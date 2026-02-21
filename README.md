@@ -1,74 +1,92 @@
-# OpenCloud Control Plane (OCCP) – Community Edition (CE)
+# OpenCloud Control Plane (OCCP) – Community Edition
 
-**Fejlesztő:** Azar Management Consulting  
-**Cél:** felhasználóbarát, gyorsan beüzemelhető (1–5 perc), auditálható és bővíthető *Agent Control Plane* platform.
+**Developer:** Azar Management Consulting
+**Goal:** User-friendly, fast-to-deploy (1–5 min), auditable and extensible **Agent Control Plane** platform.
 
-Az OCCP a **Verified Autonomy Pipeline** elvén működik:
+OCCP operates on the **Verified Autonomy Pipeline (VAP)** principle:
 
-**Plan → Gate → Execute → Validate → Ship**
+```
+Plan → Gate → Execute → Validate → Ship
+```
 
-A CE (Community Edition) nyílt forrású magot ad. A vállalati funkciók az **OCCP Enterprise Edition (EE)** csomagban érhetők el (külön, privát repóban).
+The CE (Community Edition) provides the open-source core. Enterprise features are available in the **OCCP Enterprise Edition (EE)** package (separate private repo).
 
 ---
 
-## Gyorsindítás (Docker Compose)
+## Quick Start (Docker Compose)
 
-### 1) Klónozás
 ```bash
-git clone <repo-url> occp-core
+git clone https://github.com/opencloud-controlplane/occp-core.git
 cd occp-core
-```
-
-### 2) Környezeti változók
-```bash
 cp .env.example .env
-# töltsd ki a szükséges API kulcsokat / beállításokat
-```
-
-### 3) Indítás
-```bash
 docker compose up -d
 ```
 
-### 4) Megnyitás
-- Dashboard: `http://localhost:3000`
+Dashboard: `http://localhost:3000`
 
----
+## Quick Start (CLI)
 
-## Gyorsindítás (CLI – hamarosan)
-
-A CLI csomagolás előkészítve van (`cli/`, `sdk/`). A következő milestone-ban:
 ```bash
-pip install occp-cli
+pip install occp
 occp start
+```
+
+## Quick Start (Development)
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+pytest -v
 ```
 
 ---
 
-## Projektstruktúra
+## Architecture
 
-- `orchestrator/` – Verified Autonomy Pipeline motor (tervezés, gating, futtatás, validálás, szállítás).
-- `policy_engine/` – policy-as-code, audit log, engedélyezés.
-- `dash/` – webes kezelőfelület (React/Next.js terv).
-- `cli/` – parancssoros eszköz (terv).
-- `sdk/python/`, `sdk/typescript/` – kliensek.
-- `docs/` – QuickStart + forgatókönyv + Claude Code futtatási parancsok.
-- `.github/` – hozzájárulási, issue/PR sablonok, CI.
+| Module | Description |
+|--------|-------------|
+| `orchestrator/` | VAP pipeline engine – planning, gating, execution, validation, shipping |
+| `policy_engine/` | Policy-as-code, audit log (SHA-256 hash chain), PII/injection guards |
+| `dash/` | Web dashboard & mission control (Next.js 14 + Tailwind CSS) |
+| `cli/` | Command-line interface (`occp start`, `occp run`, `occp status`) |
+| `sdk/python/` | Python SDK – stdlib-only HTTP client |
+| `sdk/typescript/` | TypeScript SDK – native fetch, zero deps |
+| `docs/` | QuickStart, scenario docs, Claude Code commands |
+| `.github/` | CI, CODEOWNERS, CONTRIBUTING, issue/PR templates |
+
+## Verified Autonomy Pipeline (VAP)
+
+1. **Plan** – Task planning + risk classification
+2. **Gate** – Policy engine check + required approvals
+3. **Execute** – Sandboxed execution
+4. **Validate** – Tests, static analysis, diff review
+5. **Ship** – PR, release, deploy
+
+## Policy Engine Features (CE)
+
+- PII detection (email, phone, SSN, credit card patterns)
+- Prompt injection detection
+- Resource limit enforcement
+- YAML/JSON policy rules with ALLOW/DENY/REQUIRE_APPROVAL actions
+- Tamper-evident audit log with SHA-256 hash chain
 
 ---
 
-## Dokumentáció
-- `docs/QuickStart.md`
-- `docs/forgato_scenario.md`
-- `docs/claude_code_commands.md`
+## Documentation
+
+- [QuickStart](docs/QuickStart.md)
+- [Scenario & Research](docs/forgato_scenario.md)
+- [Claude Code Commands](docs/claude_code_commands.md)
+
+## Contributing
+
+See [CONTRIBUTING.md](.github/CONTRIBUTING.md)
+Critical modules protected by [CODEOWNERS](.github/CODEOWNERS)
+
+## License
+
+Community Edition (occp-core) is available under the **MIT** license. See [LICENSE](LICENSE).
 
 ---
 
-## Közreműködés
-Lásd: `.github/CONTRIBUTING.md`  
-A kritikus területeket a `.github/CODEOWNERS` védi.
-
----
-
-## Licenc
-A Community Edition (occp-core) **MIT** licenc alatt érhető el. Lásd: `LICENSE`.
+*Built by [Azar Management Consulting](https://azar.hu)*

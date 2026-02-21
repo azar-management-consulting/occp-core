@@ -1,0 +1,29 @@
+{
+  "name": "@occp/sdk",
+  "version": "0.1.0",
+  "description": "OpenCloud Control Plane – TypeScript SDK",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test dist/**/*.test.js",
+    "lint": "tsc --noEmit"
+  },
+  "files": ["dist", "README.md"],
+  "keywords": ["occp", "agent", "control-plane", "sdk"],
+  "author": "Azar Management Consulting",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
