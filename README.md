@@ -16,9 +16,10 @@ The CE (Community Edition) provides the open-source core. Enterprise features ar
 ## Quick Start (Docker Compose)
 
 ```bash
-git clone https://github.com/opencloud-controlplane/occp-core.git
+git clone https://github.com/azar-management-consulting/occp-core.git
 cd occp-core
-cp .env.example .env
+bash scripts/install.sh
+bash scripts/onboard.sh   # interactive secret setup
 docker compose up -d
 ```
 
@@ -51,8 +52,11 @@ pytest -v
 | `cli/` | Command-line interface (`occp start`, `occp run`, `occp status`) |
 | `sdk/python/` | Python SDK – stdlib-only HTTP client |
 | `sdk/typescript/` | TypeScript SDK – native fetch, zero deps |
-| `docs/` | QuickStart, scenario docs, Claude Code commands |
-| `.github/` | CI, CODEOWNERS, CONTRIBUTING, issue/PR templates |
+| `config/` | YAML config templates (sandbox, channels, skills) |
+| `scripts/` | Install, onboarding wizard, security report |
+| `security/` | Secrets policy |
+| `docs/` | QuickStart, scenario docs, secret management |
+| `.github/` | CI, secret scanning, CODEOWNERS, CONTRIBUTING |
 
 ## Verified Autonomy Pipeline (VAP)
 
@@ -72,9 +76,21 @@ pytest -v
 
 ---
 
+## Security
+
+- Default-deny tool/skill policy with allowlist overrides
+- Channels bind to `127.0.0.1` by default; pairing required for inbound messages
+- Secret scanning on every push (TruffleHog)
+- No secrets in source control – `.env` only for local dev
+- See [Secrets Policy](security/SECRETS_POLICY.md) and [Secret Management Guide](docs/SECRETS.md)
+
 ## Documentation
 
 - [QuickStart](docs/QuickStart.md)
+- [Phase 1.2 – Secure Onboarding](docs/PHASE_1_2.md)
+- [Secret Management](docs/SECRETS.md)
+- [OpenClaw Comparison](docs/OPENCLAW_COMPARISON.md)
+- [GitHub Manual Steps](docs/GITHUB_MANUAL_STEPS.md)
 - [Scenario & Research](docs/forgato_scenario.md)
 - [Claude Code Commands](docs/claude_code_commands.md)
 

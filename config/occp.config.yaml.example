@@ -1,0 +1,63 @@
+# OCCP config template – Phase 1.2 (Secure Onboarding)
+
+# Global sandbox defaults for agents
+agents:
+  defaults:
+    sandbox:
+      mode: "non-main"  # off | non-main | all
+      scope: "agent"    # agent | session | shared
+      workspaceAccess: "none" # none | ro | rw
+      docker:
+        readOnlyRoot: true
+        network: "none"
+        user: "1000:1000"
+    tools:
+      allow: []
+      deny:
+        - "browser"
+        - "shell"
+        - "camera"
+
+# Models configuration
+models:
+  anthropic:
+    enabled: false
+    api_key_env: "ANTHROPIC_API_KEY"
+    model: "claude-3-opus"
+  openai:
+    enabled: false
+    api_key_env: "OPENAI_API_KEY"
+    model: "gpt-4"
+
+# Channels – disabled by default, must be enabled via onboarding
+channels:
+  slack:
+    enabled: false
+    bot_token_env: "SLACK_BOT_TOKEN"
+    signing_secret_env: "SLACK_SIGNING_SECRET"
+    bind_address: "127.0.0.1"
+    port: 8787
+    pairing_required: true
+  telegram:
+    enabled: false
+    bot_token_env: "TELEGRAM_BOT_TOKEN"
+    bind_address: "127.0.0.1"
+    port: 8788
+    pairing_required: true
+
+# Skills / Plugins
+skills:
+  allow: []    # specify allowed skills by name
+  deny: ["*"]  # deny everything else by default; whitelist to enable
+
+# Audit
+audit:
+  enabled: true
+  tamper_evident: true
+
+# Security policies
+security:
+  secrets:
+    never_commit_dotenv: true
+  pairing:
+    require_approval: true
