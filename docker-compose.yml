@@ -3,27 +3,43 @@ services:
     image: node:20-alpine
     working_dir: /app
     volumes:
-      - ./dash:/app
+      - ./dash:/app:ro
+      - dash_node_modules:/app/node_modules
     command: ["sh", "-lc", "npm install && npm run dev"]
     ports:
       - "${OCCP_PORT:-3000}:3000"
     environment:
       - NODE_ENV=development
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next
 
   orchestrator:
-    image: python:3.11-slim
+    image: python:3.12-slim
     working_dir: /app
     volumes:
-      - .:/app
+      - .:/app:ro
+      - pip_cache:/root/.cache/pip
     command: ["sh", "-lc", "pip install -e . && python -c 'from orchestrator import Pipeline; print(\"Orchestrator ready\")'"]
     environment:
       - DATABASE_URL=${DATABASE_URL:-sqlite:///occp.db}
+    security_opt:
+      - no-new-privileges:true
 
   tests:
-    image: python:3.11-slim
+    image: python:3.12-slim
     working_dir: /app
     volumes:
       - .:/app
-    command: ["sh", "-lc", "pip install -e '.[dev]' && pytest -q"]
+    command: ["sh", "-lc", "pip install -e '.[dev]' && pytest -v --cov=orchestrator --cov=policy_engine --cov=cli"]
     profiles:
       - test
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  dash_node_modules:
+  pip_cache:

@@ -6,7 +6,7 @@ import enum
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, ClassVar
 
 
 class TaskStatus(enum.Enum):
@@ -65,8 +65,29 @@ class Task:
     error: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
+    # Valid state transitions for the VAP pipeline
+    _VALID_TRANSITIONS: ClassVar[dict[TaskStatus, set[TaskStatus]]] = {
+        TaskStatus.PENDING: {TaskStatus.PLANNING, TaskStatus.FAILED},
+        TaskStatus.PLANNING: {TaskStatus.GATED, TaskStatus.FAILED},
+        TaskStatus.GATED: {TaskStatus.EXECUTING, TaskStatus.REJECTED, TaskStatus.FAILED},
+        TaskStatus.EXECUTING: {TaskStatus.VALIDATING, TaskStatus.FAILED},
+        TaskStatus.VALIDATING: {TaskStatus.SHIPPING, TaskStatus.FAILED},
+        TaskStatus.SHIPPING: {TaskStatus.COMPLETED, TaskStatus.FAILED},
+        TaskStatus.COMPLETED: set(),
+        TaskStatus.FAILED: set(),
+        TaskStatus.REJECTED: set(),
+    }
+
     def transition(self, new_status: TaskStatus) -> None:
-        """Move task to *new_status* and bump *updated_at*."""
+        """Move task to *new_status* and bump *updated_at*.
+
+        Raises :class:`ValueError` if the transition is not allowed.
+        """
+        allowed = self._VALID_TRANSITIONS.get(self.status, set())
+        if new_status not in allowed:
+            raise ValueError(
+                f"Invalid transition: {self.status.value} → {new_status.value}"
+            )
         self.status = new_status
         self.updated_at = datetime.now(timezone.utc)
 
