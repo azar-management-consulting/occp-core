@@ -1,0 +1,4 @@
+# CODEOWNERS
+# A kritikus modulokhoz (orchestrator, policy_engine) csak a fő maintainerek rendelkeznek merge joggal.
+/orchestrator/ @azar-management
+/policy_engine/ @azar-management

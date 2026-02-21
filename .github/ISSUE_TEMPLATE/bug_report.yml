@@ -1,0 +1,18 @@
+name: Bug report
+description: Hibajelentés az OCCP-hez
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: textarea
+    attributes:
+      label: Leírás
+      description: Mi a hiba?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Reprodukció
+      description: Lépések a hiba előidézéséhez
+  - type: textarea
+    attributes:
+      label: Várt viselkedés

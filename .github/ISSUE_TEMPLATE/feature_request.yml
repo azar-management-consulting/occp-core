@@ -1,0 +1,15 @@
+name: Feature request
+description: Új funkció javaslat
+title: "[FEAT] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    attributes:
+      label: Cél
+      description: Mit szeretnél elérni?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Elfogadási kritériumok
+      description: Mikor tekinthető késznek?

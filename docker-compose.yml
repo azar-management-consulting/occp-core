@@ -1,0 +1,9 @@
+services:
+  dash:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./dash:/app
+    command: ["sh","-lc","echo 'Dashboard placeholder. Build next.' && sleep 3600"]
+    ports:
+      - "${OCCP_PORT:-3000}:3000"
