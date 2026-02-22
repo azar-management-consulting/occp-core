@@ -13,7 +13,7 @@ router = APIRouter(tags=["status"])
 @router.get("/status", response_model=StatusResponse)
 async def get_status(state: AppState = Depends(get_state)) -> StatusResponse:
     return StatusResponse(
-        version="0.3.0",
+        version="0.4.0",
         tasks_count=await state.task_count(),
         audit_entries=len(state.policy_engine.audit_log),
     )

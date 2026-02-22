@@ -1,5 +1,75 @@
 # Changelog
 
+## 0.4.0 – Dashboard Auth & Next.js 15
+
+### Dashboard
+- **Login page**: Full JWT authentication UI with OCCP branding
+  - AuthProvider context with localStorage token persistence
+  - AuthGuard route protection (redirect to /login)
+  - Bearer token auto-injection in all API calls
+  - 401 response handling with auto-redirect
+  - Nav: user display, sign out button, hidden on /login
+
+### Upgrades
+- **Next.js 15** (from 14.2.x) + **React 19** (from 18.3.x)
+- **Node.js 22** Alpine base image in Dockerfile
+- TypeScript types updated (@types/node ^22, @types/react ^19)
+- 0 npm vulnerabilities
+
+### Fixes
+- OG image URL: added `metadataBase` for absolute social sharing URLs
+- Version bumped to 0.4.0 across all modules (API, CLI, SDK, dashboard, tests)
+
+---
+
+## 0.3.0 – Production Intelligence & Branding
+
+### Core
+- **LLM Planner adapter**: Anthropic Claude integration for real planning
+- **Prompt injection detection**: regex + keyword guards in policy engine
+- **Pipeline injection rejection**: 422 on detected injection attempts
+
+### Dashboard
+- Real-time pipeline status visualization
+- Policy evaluation UI
+- OCCP branding (favicon, OG tags, logo)
+
+### Infrastructure
+- Apache reverse proxy config (api.occp.ai, dash.occp.ai)
+- Docker healthchecks for both services
+- CI/CD: GitHub Actions with workflow_call trigger
+- 145 passing tests (100% pass rate)
+
+---
+
+## 0.2.0 – Production Platform
+
+### Core
+- **FastAPI REST API**: Full CRUD for tasks, agents, pipeline execution
+- **JWT Authentication**: Login, refresh, protected endpoints
+- **Audit API**: Hash-chain verified audit log endpoint
+- **Policy evaluation endpoint**: Runtime content checking
+
+### CLI Enhancements
+- Live API client mode (connects to running server)
+- `occp export` with JSON/CSV formats
+
+### SDK Updates
+- Python SDK: urllib-based HTTP client with full API coverage
+- TypeScript SDK: fetch-based client with strict types
+
+### Dashboard
+- Next.js 14 App Router pages (Mission Control, Pipeline, Policy, Audit)
+- Tailwind CSS with custom OCCP theme
+- API integration layer with error handling
+
+### Infrastructure
+- Docker Compose: API + Dashboard + test runner
+- Production deployment on Hetzner VPS
+- 100+ passing tests
+
+---
+
 ## 0.1.0 – Initial Release
 
 ### Core Modules
