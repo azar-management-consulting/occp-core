@@ -1,6 +1,21 @@
 import type { Metadata } from "next";
+import { Press_Start_2P, Space_Mono } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
+
+const pixelFont = Press_Start_2P({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-pixel",
+  display: "swap",
+});
+
+const monoFont = Space_Mono({
+  weight: ["400", "700"],
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://dash.occp.ai"),
@@ -27,7 +42,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="min-h-screen antialiased bg-[var(--bg)] text-[var(--text)]">
+      <body
+        className={`${pixelFont.variable} ${monoFont.variable} min-h-screen antialiased bg-[var(--bg)] text-[var(--text)] font-mono scanlines retro-grid`}
+      >
         <Providers>{children}</Providers>
       </body>
     </html>

@@ -15,7 +15,6 @@ export default function PipelinePage() {
   const [creating, setCreating] = useState(false);
   const { events, connected } = usePipelineWS(activeTaskId);
 
-  // Form state
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [riskLevel, setRiskLevel] = useState("low");
@@ -71,35 +70,39 @@ export default function PipelinePage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Pipeline</h1>
-        <p className="text-[var(--text-muted)] text-sm mt-1">
+        <h1 className="font-pixel text-sm tracking-wide">
+          <span className="text-occp-primary text-glow">PIPELINE</span>
+        </h1>
+        <p className="text-[var(--text-muted)] text-xs font-mono mt-2">
           Create tasks and run them through the Verified Autonomy Pipeline
         </p>
       </div>
 
       {/* Create Task Form */}
-      <div className="bg-occp-surface border border-occp-muted/30 rounded-xl p-6 space-y-4">
-        <h2 className="font-semibold">New Task</h2>
+      <div className="retro-card p-6 space-y-4 crt-glow">
+        <h2 className="font-pixel text-[10px] text-occp-accent tracking-wider uppercase">
+          New Task
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <input
             type="text"
             placeholder="Task name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="bg-[var(--bg)] border border-occp-muted/30 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-occp-primary/50"
+            className="retro-input"
           />
           <input
             type="text"
             placeholder="Description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="bg-[var(--bg)] border border-occp-muted/30 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-occp-primary/50"
+            className="retro-input"
           />
           <div className="flex gap-2">
             <select
               value={riskLevel}
               onChange={(e) => setRiskLevel(e.target.value)}
-              className="bg-[var(--bg)] border border-occp-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-occp-primary/50 flex-1"
+              className="retro-select flex-1"
             >
               <option value="low">Low Risk</option>
               <option value="medium">Medium Risk</option>
@@ -109,9 +112,9 @@ export default function PipelinePage() {
             <button
               onClick={handleCreate}
               disabled={creating || !name.trim()}
-              className="px-5 py-2 bg-occp-primary hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+              className="retro-btn-primary"
             >
-              {creating ? "..." : "Create"}
+              {creating ? "..." : "CREATE"}
             </button>
           </div>
         </div>
@@ -119,15 +122,17 @@ export default function PipelinePage() {
 
       {/* Live Pipeline Monitor */}
       {activeTaskId && (
-        <div className="bg-occp-surface border border-occp-muted/30 rounded-xl p-6 space-y-4">
+        <div className="retro-card p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Live Pipeline</h2>
-            <div className="flex items-center gap-2 text-xs">
+            <h2 className="font-pixel text-[10px] text-occp-accent tracking-wider uppercase">
+              Live Pipeline
+            </h2>
+            <div className="flex items-center gap-2 text-xs font-mono">
               <div
-                className={`w-2 h-2 rounded-full ${connected ? "bg-occp-success" : "bg-occp-danger"}`}
+                className={`w-2 h-2 rounded-full ${connected ? "bg-occp-success animate-pulse" : "bg-occp-danger"}`}
               />
               <span className="text-[var(--text-muted)]">
-                {connected ? "Connected" : "Disconnected"}
+                {connected ? "CONNECTED" : "DISCONNECTED"}
               </span>
             </div>
           </div>
@@ -141,11 +146,13 @@ export default function PipelinePage() {
                   key={i}
                   className="text-xs font-mono text-[var(--text-muted)] flex gap-4"
                 >
-                  <span>
+                  <span className="text-occp-accent/50">
                     {new Date(evt.timestamp).toLocaleTimeString()}
                   </span>
                   <span className="text-[var(--text)]">{evt.event}</span>
-                  {evt.status && <span>→ {evt.status}</span>}
+                  {evt.status && (
+                    <span className="text-occp-primary">&rarr; {evt.status}</span>
+                  )}
                 </div>
               ))}
             </div>
@@ -153,9 +160,13 @@ export default function PipelinePage() {
 
           {result && (
             <div
-              className={`text-sm p-3 rounded-lg ${result.success ? "bg-occp-success/10 text-occp-success" : "bg-occp-danger/10 text-occp-danger"}`}
+              className={`text-sm font-mono p-3 rounded-lg ${
+                result.success
+                  ? "bg-occp-success/10 text-occp-success border border-occp-success/30"
+                  : "bg-occp-danger/10 text-occp-danger border border-occp-danger/30"
+              }`}
             >
-              Pipeline {result.success ? "completed" : "failed"}
+              {result.success ? "PIPELINE COMPLETE" : "PIPELINE FAILED"}
               {result.error && ` — ${result.error}`}
             </div>
           )}
@@ -164,14 +175,17 @@ export default function PipelinePage() {
 
       {/* Error */}
       {error && (
-        <div className="bg-occp-danger/10 border border-occp-danger/30 rounded-lg p-4 text-sm text-occp-danger">
-          {error}
+        <div className="retro-card border-occp-danger/40 bg-occp-danger/5 p-4">
+          <span className="font-pixel text-[9px] text-occp-danger mr-2">?ERROR</span>
+          <span className="text-sm text-occp-danger font-mono">{error}</span>
         </div>
       )}
 
       {/* Task List */}
-      <div>
-        <h2 className="text-lg font-semibold mb-4">All Tasks</h2>
+      <div className="space-y-4">
+        <h2 className="font-pixel text-[10px] text-occp-accent tracking-wider uppercase">
+          All Tasks
+        </h2>
         {tasks.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {tasks.map((t) => (
@@ -188,7 +202,7 @@ export default function PipelinePage() {
             ))}
           </div>
         ) : (
-          <p className="text-[var(--text-muted)] text-sm">
+          <p className="text-[var(--text-muted)] text-sm font-mono">
             No tasks yet. Create one above.
           </p>
         )}

@@ -1,11 +1,11 @@
 "use client";
 
 const STAGES = [
-  { key: "planning", label: "Plan", icon: "1" },
-  { key: "gated", label: "Gate", icon: "2" },
-  { key: "executing", label: "Execute", icon: "3" },
-  { key: "validating", label: "Validate", icon: "4" },
-  { key: "shipping", label: "Ship", icon: "5" },
+  { key: "planning", label: "PLAN", icon: "01" },
+  { key: "gated", label: "GATE", icon: "02" },
+  { key: "executing", label: "EXEC", icon: "03" },
+  { key: "validating", label: "VALID", icon: "04" },
+  { key: "shipping", label: "SHIP", icon: "05" },
 ] as const;
 
 const STATUS_ORDER: Record<string, number> = {
@@ -28,7 +28,7 @@ export function VAPProgress({ status }: Props) {
   const current = STATUS_ORDER[status] ?? -1;
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       {STAGES.map((stage, i) => {
         let state: "idle" | "active" | "completed" | "failed" = "idle";
         if (status === "failed" || status === "rejected") {
@@ -40,35 +40,41 @@ export function VAPProgress({ status }: Props) {
         }
 
         return (
-          <div key={stage.key} className="flex items-center gap-2">
+          <div key={stage.key} className="flex items-center gap-1.5">
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+              className={`w-7 h-7 rounded flex items-center justify-center font-pixel text-[8px] transition-all ${
                 state === "completed"
-                  ? "bg-occp-success text-white"
+                  ? "bg-occp-success/20 text-occp-success border border-occp-success/30"
                   : state === "active"
-                  ? "bg-occp-primary text-white animate-pulse"
+                  ? "bg-occp-primary/20 text-occp-primary border border-occp-primary/30 animate-pulse"
                   : state === "failed"
-                  ? "bg-occp-danger text-white"
-                  : "bg-occp-muted text-[var(--text-muted)]"
+                  ? "bg-occp-danger/20 text-occp-danger border border-occp-danger/30"
+                  : "bg-occp-muted/30 text-[var(--text-muted)] border border-occp-muted/20"
               }`}
             >
               {state === "completed" ? "\u2713" : stage.icon}
             </div>
             <span
-              className={`text-xs ${
+              className={`text-[9px] font-pixel tracking-wider ${
                 state === "active"
-                  ? "text-occp-primary font-medium"
+                  ? "text-occp-primary"
                   : state === "completed"
                   ? "text-occp-success"
-                  : "text-[var(--text-muted)]"
+                  : state === "failed"
+                  ? "text-occp-danger"
+                  : "text-[var(--text-muted)]/50"
               }`}
             >
               {stage.label}
             </span>
             {i < STAGES.length - 1 && (
               <div
-                className={`w-8 h-0.5 ${
-                  i < current ? "bg-occp-success" : "bg-occp-muted"
+                className={`w-4 h-px ${
+                  i < current
+                    ? "bg-occp-success"
+                    : state === "failed"
+                    ? "bg-occp-danger/30"
+                    : "bg-occp-muted/30"
                 }`}
               />
             )}

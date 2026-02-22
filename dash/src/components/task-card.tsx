@@ -13,28 +13,32 @@ interface Props {
 }
 
 const riskColors: Record<string, string> = {
-  low: "bg-occp-success/20 text-occp-success",
-  medium: "bg-occp-warning/20 text-occp-warning",
-  high: "bg-occp-danger/20 text-occp-danger",
-  critical: "bg-red-900/30 text-red-400",
+  low: "bg-occp-success/15 text-occp-success border border-occp-success/30",
+  medium: "bg-occp-warning/15 text-occp-warning border border-occp-warning/30",
+  high: "bg-occp-danger/15 text-occp-danger border border-occp-danger/30",
+  critical: "bg-red-900/20 text-red-400 border border-red-500/30",
 };
 
 export function TaskCard({ id, name, description, status, risk_level, created_at, onRun }: Props) {
   return (
-    <div className="bg-occp-surface border border-occp-muted/30 rounded-xl p-5 space-y-4">
+    <div className="retro-card p-5 space-y-4">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="font-semibold text-base">{name}</h3>
-          <p className="text-sm text-[var(--text-muted)] mt-1 line-clamp-2">{description}</p>
+          <h3 className="font-mono font-bold text-sm">{name}</h3>
+          <p className="text-xs text-[var(--text-muted)] font-mono mt-1 line-clamp-2">
+            {description}
+          </p>
         </div>
-        <span className={`text-xs px-2 py-1 rounded-full font-medium ${riskColors[risk_level] || ""}`}>
-          {risk_level}
+        <span
+          className={`text-[10px] px-2 py-0.5 rounded font-pixel tracking-wider ${riskColors[risk_level] || ""}`}
+        >
+          {risk_level.toUpperCase()}
         </span>
       </div>
 
       <VAPProgress status={status} />
 
-      <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+      <div className="flex items-center justify-between text-[10px] text-[var(--text-muted)] font-mono">
         <span>ID: {id.slice(0, 12)}</span>
         <span>{new Date(created_at).toLocaleString()}</span>
       </div>
@@ -42,9 +46,9 @@ export function TaskCard({ id, name, description, status, risk_level, created_at
       {status === "pending" && onRun && (
         <button
           onClick={onRun}
-          className="w-full py-2 bg-occp-primary hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+          className="retro-btn-primary w-full py-2 font-pixel text-[9px] tracking-wider"
         >
-          Run Pipeline
+          RUN PIPELINE
         </button>
       )}
     </div>

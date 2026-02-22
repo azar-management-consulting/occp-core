@@ -34,36 +34,38 @@ export default function AuditPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Audit Log</h1>
-          <p className="text-[var(--text-muted)] text-sm mt-1">
+          <h1 className="font-pixel text-sm tracking-wide">
+            <span className="text-occp-primary text-glow">AUDIT</span>{" "}
+            <span className="text-[var(--text)]">LOG</span>
+          </h1>
+          <p className="text-[var(--text-muted)] text-xs font-mono mt-2">
             Tamper-evident SHA-256 hash chain of all pipeline operations
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-[var(--text-muted)]">
+          <span className="text-xs text-[var(--text-muted)] font-mono">
             {total} {total === 1 ? "entry" : "entries"}
           </span>
-          <button
-            onClick={load}
-            className="px-4 py-2 text-sm bg-occp-surface border border-occp-muted/30 rounded-lg hover:bg-white/5 transition-colors"
-          >
-            Refresh
+          <button onClick={load} className="retro-btn text-[10px] font-pixel tracking-wider">
+            REFRESH
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="bg-occp-danger/10 border border-occp-danger/30 rounded-lg p-4 text-sm text-occp-danger">
-          {error}
+        <div className="retro-card border-occp-danger/40 bg-occp-danger/5 p-4">
+          <span className="font-pixel text-[9px] text-occp-danger mr-2">?ERROR</span>
+          <span className="text-sm text-occp-danger font-mono">{error}</span>
         </div>
       )}
 
       {loading ? (
-        <div className="text-center py-16 text-[var(--text-muted)]">
-          Loading audit log...
+        <div className="text-center py-16 text-[var(--text-muted)] font-mono">
+          LOADING AUDIT LOG...
+          <span className="inline-block w-2 h-3 bg-occp-primary ml-1 animate-blink align-middle" />
         </div>
       ) : (
-        <div className="bg-occp-surface border border-occp-muted/30 rounded-xl p-6">
+        <div className="retro-card p-6 crt-glow">
           <AuditTable entries={entries} chainValid={chainValid} />
         </div>
       )}

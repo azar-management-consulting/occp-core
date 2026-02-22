@@ -13,7 +13,6 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Redirect if already authenticated
   if (isAuthenticated) {
     router.replace("/");
     return null;
@@ -22,15 +21,13 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) return;
-
     setLoading(true);
     setError(null);
-
     try {
       await login(username, password);
       router.replace("/");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      setError(err instanceof Error ? err.message : "LOGIN FAILED");
     } finally {
       setLoading(false);
     }
@@ -38,33 +35,27 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center">
-      <div className="w-full max-w-sm space-y-8">
-        {/* Logo & Title */}
-        <div className="text-center space-y-3">
-          <Image
-            src="/logo.png"
-            alt="OCCP"
-            width={64}
-            height={64}
-            className="mx-auto rounded-xl"
-          />
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              <span className="text-occp-primary">OCCP</span> Dashboard
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center space-y-4">
+          <Image src="/logo.png" alt="OCCP" width={64} height={64} className="mx-auto rounded-xl" />
+          <div className="space-y-2">
+            <div className="font-pixel text-[8px] text-occp-primary/50 tracking-wider">
+              **** OPENCLOUD CONTROL PLANE ****
+            </div>
+            <h1 className="font-pixel text-sm tracking-wide">
+              <span className="text-occp-primary text-glow">OCCP</span>{" "}
+              <span className="text-[var(--text)]">DASHBOARD</span>
             </h1>
-            <p className="text-sm text-[var(--text-muted)] mt-1">
-              Sign in to Mission Control
-            </p>
+            <p className="text-xs text-[var(--text-muted)] font-mono">AUTHENTICATION REQUIRED</p>
           </div>
         </div>
 
-        {/* Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-3">
+        <form onSubmit={handleSubmit} className="retro-card p-6 space-y-5 crt-glow">
+          <div className="space-y-4">
             <div>
               <label
                 htmlFor="username"
-                className="block text-xs font-medium text-[var(--text-muted)] mb-1.5 uppercase tracking-wider"
+                className="block font-pixel text-[8px] text-[var(--text-muted)] mb-2 uppercase tracking-widest"
               >
                 Username
               </label>
@@ -76,14 +67,14 @@ export default function LoginPage() {
                 autoComplete="username"
                 autoFocus
                 required
-                className="w-full bg-[var(--bg)] border border-occp-muted/30 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-occp-primary/50 focus:border-occp-primary/50 transition-colors"
+                className="retro-input w-full"
                 placeholder="admin"
               />
             </div>
             <div>
               <label
                 htmlFor="password"
-                className="block text-xs font-medium text-[var(--text-muted)] mb-1.5 uppercase tracking-wider"
+                className="block font-pixel text-[8px] text-[var(--text-muted)] mb-2 uppercase tracking-widest"
               >
                 Password
               </label>
@@ -94,30 +85,31 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
                 required
-                className="w-full bg-[var(--bg)] border border-occp-muted/30 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-occp-primary/50 focus:border-occp-primary/50 transition-colors"
-                placeholder="••••••••"
+                className="retro-input w-full"
+                placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;"
               />
             </div>
           </div>
 
-          {/* Error */}
           {error && (
-            <div className="bg-occp-danger/10 border border-occp-danger/30 rounded-lg p-3 text-sm text-occp-danger">
-              {error}
+            <div className="retro-card border-occp-danger/40 bg-occp-danger/5 p-3">
+              <span className="font-pixel text-[8px] text-occp-danger mr-2">?ERROR</span>
+              <span className="text-sm text-occp-danger font-mono">{error}</span>
             </div>
           )}
 
           <button
             type="submit"
             disabled={loading || !username.trim() || !password.trim()}
-            className="w-full py-2.5 bg-occp-primary hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
+            className="retro-btn-primary w-full py-3 font-pixel text-[10px] tracking-wider"
           >
-            {loading ? "Signing in..." : "Sign in"}
+            {loading ? "LOADING..." : "LOGIN"}
           </button>
         </form>
 
-        <p className="text-center text-xs text-[var(--text-muted)]">
-          OpenCloud Control Plane v0.5.0
+        <p className="text-center font-pixel text-[7px] text-[var(--text-muted)]/40 tracking-wider">
+          OCCP V0.5.0 &mdash; READY
+          <span className="inline-block w-1.5 h-2.5 bg-occp-primary ml-1 animate-blink align-middle" />
         </p>
       </div>
     </div>

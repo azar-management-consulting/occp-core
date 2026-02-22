@@ -10,7 +10,6 @@ export default function AgentsPage() {
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Form state
   const [agentType, setAgentType] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [capabilities, setCapabilities] = useState("");
@@ -73,58 +72,68 @@ export default function AgentsPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Agents</h1>
-          <p className="text-[var(--text-muted)] text-sm mt-1">
+          <h1 className="font-pixel text-sm tracking-wide">
+            <span className="text-occp-primary text-glow">AGENTS</span>
+          </h1>
+          <p className="text-[var(--text-muted)] text-xs font-mono mt-2">
             Register and manage autonomous agents in the pipeline
           </p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-occp-primary hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+          className={showForm ? "retro-btn" : "retro-btn-primary"}
         >
-          {showForm ? "Cancel" : "Register Agent"}
+          {showForm ? "CANCEL" : "REGISTER"}
         </button>
       </div>
 
       {/* Error */}
       {error && (
-        <div className="bg-occp-danger/10 border border-occp-danger/30 rounded-lg p-4 text-sm text-occp-danger flex justify-between">
-          <span>{error}</span>
-          <button onClick={() => setError(null)} className="underline text-xs">
-            dismiss
+        <div className="retro-card border-occp-danger/40 bg-occp-danger/5 p-4 flex justify-between items-center">
+          <div>
+            <span className="font-pixel text-[9px] text-occp-danger mr-2">?ERROR</span>
+            <span className="text-sm text-occp-danger font-mono">{error}</span>
+          </div>
+          <button
+            onClick={() => setError(null)}
+            className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] font-mono"
+          >
+            [DISMISS]
           </button>
         </div>
       )}
 
       {/* Registration Form */}
       {showForm && (
-        <div className="bg-occp-surface border border-occp-muted/30 rounded-xl p-6 space-y-4">
-          <h2 className="font-semibold">Register New Agent</h2>
+        <div className="retro-card p-6 space-y-4 crt-glow">
+          <h2 className="font-pixel text-[10px] text-occp-accent tracking-wider uppercase">
+            Register New Agent
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input
               type="text"
               placeholder="Agent type (e.g. code-reviewer)"
               value={agentType}
               onChange={(e) => setAgentType(e.target.value)}
-              className="bg-[var(--bg)] border border-occp-muted/30 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-occp-primary/50"
+              className="retro-input"
             />
             <input
               type="text"
               placeholder="Display name"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="bg-[var(--bg)] border border-occp-muted/30 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-occp-primary/50"
+              className="retro-input"
             />
             <input
               type="text"
               placeholder="Capabilities (comma-separated)"
               value={capabilities}
               onChange={(e) => setCapabilities(e.target.value)}
-              className="bg-[var(--bg)] border border-occp-muted/30 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-occp-primary/50"
+              className="retro-input"
             />
             <div className="flex gap-2">
               <div className="flex-1">
-                <label className="text-xs text-[var(--text-muted)] mb-1 block">
+                <label className="block font-pixel text-[7px] text-[var(--text-muted)] mb-1.5 uppercase tracking-widest">
                   Max concurrent
                 </label>
                 <input
@@ -133,11 +142,11 @@ export default function AgentsPage() {
                   max={100}
                   value={maxConcurrent}
                   onChange={(e) => setMaxConcurrent(Number(e.target.value))}
-                  className="w-full bg-[var(--bg)] border border-occp-muted/30 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-occp-primary/50"
+                  className="retro-input w-full"
                 />
               </div>
               <div className="flex-1">
-                <label className="text-xs text-[var(--text-muted)] mb-1 block">
+                <label className="block font-pixel text-[7px] text-[var(--text-muted)] mb-1.5 uppercase tracking-widest">
                   Timeout (sec)
                 </label>
                 <input
@@ -146,7 +155,7 @@ export default function AgentsPage() {
                   max={3600}
                   value={timeoutSeconds}
                   onChange={(e) => setTimeoutSeconds(Number(e.target.value))}
-                  className="w-full bg-[var(--bg)] border border-occp-muted/30 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-occp-primary/50"
+                  className="retro-input w-full"
                 />
               </div>
             </div>
@@ -154,9 +163,9 @@ export default function AgentsPage() {
           <button
             onClick={handleRegister}
             disabled={submitting || !agentType.trim() || !displayName.trim()}
-            className="px-6 py-2 bg-occp-primary hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+            className="retro-btn-primary"
           >
-            {submitting ? "Registering..." : "Register"}
+            {submitting ? "REGISTERING..." : "REGISTER"}
           </button>
         </div>
       )}
@@ -173,9 +182,11 @@ export default function AgentsPage() {
           ))}
         </div>
       ) : (
-        <div className="bg-occp-surface border border-occp-muted/30 rounded-xl p-12 text-center text-[var(--text-muted)]">
-          <p className="text-lg font-medium">No agents registered</p>
-          <p className="text-sm mt-1">
+        <div className="retro-card p-12 text-center crt-glow">
+          <p className="font-pixel text-[10px] text-[var(--text-muted)]">
+            NO AGENTS REGISTERED
+          </p>
+          <p className="text-sm text-[var(--text-muted)] font-mono mt-3">
             Register an agent to start using the pipeline
           </p>
         </div>
@@ -194,24 +205,23 @@ function AgentCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
-    <div className="bg-occp-surface border border-occp-muted/30 rounded-xl p-5 space-y-4">
+    <div className="retro-card p-5 space-y-4">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="font-semibold text-base">{agent.display_name}</h3>
-          <p className="text-xs text-[var(--text-muted)] font-mono mt-0.5">
+          <h3 className="font-mono font-bold text-sm">{agent.display_name}</h3>
+          <p className="text-[10px] text-occp-accent font-mono mt-0.5">
             {agent.agent_type}
           </p>
         </div>
-        <div className="w-2.5 h-2.5 rounded-full bg-occp-success mt-1.5" title="Registered" />
+        <div className="w-2.5 h-2.5 rounded-full bg-occp-success mt-1.5 animate-pulse" title="Registered" />
       </div>
 
-      {/* Capabilities */}
       {agent.capabilities.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {agent.capabilities.map((cap) => (
             <span
               key={cap}
-              className="text-xs px-2 py-0.5 rounded-full bg-occp-primary/10 text-occp-primary"
+              className="text-[10px] px-2 py-0.5 rounded font-mono bg-occp-primary/10 text-occp-primary border border-occp-primary/20"
             >
               {cap}
             </span>
@@ -219,42 +229,40 @@ function AgentCard({
         </div>
       )}
 
-      {/* Config */}
-      <div className="grid grid-cols-2 gap-3 text-xs">
+      <div className="grid grid-cols-2 gap-3 text-xs font-mono">
         <div>
-          <span className="text-[var(--text-muted)]">Concurrency</span>
-          <p className="font-medium">{agent.max_concurrent}</p>
+          <span className="text-[var(--text-muted)] text-[10px]">CONCURRENCY</span>
+          <p className="font-bold text-occp-accent">{agent.max_concurrent}</p>
         </div>
         <div>
-          <span className="text-[var(--text-muted)]">Timeout</span>
-          <p className="font-medium">{agent.timeout_seconds}s</p>
+          <span className="text-[var(--text-muted)] text-[10px]">TIMEOUT</span>
+          <p className="font-bold text-occp-accent">{agent.timeout_seconds}s</p>
         </div>
       </div>
 
-      {/* Actions */}
       <div className="pt-2 border-t border-occp-muted/20">
         {confirmDelete ? (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-occp-danger">Confirm delete?</span>
+            <span className="text-xs text-occp-danger font-mono">CONFIRM?</span>
             <button
               onClick={onDelete}
-              className="text-xs px-3 py-1 bg-occp-danger/20 text-occp-danger rounded-md hover:bg-occp-danger/30 transition-colors"
+              className="text-xs px-3 py-1 bg-occp-danger/20 text-occp-danger rounded hover:bg-occp-danger/30 transition-colors font-mono"
             >
-              Yes
+              YES
             </button>
             <button
               onClick={() => setConfirmDelete(false)}
-              className="text-xs px-3 py-1 bg-white/5 text-[var(--text-muted)] rounded-md hover:bg-white/10 transition-colors"
+              className="text-xs px-3 py-1 bg-white/5 text-[var(--text-muted)] rounded hover:bg-white/10 transition-colors font-mono"
             >
-              No
+              NO
             </button>
           </div>
         ) : (
           <button
             onClick={() => setConfirmDelete(true)}
-            className="text-xs text-[var(--text-muted)] hover:text-occp-danger transition-colors"
+            className="text-xs text-[var(--text-muted)] hover:text-occp-danger transition-colors font-mono"
           >
-            Unregister
+            UNREGISTER
           </button>
         )}
       </div>
