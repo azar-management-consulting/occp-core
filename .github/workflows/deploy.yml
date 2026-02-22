@@ -24,11 +24,21 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
+          envs: ANTHROPIC_API_KEY
           script: |
             cd /opt/occp
             git pull origin main
-            docker compose build --no-cache api
-            docker compose up -d api
-            sleep 5
+            # Sync Anthropic key to .env if provided via GitHub secret
+            if [ -n "$ANTHROPIC_API_KEY" ]; then
+              grep -q "OCCP_ANTHROPIC_API_KEY" .env 2>/dev/null && \
+                sed -i "s|^OCCP_ANTHROPIC_API_KEY=.*|OCCP_ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY|" .env || \
+                echo "OCCP_ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY" >> .env
+            fi
+            docker compose build --no-cache
+            docker compose up -d
+            sleep 10
             curl -sf http://localhost:8000/api/v1/status || exit 1
+            curl -sf http://localhost:3000/ || exit 1
             echo "Deploy OK: $(date -u)"
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

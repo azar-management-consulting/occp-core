@@ -12,7 +12,7 @@ COPY store/ store/
 COPY cli/ cli/
 COPY sdk/ sdk/
 
-RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir -e '.[llm]'
 
 EXPOSE 8000
 
