@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { StatusData, TaskData } from "@/lib/api";
@@ -32,13 +33,16 @@ export default function MissionControl() {
   return (
     <div className="space-y-8">
       {/* Hero */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          <span className="text-occp-primary">OCCP</span> Mission Control
-        </h1>
-        <p className="text-[var(--text-muted)] mt-1">
-          Verified Autonomy Pipeline — Plan, Gate, Execute, Validate, Ship
-        </p>
+      <div className="flex items-center gap-4">
+        <Image src="/logo.png" alt="OCCP Logo" width={48} height={48} className="rounded-lg" />
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            <span className="text-occp-primary">OCCP</span> Mission Control
+          </h1>
+          <p className="text-[var(--text-muted)] mt-1">
+            Verified Autonomy Pipeline — Plan, Gate, Execute, Validate, Ship
+          </p>
+        </div>
       </div>
 
       {/* Status Bar */}

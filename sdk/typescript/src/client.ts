@@ -23,7 +23,7 @@ const DEFAULT_TIMEOUT = 30_000; // ms
 
 export class OCCPClient {
   private readonly baseUrl: string;
-  private readonly apiKey: string;
+  private apiKey: string;
   private readonly timeout: number;
 
   constructor(options: OCCPClientOptions = {}) {
@@ -34,12 +34,45 @@ export class OCCPClient {
 
   // ----- Public API -----
 
+  /** POST /api/v1/auth/login — stores token internally. */
+  async login(username: string, password: string): Promise<string> {
+    const data = await this.request<{ access_token: string }>(
+      "POST",
+      "/api/v1/auth/login",
+      { username, password },
+    );
+    this.apiKey = data.access_token;
+    return data.access_token;
+  }
+
   async getStatus(): Promise<PlatformStatus> {
     return this.request<PlatformStatus>("GET", "/api/v1/status");
   }
 
-  async listAgents(): Promise<Agent[]> {
-    return this.request<Agent[]>("GET", "/api/v1/agents");
+  async listAgents(): Promise<{ agents: Agent[]; total: number }> {
+    return this.request<{ agents: Agent[]; total: number }>("GET", "/api/v1/agents");
+  }
+
+  /** POST /api/v1/tasks — requires auth. */
+  async createTask(input: {
+    name: string;
+    description: string;
+    agentType: string;
+    riskLevel?: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<Task> {
+    return this.request<Task>("POST", "/api/v1/tasks", {
+      name: input.name,
+      description: input.description,
+      agent_type: input.agentType,
+      risk_level: input.riskLevel ?? "low",
+      metadata: input.metadata,
+    });
+  }
+
+  /** POST /api/v1/pipeline/run/{taskId} — requires auth. */
+  async runPipeline(taskId: string): Promise<Record<string, unknown>> {
+    return this.request<Record<string, unknown>>("POST", `/api/v1/pipeline/run/${taskId}`);
   }
 
   async runWorkflow(input: WorkflowInput): Promise<WorkflowResult> {
@@ -50,13 +83,13 @@ export class OCCPClient {
     return this.request<Task>("GET", `/api/v1/tasks/${taskId}`);
   }
 
-  async listTasks(status?: string): Promise<Task[]> {
+  async listTasks(status?: string): Promise<{ tasks: Task[]; total: number }> {
     const qs = status ? `?status=${encodeURIComponent(status)}` : "";
-    return this.request<Task[]>("GET", `/api/v1/tasks${qs}`);
+    return this.request<{ tasks: Task[]; total: number }>("GET", `/api/v1/tasks${qs}`);
   }
 
-  async getAuditLog(limit = 100, offset = 0): Promise<AuditEntry[]> {
-    return this.request<AuditEntry[]>(
+  async getAuditLog(limit = 100, offset = 0): Promise<{ entries: AuditEntry[]; total: number }> {
+    return this.request<{ entries: AuditEntry[]; total: number }>(
       "GET",
       `/api/v1/audit?limit=${limit}&offset=${offset}`,
     );

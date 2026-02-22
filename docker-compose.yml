@@ -5,8 +5,16 @@ services:
       dockerfile: Dockerfile.api
     ports:
       - "${OCCP_API_PORT:-8000}:8000"
+    volumes:
+      - occp-data:/app/data
     environment:
       - OCCP_ENV=${OCCP_ENV:-development}
+      - OCCP_DATABASE_URL=sqlite+aiosqlite:///data/occp.db
+      - OCCP_JWT_SECRET=${OCCP_JWT_SECRET:-}
+      - OCCP_ADMIN_USER=${OCCP_ADMIN_USER:-admin}
+      - OCCP_ADMIN_PASSWORD=${OCCP_ADMIN_PASSWORD:-changeme}
+      - OCCP_ANTHROPIC_API_KEY=${OCCP_ANTHROPIC_API_KEY:-}
+      - OCCP_CORS_ORIGINS=${OCCP_CORS_ORIGINS:-["https://dash.occp.ai","http://localhost:3000"]}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/status')"]
       interval: 15s
@@ -62,11 +70,12 @@ services:
     working_dir: /app
     volumes:
       - .:/app
-    command: ["sh", "-lc", "pip install -e '.[dev]' && pytest -v --cov=orchestrator --cov=policy_engine --cov=cli --cov=api --cov=adapters"]
+    command: ["sh", "-lc", "pip install -e '.[dev]' && pytest -v --cov=orchestrator --cov=policy_engine --cov=cli --cov=api --cov=adapters --cov=config --cov=store --cov=sdk"]
     profiles:
       - test
     security_opt:
       - no-new-privileges:true
 
 volumes:
+  occp-data:
   dash_node_modules:

@@ -40,7 +40,7 @@ class PolicyEngine:
         result = await engine.evaluate(task)
     """
 
-    def __init__(self) -> None:
+    def __init__(self, audit_store: Any = None) -> None:
         self._policies: list[Policy] = []
         self._guards = [
             PIIGuard(),
@@ -48,6 +48,16 @@ class PolicyEngine:
             ResourceLimitGuard(),
         ]
         self._audit_chain: list[AuditEntry] = []
+        self._audit_store = audit_store  # Optional AuditStore for persistence
+
+    # ------------------------------------------------------------------
+    # Chain head management (for restart continuity)
+    # ------------------------------------------------------------------
+
+    def set_chain_head(self, entry: AuditEntry) -> None:
+        """Set the last known audit entry for hash chain continuity on restart."""
+        if not self._audit_chain:
+            self._audit_chain.append(entry)
 
     # ------------------------------------------------------------------
     # Policy loading
@@ -152,13 +162,15 @@ class PolicyEngine:
         else:
             result = GateResult(approved=True, guard_results=guard_results)
 
-        # Audit
-        self._append_audit(
+        # Audit – in-memory chain + optional persistent store
+        entry = self._append_audit(
             actor="policy_engine",
             action="gate_evaluation",
             task_id=getattr(task, "id", ""),
             detail={"approved": result.approved, "reason": result.reason},
         )
+        if self._audit_store:
+            await self._audit_store.append(entry)
 
         return result
 

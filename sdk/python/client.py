@@ -37,13 +37,47 @@ class OCCPClient:
     # Public API
     # ------------------------------------------------------------------
 
+    def login(self, username: str, password: str) -> str:
+        """POST /api/v1/auth/login — returns and stores access token."""
+        data = self._request(
+            "POST",
+            "/api/v1/auth/login",
+            body={"username": username, "password": password},
+        )
+        token = data.get("access_token", "")
+        self.api_key = token
+        return token
+
     def get_status(self) -> dict[str, Any]:
         """GET /api/v1/status"""
         return self._request("GET", "/api/v1/status")
 
-    def list_agents(self) -> list[dict[str, Any]]:
+    def list_agents(self) -> dict[str, Any]:
         """GET /api/v1/agents"""
         return self._request("GET", "/api/v1/agents")
+
+    def create_task(
+        self,
+        name: str,
+        description: str,
+        agent_type: str,
+        risk_level: str = "low",
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """POST /api/v1/tasks — requires auth."""
+        body: dict[str, Any] = {
+            "name": name,
+            "description": description,
+            "agent_type": agent_type,
+            "risk_level": risk_level,
+        }
+        if metadata:
+            body["metadata"] = metadata
+        return self._request("POST", "/api/v1/tasks", body=body)
+
+    def run_pipeline(self, task_id: str) -> dict[str, Any]:
+        """POST /api/v1/pipeline/run/{task_id} — requires auth."""
+        return self._request("POST", f"/api/v1/pipeline/run/{task_id}")
 
     def run_workflow(self, workflow: dict[str, Any]) -> dict[str, Any]:
         """POST /api/v1/workflows/run"""
@@ -53,14 +87,14 @@ class OCCPClient:
         """GET /api/v1/tasks/{task_id}"""
         return self._request("GET", f"/api/v1/tasks/{task_id}")
 
-    def list_tasks(self, status: str | None = None) -> list[dict[str, Any]]:
+    def list_tasks(self, status: str | None = None) -> dict[str, Any]:
         """GET /api/v1/tasks"""
         params = f"?status={status}" if status else ""
         return self._request("GET", f"/api/v1/tasks{params}")
 
     def get_audit_log(
         self, limit: int = 100, offset: int = 0
-    ) -> list[dict[str, Any]]:
+    ) -> dict[str, Any]:
         """GET /api/v1/audit"""
         return self._request(
             "GET", f"/api/v1/audit?limit={limit}&offset={offset}"

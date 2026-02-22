@@ -21,7 +21,7 @@ class TestCLI:
         runner = CliRunner()
         result = runner.invoke(cli, ["--version"])
         assert result.exit_code == 0
-        assert "0.2.0" in result.output
+        assert "0.3.0" in result.output
 
     def test_status(self) -> None:
         runner = CliRunner()
@@ -61,6 +61,13 @@ class TestCLI:
         result = runner.invoke(cli, ["demo", "--inject"])
         assert result.exit_code == 0
         assert "blocked" in result.output.lower()
+
+    def test_agents_command_offline(self) -> None:
+        """agents command handles offline API gracefully."""
+        runner = CliRunner()
+        result = runner.invoke(cli, ["agents"])
+        # Should fail gracefully when no API is running
+        assert result.exit_code != 0 or "Error" in result.output or "No agents" in result.output
 
     def test_main_compat(self) -> None:
         """Backward compat wrapper returns int."""

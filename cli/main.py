@@ -54,16 +54,45 @@ def start(host: str, port: int, reload: bool) -> None:
 
 
 @cli.command()
-def status() -> None:
+@click.option("--url", default="http://localhost:8000", help="API base URL.")
+def status(url: str) -> None:
     """Show platform status."""
-    info = {
-        "platform": "OCCP",
-        "version": __version__,
-        "status": "running",
-        "agents": [],
-        "pipelines_active": 0,
-    }
+    try:
+        from sdk.python.client import OCCPClient
+
+        client = OCCPClient(base_url=url)
+        info = client.get_status()
+    except Exception:
+        info = {
+            "platform": "OCCP",
+            "version": __version__,
+            "status": "offline",
+            "agents": [],
+            "pipelines_active": 0,
+        }
     click.echo(json.dumps(info, indent=2))
+
+
+@cli.command()
+@click.option("--url", default="http://localhost:8000", help="API base URL.")
+def agents(url: str) -> None:
+    """List registered agents."""
+    try:
+        from sdk.python.client import OCCPClient
+
+        client = OCCPClient(base_url=url)
+        data = client.list_agents()
+        agents_list = data.get("agents", []) if isinstance(data, dict) else data
+        if not agents_list:
+            click.echo("No agents registered.")
+            return
+        for ag in agents_list:
+            name = ag.get("display_name", ag.get("agent_type", "?"))
+            atype = ag.get("agent_type", "?")
+            click.echo(f"  {atype:20s}  {name}")
+    except Exception as exc:
+        click.echo(f"Error fetching agents: {exc}", err=True)
+        sys.exit(1)
 
 
 @cli.command("run")

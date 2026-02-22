@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="assets/logo.png" alt="OCCP Logo" width="120">
+</p>
+
+<p align="center">
   <strong>OpenCloud Control Plane (OCCP)</strong><br>
   <em>Agent Control Plane with Verified Autonomy Pipeline</em>
 </p>
@@ -8,7 +12,7 @@
   <img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT">
   <img src="https://img.shields.io/badge/docker-compose-blue?logo=docker" alt="Docker Compose">
-  <img src="https://img.shields.io/badge/version-0.2.0-orange" alt="Version 0.2.0">
+  <img src="https://img.shields.io/badge/version-0.3.0-orange" alt="Version 0.3.0">
 </p>
 
 ---

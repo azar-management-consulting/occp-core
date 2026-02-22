@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -16,7 +17,8 @@ export function Nav() {
   return (
     <nav className="border-b border-occp-muted/50 bg-occp-surface/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 flex items-center h-14 gap-8">
-        <Link href="/" className="font-bold text-lg tracking-tight">
+        <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-tight">
+          <Image src="/logo.png" alt="OCCP" width={28} height={28} className="rounded-md" />
           <span className="text-occp-primary">OCCP</span>
         </Link>
         <div className="flex gap-1">
@@ -34,7 +36,7 @@ export function Nav() {
             </Link>
           ))}
         </div>
-        <div className="ml-auto text-xs text-[var(--text-muted)]">v0.2.0</div>
+        <div className="ml-auto text-xs text-[var(--text-muted)]">v0.3.0</div>
       </div>
     </nav>
   );

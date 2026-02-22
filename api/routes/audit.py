@@ -14,7 +14,12 @@ router = APIRouter(tags=["audit"])
 async def get_audit_log(
     state: AppState = Depends(get_state),
 ) -> AuditLogResponse:
-    entries = state.policy_engine.audit_log
+    # Read from persistent store if available, else in-memory
+    if state.audit_store:
+        entries = await state.audit_store.list_all()
+    else:
+        entries = state.policy_engine.audit_log
+
     return AuditLogResponse(
         entries=[
             AuditEntryResponse(

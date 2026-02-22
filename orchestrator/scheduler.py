@@ -57,6 +57,14 @@ class Scheduler:
     def registered_types(self) -> list[str]:
         return list(self._agents)
 
+    def get_agent(self, agent_type: str) -> AgentConfig | None:
+        """Return config for a single registered agent type, or None."""
+        return self._agents.get(agent_type)
+
+    def list_agents(self) -> list[AgentConfig]:
+        """Return all registered agent configs."""
+        return list(self._agents.values())
+
     # ------------------------------------------------------------------
     # Dispatch
     # ------------------------------------------------------------------

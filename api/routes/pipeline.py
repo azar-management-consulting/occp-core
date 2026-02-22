@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from orchestrator.exceptions import GateRejectedError
-from orchestrator.models import Task, TaskStatus
+from orchestrator.models import TaskStatus
 
+from api.auth import get_current_user
 from api.deps import AppState, get_state
 from api.models import PipelineRunResponse
 
@@ -23,9 +22,10 @@ router = APIRouter(tags=["pipeline"])
 @router.post("/pipeline/run/{task_id}", response_model=PipelineRunResponse)
 async def run_pipeline(
     task_id: str,
+    _user: str = Depends(get_current_user),
     state: AppState = Depends(get_state),
 ) -> PipelineRunResponse:
-    task = state.get_task(task_id)
+    task = await state.get_task(task_id)
     if task is None:
         raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
 
@@ -38,23 +38,11 @@ async def run_pipeline(
     if state.pipeline is None:
         raise HTTPException(status_code=503, detail="Pipeline not configured")
 
-    # Instrument task transitions for WebSocket broadcasting
-    original_transition = task.transition
-
-    async def _broadcast_transition(new_status: TaskStatus) -> None:
-        original_transition(new_status)
-        await state.ws_manager.broadcast(task_id, {
-            "event": "status_change",
-            "task_id": task_id,
-            "status": new_status.value,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        })
-
-    # Monkey-patch transition to async broadcast wrapper
-    # Pipeline calls task.transition() synchronously, so we use a different approach:
-    # wrap the pipeline run and broadcast after each stage
     try:
         result = await state.pipeline.run(task)
+
+        # Persist updated task state after pipeline run
+        await state.update_task(task)
 
         # Broadcast final status
         await state.ws_manager.broadcast(task_id, {
@@ -76,6 +64,9 @@ async def run_pipeline(
         )
 
     except GateRejectedError as exc:
+        # Persist rejected state
+        await state.update_task(task)
+
         await state.ws_manager.broadcast(task_id, {
             "event": "pipeline_rejected",
             "task_id": task_id,

@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from orchestrator.models import RiskLevel, Task
 
+from api.auth import get_current_user
 from api.deps import AppState, get_state
 from api.models import TaskCreate, TaskListResponse, TaskResponse
 
@@ -30,6 +31,7 @@ def _task_to_response(task: Task) -> TaskResponse:
 @router.post("/tasks", response_model=TaskResponse, status_code=201)
 async def create_task(
     body: TaskCreate,
+    _user: str = Depends(get_current_user),
     state: AppState = Depends(get_state),
 ) -> TaskResponse:
     task = Task(
@@ -39,16 +41,16 @@ async def create_task(
         risk_level=RiskLevel(body.risk_level),
         metadata=body.metadata,
     )
-    state.add_task(task)
+    await state.add_task(task)
     return _task_to_response(task)
 
 
 @router.get("/tasks", response_model=TaskListResponse)
 async def list_tasks(state: AppState = Depends(get_state)) -> TaskListResponse:
-    tasks = state.list_tasks()
+    all_tasks = await state.list_tasks()
     return TaskListResponse(
-        tasks=[_task_to_response(t) for t in tasks],
-        total=len(tasks),
+        tasks=[_task_to_response(t) for t in all_tasks],
+        total=len(all_tasks),
     )
 
 
@@ -57,7 +59,7 @@ async def get_task(
     task_id: str,
     state: AppState = Depends(get_state),
 ) -> TaskResponse:
-    task = state.get_task(task_id)
+    task = await state.get_task(task_id)
     if task is None:
         raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
     return _task_to_response(task)

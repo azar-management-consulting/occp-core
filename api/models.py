@@ -95,6 +95,33 @@ class AuditLogResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Agents
+# ---------------------------------------------------------------------------
+
+class AgentRegistrationRequest(BaseModel):
+    agent_type: str = Field(..., min_length=1, max_length=100)
+    display_name: str = Field(..., min_length=1, max_length=200)
+    capabilities: list[str] = Field(default_factory=list)
+    max_concurrent: int = Field(default=1, ge=1, le=100)
+    timeout_seconds: int = Field(default=300, ge=1, le=3600)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class AgentResponse(BaseModel):
+    agent_type: str
+    display_name: str
+    capabilities: list[str]
+    max_concurrent: int
+    timeout_seconds: int
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class AgentListResponse(BaseModel):
+    agents: list[AgentResponse]
+    total: int
+
+
+# ---------------------------------------------------------------------------
 # Status
 # ---------------------------------------------------------------------------
 

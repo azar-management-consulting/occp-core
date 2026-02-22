@@ -7,6 +7,8 @@ COPY orchestrator/ orchestrator/
 COPY policy_engine/ policy_engine/
 COPY adapters/ adapters/
 COPY api/ api/
+COPY config/ config/
+COPY store/ store/
 COPY cli/ cli/
 COPY sdk/ sdk/
 

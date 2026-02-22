@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends
 
 from adapters.policy_gate import PolicyGate
 
+from api.auth import get_current_user
 from api.deps import AppState, get_state
 from api.models import (
     GuardResultResponse,
@@ -19,6 +20,7 @@ router = APIRouter(tags=["policy"])
 @router.post("/policy/evaluate", response_model=PolicyEvaluateResponse)
 async def evaluate_policy(
     body: PolicyEvaluateRequest,
+    _user: str = Depends(get_current_user),
     state: AppState = Depends(get_state),
 ) -> PolicyEvaluateResponse:
     gate = PolicyGate(engine=state.policy_engine)
