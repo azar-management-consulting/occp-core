@@ -72,6 +72,15 @@ export interface PolicyResult {
   results: GuardResult[];
 }
 
+export interface AgentData {
+  agent_type: string;
+  display_name: string;
+  capabilities: string[];
+  max_concurrent: number;
+  timeout_seconds: number;
+  metadata: Record<string, unknown>;
+}
+
 export interface AuditEntry {
   id: string;
   timestamp: string;
@@ -99,4 +108,15 @@ export const api = {
   evaluatePolicy: (content: string) =>
     apiFetch<PolicyResult>("/policy/evaluate", { method: "POST", body: JSON.stringify({ content }) }),
   auditLog: () => apiFetch<AuditLog>("/audit"),
+  listAgents: () => apiFetch<{ agents: AgentData[]; total: number }>("/agents"),
+  registerAgent: (data: {
+    agent_type: string;
+    display_name: string;
+    capabilities: string[];
+    max_concurrent: number;
+    timeout_seconds: number;
+    metadata?: Record<string, unknown>;
+  }) => apiFetch<AgentData>("/agents", { method: "POST", body: JSON.stringify(data) }),
+  deleteAgent: (agentType: string) =>
+    apiFetch<void>(`/agents/${agentType}`, { method: "DELETE" }),
 };

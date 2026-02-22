@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile.api
     ports:
-      - "${OCCP_API_PORT:-8000}:8000"
+      - "127.0.0.1:${OCCP_API_PORT:-8000}:8000"
     volumes:
       - occp-data:/app/data
     environment:
@@ -23,6 +23,9 @@ services:
       retries: 3
     security_opt:
       - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
     restart: unless-stopped
 
   dash:
@@ -30,7 +33,7 @@ services:
       context: ./dash
       dockerfile: Dockerfile
     ports:
-      - "${OCCP_DASH_PORT:-3000}:3000"
+      - "127.0.0.1:${OCCP_DASH_PORT:-3000}:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://api:8000/api/v1
     depends_on:
@@ -38,6 +41,9 @@ services:
         condition: service_healthy
     security_opt:
       - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
     restart: unless-stopped
 
   # Development mode: mounts source code

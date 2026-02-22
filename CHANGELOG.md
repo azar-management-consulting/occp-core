@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.5.0 – Agent Management Dashboard
+
+### Dashboard
+- **Agents page** (`/agents`): Full agent registry UI
+  - List registered agents with capability badges
+  - Register new agents (type, display name, capabilities, concurrency, timeout)
+  - Unregister agents with confirmation dialog
+  - Agent cards with status indicators and config display
+- Navigation updated: 5 pages (Mission Control, Pipeline, Agents, Policy, Audit)
+- API client: `listAgents()`, `registerAgent()`, `deleteAgent()` methods
+
+### Infrastructure
+- Version bump to 0.5.0 across all modules
+- 145 passing tests
+
+---
+
 ## 0.4.0 – Dashboard Auth & Next.js 15
 
 ### Dashboard

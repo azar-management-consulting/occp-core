@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth";
 const links = [
   { href: "/", label: "Mission Control" },
   { href: "/pipeline", label: "Pipeline" },
+  { href: "/agents", label: "Agents" },
   { href: "/policy", label: "Policy" },
   { href: "/audit", label: "Audit" },
 ];
@@ -46,7 +47,7 @@ export function Nav() {
         )}
 
         <div className="ml-auto flex items-center gap-4">
-          <span className="text-xs text-[var(--text-muted)]">v0.4.0</span>
+          <span className="text-xs text-[var(--text-muted)]">v0.5.0</span>
           {isAuthenticated && (
             <div className="flex items-center gap-3">
               <span className="text-xs text-[var(--text-muted)]">{user}</span>

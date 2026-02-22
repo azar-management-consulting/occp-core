@@ -117,7 +117,7 @@ export default function LoginPage() {
         </form>
 
         <p className="text-center text-xs text-[var(--text-muted)]">
-          OpenCloud Control Plane v0.4.0
+          OpenCloud Control Plane v0.5.0
         </p>
       </div>
     </div>
