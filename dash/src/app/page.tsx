@@ -1,54 +1,130 @@
-export default function Home() {
+"use client";
+
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
+import type { StatusData, TaskData } from "@/lib/api";
+import { TaskCard } from "@/components/task-card";
+
+export default function MissionControl() {
+  const [status, setStatus] = useState<StatusData | null>(null);
+  const [tasks, setTasks] = useState<TaskData[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    Promise.all([api.status(), api.listTasks()])
+      .then(([s, t]) => {
+        setStatus(s);
+        setTasks(t.tasks);
+      })
+      .catch((e) => setError(e.message));
+  }, []);
+
+  const handleRun = async (taskId: string) => {
+    try {
+      await api.runPipeline(taskId);
+      const t = await api.listTasks();
+      setTasks(t.tasks);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Pipeline failed");
+    }
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8">
-      {/* Header */}
-      <div className="text-center mb-12">
-        <h1 className="text-5xl font-bold text-occp-dark mb-4">
-          OCCP <span className="text-occp-primary">Mission Control</span>
+    <div className="space-y-8">
+      {/* Hero */}
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">
+          <span className="text-occp-primary">OCCP</span> Mission Control
         </h1>
-        <p className="text-lg text-slate-600 max-w-2xl">
-          OpenCloud Control Plane — Verified Autonomy Pipeline for AI agents.
-          Plan, gate, execute, validate, and ship with confidence.
+        <p className="text-[var(--text-muted)] mt-1">
+          Verified Autonomy Pipeline — Plan, Gate, Execute, Validate, Ship
         </p>
       </div>
 
-      {/* Pipeline Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 w-full max-w-5xl mb-12">
+      {/* Status Bar */}
+      {status && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: "Platform", value: status.platform },
+            { label: "Version", value: status.version },
+            { label: "Tasks", value: String(status.tasks_count) },
+            { label: "Audit Entries", value: String(status.audit_entries) },
+          ].map(({ label, value }) => (
+            <div
+              key={label}
+              className="bg-occp-surface border border-occp-muted/30 rounded-xl p-4"
+            >
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider">
+                {label}
+              </p>
+              <p className="text-lg font-semibold mt-1">{value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-occp-danger/10 border border-occp-danger/30 rounded-lg p-4 text-sm text-occp-danger">
+          {error}
+          <button
+            onClick={() => setError(null)}
+            className="ml-4 underline text-xs"
+          >
+            dismiss
+          </button>
+        </div>
+      )}
+
+      {/* VAP Stages Overview */}
+      <div className="grid grid-cols-5 gap-3">
         {[
-          { step: "Plan", icon: "📋", color: "bg-blue-50 border-blue-200" },
-          { step: "Gate", icon: "🛡️", color: "bg-purple-50 border-purple-200" },
-          { step: "Execute", icon: "⚡", color: "bg-amber-50 border-amber-200" },
-          { step: "Validate", icon: "✅", color: "bg-green-50 border-green-200" },
-          { step: "Ship", icon: "🚀", color: "bg-cyan-50 border-cyan-200" },
-        ].map(({ step, icon, color }) => (
+          { step: "Plan", num: "1", desc: "Generate plan" },
+          { step: "Gate", num: "2", desc: "Policy check" },
+          { step: "Execute", num: "3", desc: "Run agent" },
+          { step: "Validate", num: "4", desc: "Verify output" },
+          { step: "Ship", num: "5", desc: "Deliver result" },
+        ].map(({ step, num, desc }) => (
           <div
             key={step}
-            className={`${color} border rounded-xl p-6 text-center shadow-sm`}
+            className="bg-occp-surface border border-occp-muted/30 rounded-xl p-4 text-center"
           >
-            <div className="text-3xl mb-2">{icon}</div>
-            <h3 className="font-semibold text-slate-800">{step}</h3>
-            <p className="text-sm text-slate-500 mt-1">Ready</p>
+            <div className="w-10 h-10 rounded-full bg-occp-primary/15 text-occp-primary font-bold flex items-center justify-center mx-auto text-sm">
+              {num}
+            </div>
+            <h3 className="font-semibold text-sm mt-2">{step}</h3>
+            <p className="text-xs text-[var(--text-muted)] mt-0.5">{desc}</p>
           </div>
         ))}
       </div>
 
-      {/* Quick Actions */}
-      <div className="flex gap-4">
-        <button className="px-6 py-3 bg-occp-primary text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
-          New Pipeline
-        </button>
-        <button className="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors">
-          View Agents
-        </button>
-        <button className="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors">
-          Audit Log
-        </button>
+      {/* Tasks */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4">Recent Tasks</h2>
+        {tasks.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {tasks.map((t) => (
+              <TaskCard
+                key={t.id}
+                id={t.id}
+                name={t.name}
+                description={t.description}
+                status={t.status}
+                risk_level={t.risk_level}
+                created_at={t.created_at}
+                onRun={() => handleRun(t.id)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-occp-surface border border-occp-muted/30 rounded-xl p-12 text-center text-[var(--text-muted)]">
+            <p className="text-lg font-medium">No tasks yet</p>
+            <p className="text-sm mt-1">
+              Create a task from the Pipeline page or via the API
+            </p>
+          </div>
+        )}
       </div>
-
-      {/* Footer */}
-      <footer className="mt-16 text-sm text-slate-400">
-        OCCP v0.1.0 — Azar Management Consulting
-      </footer>
-    </main>
+    </div>
   );
 }

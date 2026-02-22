@@ -1,44 +1,68 @@
-"""Tests for the CLI module."""
+"""Tests for the Click-based CLI module."""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-from cli.main import main
+from click.testing import CliRunner
+
+from cli.main import cli, main
 
 
 class TestCLI:
-    def test_no_command_returns_zero(self) -> None:
-        assert main([]) == 0
+    def test_no_command_shows_help(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, [])
+        assert result.exit_code == 0
+        assert "OpenCloud Control Plane" in result.output
 
-    def test_version(self, capsys) -> None:  # type: ignore[no-untyped-def]
-        import pytest
+    def test_version(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["--version"])
+        assert result.exit_code == 0
+        assert "0.2.0" in result.output
 
-        with pytest.raises(SystemExit) as exc_info:
-            main(["--version"])
-        assert exc_info.value.code == 0
-
-    def test_status(self, capsys) -> None:  # type: ignore[no-untyped-def]
-        ret = main(["status"])
-        captured = capsys.readouterr()
-        data = json.loads(captured.out)
+    def test_status(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["status"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
         assert data["platform"] == "OCCP"
-        assert ret == 0
 
     def test_run_missing_file(self) -> None:
-        ret = main(["run", "/nonexistent/workflow.json"])
-        assert ret == 1
+        runner = CliRunner()
+        result = runner.invoke(cli, ["run", "/nonexistent/workflow.json"])
+        assert result.exit_code != 0
 
     def test_run_dry_run(self, tmp_path: Path) -> None:
         wf = tmp_path / "test.json"
         wf.write_text(json.dumps({"name": "test_wf", "tasks": []}))
-        ret = main(["run", str(wf), "--dry-run"])
-        assert ret == 0
+        runner = CliRunner()
+        result = runner.invoke(cli, ["run", str(wf), "--dry-run"])
+        assert result.exit_code == 0
+        assert "validated OK" in result.output
 
-    def test_export_json(self, capsys) -> None:  # type: ignore[no-untyped-def]
-        ret = main(["export", "--format", "json"])
-        captured = capsys.readouterr()
-        data = json.loads(captured.out)
+    def test_export_json(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["export", "--format", "json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
         assert isinstance(data, list)
+
+    def test_demo(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["demo"])
+        assert result.exit_code == 0
+        assert "Pipeline completed" in result.output
+
+    def test_demo_inject(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["demo", "--inject"])
+        assert result.exit_code == 0
+        assert "blocked" in result.output.lower()
+
+    def test_main_compat(self) -> None:
+        """Backward compat wrapper returns int."""
+        ret = main(["status"])
         assert ret == 0

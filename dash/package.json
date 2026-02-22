@@ -1,19 +1,19 @@
 {
   "name": "@occp/dashboard",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "OpenCloud Control Plane – Dashboard & Mission Control",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "test": "echo \"No tests yet\" && exit 0"
+    "lint": "next lint"
   },
   "dependencies": {
     "next": "^14.2.0",
     "react": "^18.3.0",
-    "react-dom": "^18.3.0"
+    "react-dom": "^18.3.0",
+    "lucide-react": "^0.460.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

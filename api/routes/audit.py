@@ -1,0 +1,34 @@
+"""Audit log endpoint – read tamper-evident audit chain."""
+
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends
+
+from api.deps import AppState, get_state
+from api.models import AuditEntryResponse, AuditLogResponse
+
+router = APIRouter(tags=["audit"])
+
+
+@router.get("/audit", response_model=AuditLogResponse)
+async def get_audit_log(
+    state: AppState = Depends(get_state),
+) -> AuditLogResponse:
+    entries = state.policy_engine.audit_log
+    return AuditLogResponse(
+        entries=[
+            AuditEntryResponse(
+                id=e.id,
+                timestamp=e.timestamp,
+                actor=e.actor,
+                action=e.action,
+                task_id=e.task_id,
+                detail=e.detail,
+                prev_hash=e.prev_hash,
+                hash=e.hash,
+            )
+            for e in entries
+        ],
+        chain_valid=state.policy_engine.verify_audit_chain(),
+        total=len(entries),
+    )

@@ -1,5 +1,39 @@
 services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "${OCCP_API_PORT:-8000}:8000"
+    environment:
+      - OCCP_ENV=${OCCP_ENV:-development}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/status')"]
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
   dash:
+    build:
+      context: ./dash
+      dockerfile: Dockerfile
+    ports:
+      - "${OCCP_DASH_PORT:-3000}:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api:8000/api/v1
+    depends_on:
+      api:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  # Development mode: mounts source code
+  dash-dev:
     image: node:20-alpine
     working_dir: /app
     volumes:
@@ -7,34 +41,28 @@ services:
       - dash_node_modules:/app/node_modules
     command: ["sh", "-lc", "npm install && npm run dev"]
     ports:
-      - "${OCCP_PORT:-3000}:3000"
+      - "3001:3000"
     environment:
       - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://api:8000/api/v1
+    depends_on:
+      api:
+        condition: service_healthy
     security_opt:
       - no-new-privileges:true
     read_only: true
     tmpfs:
       - /tmp
       - /app/.next
-
-  orchestrator:
-    image: python:3.12-slim
-    working_dir: /app
-    volumes:
-      - .:/app:ro
-      - pip_cache:/root/.cache/pip
-    command: ["sh", "-lc", "pip install -e . && python -c 'from orchestrator import Pipeline; print(\"Orchestrator ready\")'"]
-    environment:
-      - DATABASE_URL=${DATABASE_URL:-sqlite:///occp.db}
-    security_opt:
-      - no-new-privileges:true
+    profiles:
+      - dev
 
   tests:
     image: python:3.12-slim
     working_dir: /app
     volumes:
       - .:/app
-    command: ["sh", "-lc", "pip install -e '.[dev]' && pytest -v --cov=orchestrator --cov=policy_engine --cov=cli"]
+    command: ["sh", "-lc", "pip install -e '.[dev]' && pytest -v --cov=orchestrator --cov=policy_engine --cov=cli --cov=api --cov=adapters"]
     profiles:
       - test
     security_opt:
@@ -42,4 +70,3 @@ services:
 
 volumes:
   dash_node_modules:
-  pip_cache:
