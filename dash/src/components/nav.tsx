@@ -24,22 +24,22 @@ export function Nav() {
 
   return (
     <nav className="border-b border-occp-muted/40 bg-occp-surface/80 backdrop-blur-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 flex items-center h-14 gap-6">
+      <div className="max-w-7xl mx-auto px-6 flex items-center h-16 gap-6">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <Image src="/logo.png" alt="OCCP" width={26} height={26} className="rounded" />
-          <span className="font-pixel text-[11px] text-occp-primary text-glow tracking-wider">
+          <Image src="/logo.png" alt="OCCP" width={28} height={28} className="rounded" />
+          <span className="font-pixel text-[13px] text-occp-primary text-glow tracking-wider">
             OCCP
           </span>
         </Link>
 
         {isAuthenticated && (
-          <div className="flex gap-0.5">
+          <div className="flex gap-1">
             {links.map(({ href, label, desc }) => (
               <Link
                 key={href}
                 href={href}
                 title={desc}
-                className={`group relative px-3 py-1.5 rounded text-xs font-mono tracking-wide transition-all duration-200 ${
+                className={`group relative px-3.5 py-2 rounded text-sm font-mono tracking-wide transition-all duration-200 ${
                   pathname === href
                     ? "bg-occp-primary/15 text-occp-primary text-glow border border-occp-primary/30"
                     : "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/5"
@@ -49,7 +49,7 @@ export function Nav() {
                   <span className="text-occp-accent mr-1">&gt;</span>
                 )}
                 {label}
-                <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-2.5 py-1.5 rounded bg-occp-dark border border-[var(--muted)] text-[10px] text-[var(--text-muted)] font-mono whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
+                <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-2.5 py-1.5 rounded bg-occp-dark border border-[var(--muted)] text-[11px] text-[var(--text-muted)] font-mono whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
                   {desc}
                 </span>
               </Link>
@@ -57,7 +57,7 @@ export function Nav() {
           </div>
         )}
 
-        <div className="ml-auto flex items-center gap-4 text-xs font-mono">
+        <div className="ml-auto flex items-center gap-4 text-sm font-mono">
           <LanguageSelector />
           <span className="text-occp-accent/60">[v0.6.0]</span>
           {isAuthenticated && (

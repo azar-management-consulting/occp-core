@@ -44,7 +44,7 @@ function ProviderRow({ name, health }: { name: string; health: LLMProviderHealth
           <span className={`text-sm ${health.healthy ? "text-occp-success" : "text-occp-danger"}`}>
             {meta.icon}
           </span>
-          <span className="font-pixel text-[11px] tracking-wider">{meta.label}</span>
+          <span className="font-pixel text-[12px] tracking-wider">{meta.label}</span>
         </div>
         <span
           className={`text-[11px] font-pixel px-2 py-0.5 rounded tracking-wider ${
@@ -61,18 +61,18 @@ function ProviderRow({ name, health }: { name: string; health: LLMProviderHealth
 
       <div className="grid grid-cols-3 gap-2 text-center">
         <div>
-          <p className="text-[11px] text-[var(--text-muted)] font-mono uppercase">{t.home.calls}</p>
-          <p className="text-sm font-bold font-mono text-occp-primary">{health.total_calls}</p>
+          <p className="text-[12px] text-[var(--text-muted)] font-mono uppercase">{t.home.calls}</p>
+          <p className="text-base font-bold font-mono text-occp-primary">{health.total_calls}</p>
         </div>
         <div>
-          <p className="text-[11px] text-[var(--text-muted)] font-mono uppercase">{t.home.latency}</p>
-          <p className="text-sm font-bold font-mono text-occp-accent">
+          <p className="text-[12px] text-[var(--text-muted)] font-mono uppercase">{t.home.latency}</p>
+          <p className="text-base font-bold font-mono text-occp-accent">
             {health.avg_latency_ms > 0 ? `${Math.round(health.avg_latency_ms)}ms` : "—"}
           </p>
         </div>
         <div>
-          <p className="text-[11px] text-[var(--text-muted)] font-mono uppercase">{t.home.errors}</p>
-          <p className={`text-sm font-bold font-mono ${health.failures > 0 ? "text-occp-danger" : "text-occp-success"}`}>
+          <p className="text-[12px] text-[var(--text-muted)] font-mono uppercase">{t.home.errors}</p>
+          <p className={`text-base font-bold font-mono ${health.failures > 0 ? "text-occp-danger" : "text-occp-success"}`}>
             {health.failures}
           </p>
         </div>
@@ -103,11 +103,11 @@ export function LLMHealthPanel() {
   if (loading) {
     return (
       <div className="space-y-3">
-        <h2 className="font-pixel text-[12px] text-occp-accent tracking-wider uppercase">
+        <h2 className="font-pixel text-[13px] text-occp-accent tracking-wider uppercase">
           {t.home.llmTitle}
         </h2>
         <div className="retro-card p-6 text-center crt-glow">
-          <p className="font-pixel text-[11px] text-[var(--text-muted)] animate-pulse">
+          <p className="font-pixel text-[12px] text-[var(--text-muted)] animate-pulse">
             {t.home.loading}
           </p>
         </div>
@@ -118,11 +118,11 @@ export function LLMHealthPanel() {
   if (!data) {
     return (
       <div className="space-y-3">
-        <h2 className="font-pixel text-[12px] text-occp-accent tracking-wider uppercase">
+        <h2 className="font-pixel text-[13px] text-occp-accent tracking-wider uppercase">
           {t.home.llmTitle}
         </h2>
         <div className="retro-card p-6 text-center border-occp-danger/30">
-          <p className="font-pixel text-[11px] text-occp-danger">{t.home.unavailable}</p>
+          <p className="font-pixel text-[12px] text-occp-danger">{t.home.unavailable}</p>
         </div>
       </div>
     );
@@ -141,7 +141,7 @@ export function LLMHealthPanel() {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-pixel text-[12px] text-occp-accent tracking-wider uppercase">
+          <h2 className="font-pixel text-[13px] text-occp-accent tracking-wider uppercase">
             {t.home.llmTitle}
           </h2>
           <p className="section-desc">{t.home.llmDesc}</p>

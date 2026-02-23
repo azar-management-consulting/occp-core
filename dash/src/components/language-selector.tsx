@@ -61,7 +61,7 @@ export function LanguageSelector() {
               }`}
             >
               <span>{l.native}</span>
-              <span className="text-[10px] uppercase tracking-wider opacity-50">{l.code}</span>
+              <span className="text-[11px] uppercase tracking-wider opacity-50">{l.code}</span>
             </button>
           ))}
         </div>

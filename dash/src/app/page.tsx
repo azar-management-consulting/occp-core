@@ -64,7 +64,7 @@ export default function MissionControl() {
       {status && (
         <div className="space-y-3">
           <div>
-            <h2 className="font-pixel text-[12px] text-occp-accent tracking-wider uppercase">
+            <h2 className="font-pixel text-[13px] text-occp-accent tracking-wider uppercase">
               {t.home.systemStatus}
             </h2>
             <p className="section-desc">{t.home.systemStatusDesc}</p>
@@ -76,11 +76,11 @@ export default function MissionControl() {
               { label: t.home.tasks, value: String(status.tasks_count), color: "text-occp-success" },
               { label: t.home.auditLog, value: String(status.audit_entries), color: "text-occp-secondary" },
             ].map(({ label, value, color }) => (
-              <div key={label} className="retro-card p-4">
-                <p className="text-[11px] text-[var(--text-muted)] font-mono uppercase tracking-widest">
+              <div key={label} className="retro-card p-5">
+                <p className="text-[12px] text-[var(--text-muted)] font-mono uppercase tracking-widest">
                   {label}
                 </p>
-                <p className={`text-lg font-bold font-mono mt-1.5 ${color}`}>{value}</p>
+                <p className={`text-xl font-bold font-mono mt-1.5 ${color}`}>{value}</p>
               </div>
             ))}
           </div>
@@ -109,12 +109,12 @@ export default function MissionControl() {
       {/* VAP Pipeline */}
       <div className="space-y-3">
         <div>
-          <h2 className="font-pixel text-[12px] text-occp-accent tracking-wider uppercase">
+          <h2 className="font-pixel text-[13px] text-occp-accent tracking-wider uppercase">
             {t.home.vapTitle}
           </h2>
           <p className="section-desc">{t.home.vapDesc}</p>
         </div>
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {[
             { step: t.home.plan, num: "01", desc: t.home.planDesc, color: "text-occp-primary" },
             { step: t.home.gate, num: "02", desc: t.home.gateDesc, color: "text-occp-secondary" },
@@ -122,10 +122,10 @@ export default function MissionControl() {
             { step: t.home.valid, num: "04", desc: t.home.validDesc, color: "text-occp-success" },
             { step: t.home.ship, num: "05", desc: t.home.shipDesc, color: "text-occp-warning" },
           ].map(({ step, num, desc, color }) => (
-            <div key={step} className="retro-card p-4 text-center group hover:border-occp-primary/40">
-              <div className={`font-pixel text-lg ${color} mb-2`}>{num}</div>
-              <h3 className="font-pixel text-[11px] tracking-wider">{step}</h3>
-              <p className="text-[11px] text-[var(--text-muted)] font-mono mt-1.5">{desc}</p>
+            <div key={step} className="retro-card p-5 text-center group hover:border-occp-primary/40">
+              <div className={`font-pixel text-xl ${color} mb-2`}>{num}</div>
+              <h3 className="font-pixel text-[12px] tracking-wider">{step}</h3>
+              <p className="text-[12px] text-[var(--text-muted)] font-mono mt-1.5 break-words">{desc}</p>
             </div>
           ))}
         </div>
@@ -134,7 +134,7 @@ export default function MissionControl() {
       {/* Recent Tasks */}
       <div className="space-y-4">
         <div>
-          <h2 className="font-pixel text-[12px] text-occp-accent tracking-wider uppercase">
+          <h2 className="font-pixel text-[13px] text-occp-accent tracking-wider uppercase">
             {t.home.recentTasks}
           </h2>
           <p className="section-desc">{t.home.recentTasksDesc}</p>
@@ -156,11 +156,11 @@ export default function MissionControl() {
           </div>
         ) : (
           <div className="retro-card p-12 text-center crt-glow">
-            <p className="font-pixel text-[11px] text-[var(--text-muted)]">{t.home.noTasks}</p>
-            <p className="text-sm text-[var(--text-muted)] font-mono mt-3">
+            <p className="font-pixel text-[12px] text-[var(--text-muted)]">{t.home.noTasks}</p>
+            <p className="text-base text-[var(--text-muted)] font-mono mt-3">
               {t.home.noTasksHint}
             </p>
-            <p className="text-xs text-occp-accent font-mono mt-4">
+            <p className="text-sm text-occp-accent font-mono mt-4">
               {t.home.noTasksCmd}
               <span className="inline-block w-2 h-3 bg-occp-primary ml-1 animate-blink align-middle" />
             </p>

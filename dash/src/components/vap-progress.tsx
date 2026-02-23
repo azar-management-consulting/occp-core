@@ -42,7 +42,7 @@ export function VAPProgress({ status }: Props) {
         return (
           <div key={stage.key} className="flex items-center gap-1.5">
             <div
-              className={`w-7 h-7 rounded flex items-center justify-center font-pixel text-[11px] transition-all ${
+              className={`w-8 h-8 rounded flex items-center justify-center font-pixel text-[12px] transition-all ${
                 state === "completed"
                   ? "bg-occp-success/20 text-occp-success border border-occp-success/30"
                   : state === "active"
@@ -55,7 +55,7 @@ export function VAPProgress({ status }: Props) {
               {state === "completed" ? "\u2713" : stage.icon}
             </div>
             <span
-              className={`text-[11px] font-pixel tracking-wider ${
+              className={`text-[12px] font-pixel tracking-wider ${
                 state === "active"
                   ? "text-occp-primary"
                   : state === "completed"
