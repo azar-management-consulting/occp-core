@@ -160,6 +160,24 @@ class TestScheduler:
         assert len(results) == 3
         assert all(r == "ok" for r in results)
 
+    @pytest.mark.asyncio
+    async def test_dispatch_passes_task(self) -> None:
+        """Factory receives both config and task."""
+        received: list = []
+
+        async def capturing_factory(cfg: AgentConfig, task: Task) -> str:
+            received.append((cfg, task))
+            return "captured"
+
+        sched = Scheduler()
+        cfg = AgentConfig(agent_type="cap", display_name="Cap")
+        sched.register(cfg, capturing_factory)
+        task = Task(name="t", description="d", agent_type="cap")
+        result = await sched.dispatch(task)
+        assert result == "captured"
+        assert len(received) == 1
+        assert received[0][1] is task
+
 
 # ---------------------------------------------------------------------------
 # Pipeline (VAP full lifecycle)
@@ -167,7 +185,7 @@ class TestScheduler:
 
 class _MockPlanner:
     async def create_plan(self, task: Task) -> dict:
-        return {"steps": ["step1", "step2"]}
+        return {"strategy": "mock", "steps": ["step1", "step2"]}
 
 
 class _MockExecutor:
@@ -178,6 +196,19 @@ class _MockExecutor:
 class _MockFailingExecutor:
     async def execute(self, task: Task) -> dict:
         raise ExecutionError(task.id, "sandbox crash")
+
+
+class _MockTransientExecutor:
+    """Fails once then succeeds — tests retry logic."""
+
+    def __init__(self) -> None:
+        self._attempts = 0
+
+    async def execute(self, task: Task) -> dict:
+        self._attempts += 1
+        if self._attempts < 2:
+            raise RuntimeError("transient network error")
+        return {"output": "recovered", "attempts": self._attempts}
 
 
 class _MockValidator:
@@ -258,6 +289,44 @@ class TestPipeline:
         assert result.status == TaskStatus.FAILED
         assert "test_foo failed" in result.error
 
+    @pytest.mark.asyncio
+    async def test_pipeline_timings(self) -> None:
+        """Pipeline records per-stage wall-clock timings."""
+        pipe = self._make_pipeline()
+        task = Task(name="timing", description="test timing", agent_type="claude")
+        result = await pipe.run(task)
+        assert result.success
+        timings = result.evidence.get("_timings", {})
+        for stage in ("plan", "gate", "execute", "validate", "ship"):
+            assert stage in timings
+            assert isinstance(timings[stage], float)
+            assert timings[stage] >= 0
 
-async def _dummy_factory(_cfg: AgentConfig) -> str:
+    @pytest.mark.asyncio
+    async def test_execute_retry_on_transient_failure(self) -> None:
+        """Pipeline retries transient executor failures."""
+        executor = _MockTransientExecutor()
+        pipe = self._make_pipeline(executor=executor, execute_retries=2)
+        task = Task(name="retry", description="transient fail", agent_type="claude")
+        result = await pipe.run(task)
+        assert result.success
+        assert result.evidence["execution"]["attempts"] == 2
+
+    @pytest.mark.asyncio
+    async def test_execute_no_retry_on_execution_error(self) -> None:
+        """ExecutionError is not retried (explicit failure)."""
+        pipe = self._make_pipeline(
+            executor=_MockFailingExecutor(), execute_retries=3
+        )
+        task = Task(name="noretry", description="explicit fail", agent_type="claude")
+        result = await pipe.run(task)
+        assert result.success is False
+        assert "sandbox crash" in result.error
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+async def _dummy_factory(_cfg: AgentConfig, _task: Task) -> str:
     return "ok"
