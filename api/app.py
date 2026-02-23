@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from adapters.echo_planner import EchoPlanner
+from adapters.multi_llm_planner import MultiLLMPlanner
 from adapters.mock_executor import MockExecutor
 from adapters.basic_validator import BasicValidator
 from adapters.log_shipper import LogShipper
@@ -51,21 +52,45 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     state.task_store = task_store
     state.audit_store = audit_store
 
-    # Select planner: real LLM if key present, else echo demo
-    planner = EchoPlanner()
+    # Multi-LLM planner with automatic failover chain
+    multi_planner = MultiLLMPlanner()
+
+    # Priority 1: Anthropic Claude
     if settings.has_anthropic:
         try:
             from adapters.claude_planner import ClaudePlanner
-            planner = ClaudePlanner(
-                api_key=settings.anthropic_api_key,
-                model=settings.anthropic_model,
+            multi_planner.add_provider(
+                "anthropic",
+                ClaudePlanner(
+                    api_key=settings.anthropic_api_key,
+                    model=settings.anthropic_model,
+                ),
+                priority=1,
             )
-            logger.info("Using ClaudePlanner (model=%s)", settings.anthropic_model)
+            logger.info("LLM provider: Anthropic (model=%s)", settings.anthropic_model)
         except ImportError:
-            logger.warning("anthropic not installed – falling back to EchoPlanner")
+            logger.warning("anthropic package not installed – skipping")
+
+    # Priority 2: OpenAI GPT
+    if settings.has_openai:
+        try:
+            from adapters.openai_planner import OpenAIPlanner
+            multi_planner.add_provider(
+                "openai",
+                OpenAIPlanner(api_key=settings.openai_api_key),
+                priority=2,
+            )
+            logger.info("LLM provider: OpenAI (gpt-4o)")
+        except ImportError:
+            logger.warning("openai package not installed – skipping")
+
+    # Priority 99: Echo fallback (always available)
+    multi_planner.add_provider("echo", EchoPlanner(), priority=99)
+
+    state.multi_planner = multi_planner
 
     state.pipeline = Pipeline(
-        planner=planner,
+        planner=multi_planner,
         policy_engine=engine,
         executor=MockExecutor(),
         validator=BasicValidator(),

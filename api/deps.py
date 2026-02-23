@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from orchestrator.models import Task
 from orchestrator.pipeline import Pipeline
@@ -31,6 +31,7 @@ class AppState:
         self.policy_engine: PolicyEngine = PolicyEngine()
         self.scheduler: Scheduler = Scheduler()
         self.ws_manager: ConnectionManager = ConnectionManager()
+        self.multi_planner: Any = None  # MultiLLMPlanner (set in lifespan)
 
     # -- Task helpers (async, with store-or-dict fallback) --
 

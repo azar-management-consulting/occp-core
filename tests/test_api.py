@@ -233,6 +233,19 @@ class TestPolicy:
         assert data["approved"] is False
 
 
+class TestLLMHealth:
+    @pytest.mark.asyncio
+    async def test_llm_health_endpoint(self, client: AsyncClient) -> None:
+        """LLM health endpoint returns provider metrics (echo always present)."""
+        resp = await client.get("/api/v1/llm/health")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["status"] in ("healthy", "degraded")
+        assert "providers" in data
+        assert "echo" in data["providers"]
+        assert data["providers"]["echo"]["healthy"] is True
+
+
 class TestAudit:
     @pytest.mark.asyncio
     async def test_audit_log(self, client: AsyncClient) -> None:
