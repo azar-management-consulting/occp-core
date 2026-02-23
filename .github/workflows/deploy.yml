@@ -39,7 +39,7 @@ jobs:
             docker run --rm -v occp_occp-data:/data alpine chown -R 1001:1001 /data
             docker compose up -d
             sleep 10
-            curl -sf http://localhost:8000/api/v1/status || exit 1
+            curl -sf http://localhost:8000/api/v1/health || exit 1
             curl -sf http://localhost:3000/ || exit 1
             echo "Deploy OK: $(date -u)"
         env:

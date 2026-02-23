@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "occp"
-version = "0.6.0"
+version = "0.7.0"
 description = "OpenCloud Control Plane – Agent Control Plane platform"
 readme = "README.md"
 license = {text = "MIT"}
@@ -36,6 +36,7 @@ dependencies = [
     "alembic>=1.13",
     "argon2-cffi>=23.1",
     "casbin>=1.36",
+    "structlog>=24.1",
 ]
 
 [project.optional-dependencies]

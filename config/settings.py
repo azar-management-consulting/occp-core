@@ -62,6 +62,15 @@ class Settings(BaseSettings):
     sandbox_bwrap_bin: str = "bwrap"
     sandbox_nsjail_config: str = ""
 
+    # ── Rate limiting ────────────────────────────────────────────────
+    rate_limit_requests: int = 20  # per window
+    rate_limit_window: int = 60  # seconds
+    rate_limit_paths: str = "/api/v1/auth/"  # comma-separated prefixes
+
+    # ── Logging ──────────────────────────────────────────────────────
+    log_level: str = "INFO"
+    log_format: str = "json"  # json | console
+
     # ── Channels (future) ─────────────────────────────────────────────
     slack_bot_token: str = ""
     slack_signing_secret: str = ""

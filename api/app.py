@@ -9,6 +9,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.logging_config import setup_logging
+from api.middleware import (
+    RateLimitMiddleware,
+    RequestLoggingMiddleware,
+    SecurityHeadersMiddleware,
+)
+
 from adapters.echo_planner import EchoPlanner
 from adapters.multi_llm_planner import MultiLLMPlanner
 from adapters.mock_executor import MockExecutor
@@ -38,6 +45,9 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     settings = Settings()
+
+    # Structured logging (structlog wrapping stdlib)
+    setup_logging(level=settings.log_level, fmt=settings.log_format)
 
     # Persistent storage
     db = Database(url=settings.database_url)
@@ -193,14 +203,38 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # CORS – merged from settings at startup; we read env here for middleware
+    # Middleware stack (applied in reverse order — last added runs first)
     settings = Settings()
+
+    # CORS
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+    )
+
+    # Security headers
+    app.add_middleware(
+        SecurityHeadersMiddleware,
+        include_hsts=settings.is_production,
+    )
+
+    # Request logging
+    app.add_middleware(RequestLoggingMiddleware)
+
+    # Rate limiting (auth endpoints)
+    rate_paths = [
+        p.strip()
+        for p in settings.rate_limit_paths.split(",")
+        if p.strip()
+    ]
+    app.add_middleware(
+        RateLimitMiddleware,
+        requests_per_window=settings.rate_limit_requests,
+        window_seconds=settings.rate_limit_window,
+        rate_limit_paths=rate_paths or None,
     )
 
     prefix = "/api/v1"

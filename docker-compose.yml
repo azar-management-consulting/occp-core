@@ -16,7 +16,7 @@ services:
       - OCCP_ANTHROPIC_API_KEY=${OCCP_ANTHROPIC_API_KEY:-}
       - OCCP_CORS_ORIGINS=${OCCP_CORS_ORIGINS:-["https://dash.occp.ai","http://localhost:3000"]}
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/status')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
       interval: 15s
       timeout: 5s
       start_period: 10s
