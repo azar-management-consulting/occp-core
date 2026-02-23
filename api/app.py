@@ -198,7 +198,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 def create_app() -> FastAPI:
     app = FastAPI(
         title="OCCP – OpenCloud Control Plane",
-        version="0.7.0",  # keep in sync with pyproject.toml & status.py
+        version="0.7.0",
         description="Agent Control Plane with Verified Autonomy Pipeline",
         lifespan=lifespan,
     )
