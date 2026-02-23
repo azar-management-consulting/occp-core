@@ -6,6 +6,7 @@ import type { TaskData, PipelineResult, AgentData } from "@/lib/api";
 import { usePipelineWS } from "@/lib/ws";
 import { TaskCard } from "@/components/task-card";
 import { VAPProgress } from "@/components/vap-progress";
+import { useT } from "@/lib/i18n";
 
 export default function PipelinePage() {
   const [tasks, setTasks] = useState<TaskData[]>([]);
@@ -15,6 +16,7 @@ export default function PipelinePage() {
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const { events, connected } = usePipelineWS(activeTaskId);
+  const t = useT();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -22,13 +24,13 @@ export default function PipelinePage() {
   const [riskLevel, setRiskLevel] = useState("low");
 
   useEffect(() => {
-    api.listTasks().then((t) => setTasks(t.tasks)).catch(() => {});
+    api.listTasks().then((res) => setTasks(res.tasks)).catch(() => {});
     api.listAgents().then((a) => setAgents(a.agents)).catch(() => {});
   }, []);
 
   const refreshTasks = async () => {
-    const t = await api.listTasks();
-    setTasks(t.tasks);
+    const res = await api.listTasks();
+    setTasks(res.tasks);
   };
 
   const handleCreate = async () => {
@@ -74,33 +76,36 @@ export default function PipelinePage() {
     <div className="space-y-8">
       <div>
         <h1 className="font-pixel text-sm tracking-wide">
-          <span className="text-occp-primary text-glow">PIPELINE</span>
+          <span className="text-occp-primary text-glow">{t.pipeline.title}</span>
         </h1>
-        <p className="text-[var(--text-muted)] text-xs font-mono mt-2">
-          Create tasks and run them through the Verified Autonomy Pipeline
-        </p>
+        <p className="section-desc mt-2">{t.pipeline.subtitle}</p>
       </div>
 
       {/* Create Task Form */}
       <div className="retro-card p-6 space-y-4 crt-glow">
-        <h2 className="font-pixel text-[10px] text-occp-accent tracking-wider uppercase">
-          New Task
+        <h2 className="font-pixel text-[12px] text-occp-accent tracking-wider uppercase">
+          {t.pipeline.newTask}
         </h2>
+        <p className="section-desc">{t.pipeline.newTaskDesc}</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            type="text"
-            placeholder="Task name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="retro-input"
-          />
-          <input
-            type="text"
-            placeholder="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="retro-input"
-          />
+          <div>
+            <input
+              type="text"
+              placeholder={t.pipeline.taskName}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="retro-input w-full"
+            />
+          </div>
+          <div>
+            <input
+              type="text"
+              placeholder={t.pipeline.taskDescription}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="retro-input w-full"
+            />
+          </div>
           <select
             value={agentType}
             onChange={(e) => setAgentType(e.target.value)}
@@ -122,17 +127,17 @@ export default function PipelinePage() {
               onChange={(e) => setRiskLevel(e.target.value)}
               className="retro-select flex-1"
             >
-              <option value="low">Low Risk</option>
-              <option value="medium">Medium Risk</option>
-              <option value="high">High Risk</option>
-              <option value="critical">Critical Risk</option>
+              <option value="low">{t.pipeline.riskLow}</option>
+              <option value="medium">{t.pipeline.riskMedium}</option>
+              <option value="high">{t.pipeline.riskHigh}</option>
+              <option value="critical">{t.pipeline.riskCritical}</option>
             </select>
             <button
               onClick={handleCreate}
               disabled={creating || !name.trim()}
               className="retro-btn-primary"
             >
-              {creating ? "..." : "CREATE"}
+              {creating ? t.pipeline.creating : t.pipeline.create}
             </button>
           </div>
         </div>
@@ -142,15 +147,18 @@ export default function PipelinePage() {
       {activeTaskId && (
         <div className="retro-card p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-pixel text-[10px] text-occp-accent tracking-wider uppercase">
-              Live Pipeline
-            </h2>
+            <div>
+              <h2 className="font-pixel text-[12px] text-occp-accent tracking-wider uppercase">
+                {t.pipeline.livePipeline}
+              </h2>
+              <p className="section-desc">{t.pipeline.liveDesc}</p>
+            </div>
             <div className="flex items-center gap-2 text-xs font-mono">
               <div
                 className={`w-2 h-2 rounded-full ${connected ? "bg-occp-success animate-pulse" : "bg-occp-danger"}`}
               />
               <span className="text-[var(--text-muted)]">
-                {connected ? "CONNECTED" : "DISCONNECTED"}
+                {connected ? t.pipeline.connected : t.pipeline.disconnected}
               </span>
             </div>
           </div>
@@ -184,7 +192,7 @@ export default function PipelinePage() {
                   : "bg-occp-danger/10 text-occp-danger border border-occp-danger/30"
               }`}
             >
-              {result.success ? "PIPELINE COMPLETE" : "PIPELINE FAILED"}
+              {result.success ? t.pipeline.complete : t.pipeline.failed}
               {result.error && ` — ${result.error}`}
             </div>
           )}
@@ -194,34 +202,35 @@ export default function PipelinePage() {
       {/* Error */}
       {error && (
         <div className="retro-card border-occp-danger/40 bg-occp-danger/5 p-4">
-          <span className="font-pixel text-[9px] text-occp-danger mr-2">?ERROR</span>
+          <span className="font-pixel text-[11px] text-occp-danger mr-2">?{t.common.error}</span>
           <span className="text-sm text-occp-danger font-mono">{error}</span>
         </div>
       )}
 
       {/* Task List */}
       <div className="space-y-4">
-        <h2 className="font-pixel text-[10px] text-occp-accent tracking-wider uppercase">
-          All Tasks
+        <h2 className="font-pixel text-[12px] text-occp-accent tracking-wider uppercase">
+          {t.pipeline.allTasks}
         </h2>
+        <p className="section-desc">{t.pipeline.allTasksDesc}</p>
         {tasks.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {tasks.map((t) => (
+            {tasks.map((task) => (
               <TaskCard
-                key={t.id}
-                id={t.id}
-                name={t.name}
-                description={t.description}
-                status={t.status}
-                risk_level={t.risk_level}
-                created_at={t.created_at}
-                onRun={() => handleRun(t.id)}
+                key={task.id}
+                id={task.id}
+                name={task.name}
+                description={task.description}
+                status={task.status}
+                risk_level={task.risk_level}
+                created_at={task.created_at}
+                onRun={() => handleRun(task.id)}
               />
             ))}
           </div>
         ) : (
           <p className="text-[var(--text-muted)] text-sm font-mono">
-            No tasks yet. Create one above.
+            {t.pipeline.noTasks} {t.pipeline.noTasksHint}
           </p>
         )}
       </div>

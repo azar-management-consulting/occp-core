@@ -1,6 +1,7 @@
 "use client";
 
 import type { AuditEntry } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 
 interface Props {
   entries: AuditEntry[];
@@ -8,31 +9,34 @@ interface Props {
 }
 
 export function AuditTable({ entries, chainValid }: Props) {
+  const t = useT();
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <div
           className={`w-2.5 h-2.5 rounded-full ${
             chainValid ? "bg-occp-success animate-pulse" : "bg-occp-danger"
           }`}
         />
-        <span className="font-pixel text-[9px] tracking-wider">
-          HASH CHAIN:{" "}
+        <span className="font-pixel text-[11px] tracking-wider">
+          {t.audit.hashChain}:{" "}
           <span className={chainValid ? "text-occp-success" : "text-occp-danger"}>
-            {chainValid ? "VALID" : "BROKEN"}
+            {chainValid ? t.audit.valid : t.audit.broken}
           </span>
         </span>
       </div>
+      <p className="field-hint">{t.audit.chainDesc}</p>
 
       <div className="overflow-x-auto">
         <table className="w-full text-xs font-mono">
           <thead>
             <tr className="text-left text-[var(--text-muted)] border-b border-occp-muted/30">
-              <th className="pb-2 pr-4 font-pixel text-[8px] tracking-wider">TIME</th>
-              <th className="pb-2 pr-4 font-pixel text-[8px] tracking-wider">ACTOR</th>
-              <th className="pb-2 pr-4 font-pixel text-[8px] tracking-wider">ACTION</th>
-              <th className="pb-2 pr-4 font-pixel text-[8px] tracking-wider">TASK</th>
-              <th className="pb-2 pr-4 font-pixel text-[8px] tracking-wider">HASH</th>
+              <th className="pb-2 pr-4 font-pixel text-[11px] tracking-wider">{t.audit.time}</th>
+              <th className="pb-2 pr-4 font-pixel text-[11px] tracking-wider">{t.audit.actor}</th>
+              <th className="pb-2 pr-4 font-pixel text-[11px] tracking-wider">{t.audit.action}</th>
+              <th className="pb-2 pr-4 font-pixel text-[11px] tracking-wider">{t.audit.task}</th>
+              <th className="pb-2 pr-4 font-pixel text-[11px] tracking-wider">{t.audit.hash}</th>
             </tr>
           </thead>
           <tbody>
@@ -52,7 +56,7 @@ export function AuditTable({ entries, chainValid }: Props) {
             {entries.length === 0 && (
               <tr>
                 <td colSpan={5} className="py-8 text-center text-[var(--text-muted)]">
-                  <span className="font-pixel text-[9px]">NO AUDIT ENTRIES</span>
+                  <span className="font-pixel text-[11px]">{t.audit.noEntries}</span>
                 </td>
               </tr>
             )}

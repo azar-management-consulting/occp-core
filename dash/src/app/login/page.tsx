@@ -39,7 +39,7 @@ export default function LoginPage() {
         <div className="text-center space-y-4">
           <Image src="/logo.png" alt="OCCP" width={64} height={64} className="mx-auto rounded-xl" />
           <div className="space-y-2">
-            <div className="font-pixel text-[8px] text-occp-primary/50 tracking-wider">
+            <div className="font-pixel text-[11px] text-occp-primary/50 tracking-wider">
               **** OPENCLOUD CONTROL PLANE ****
             </div>
             <h1 className="font-pixel text-sm tracking-wide">
@@ -55,7 +55,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="username"
-                className="block font-pixel text-[8px] text-[var(--text-muted)] mb-2 uppercase tracking-widest"
+                className="block font-pixel text-[11px] text-[var(--text-muted)] mb-2 uppercase tracking-widest"
               >
                 Username
               </label>
@@ -74,7 +74,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block font-pixel text-[8px] text-[var(--text-muted)] mb-2 uppercase tracking-widest"
+                className="block font-pixel text-[11px] text-[var(--text-muted)] mb-2 uppercase tracking-widest"
               >
                 Password
               </label>
@@ -93,7 +93,7 @@ export default function LoginPage() {
 
           {error && (
             <div className="retro-card border-occp-danger/40 bg-occp-danger/5 p-3">
-              <span className="font-pixel text-[8px] text-occp-danger mr-2">?ERROR</span>
+              <span className="font-pixel text-[11px] text-occp-danger mr-2">?ERROR</span>
               <span className="text-sm text-occp-danger font-mono">{error}</span>
             </div>
           )}
@@ -101,13 +101,13 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading || !username.trim() || !password.trim()}
-            className="retro-btn-primary w-full py-3 font-pixel text-[10px] tracking-wider"
+            className="retro-btn-primary w-full py-3 font-pixel text-[11px] tracking-wider"
           >
             {loading ? "LOADING..." : "LOGIN"}
           </button>
         </form>
 
-        <p className="text-center font-pixel text-[7px] text-[var(--text-muted)]/40 tracking-wider">
+        <p className="text-center font-pixel text-[11px] text-[var(--text-muted)]/40 tracking-wider">
           OCCP V0.6.0 &mdash; READY
           <span className="inline-block w-1.5 h-2.5 bg-occp-primary ml-1 animate-blink align-middle" />
         </p>

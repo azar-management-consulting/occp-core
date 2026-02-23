@@ -4,18 +4,21 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-
-const links = [
-  { href: "/", label: "CONTROL", desc: "Mission overview" },
-  { href: "/pipeline", label: "PIPELINE", desc: "Run VAP tasks" },
-  { href: "/agents", label: "AGENTS", desc: "Agent registry" },
-  { href: "/policy", label: "POLICY", desc: "Guard evaluation" },
-  { href: "/audit", label: "AUDIT", desc: "Immutable log" },
-];
+import { useT } from "@/lib/i18n";
+import { LanguageSelector } from "@/components/language-selector";
 
 export function Nav() {
   const pathname = usePathname();
   const { isAuthenticated, user, logout } = useAuth();
+  const t = useT();
+
+  const links = [
+    { href: "/", label: t.nav.control, desc: t.nav.controlDesc },
+    { href: "/pipeline", label: t.nav.pipeline, desc: t.nav.pipelineDesc },
+    { href: "/agents", label: t.nav.agents, desc: t.nav.agentsDesc },
+    { href: "/policy", label: t.nav.policy, desc: t.nav.policyDesc },
+    { href: "/audit", label: t.nav.audit, desc: t.nav.auditDesc },
+  ];
 
   if (pathname === "/login") return null;
 
@@ -24,7 +27,7 @@ export function Nav() {
       <div className="max-w-7xl mx-auto px-6 flex items-center h-14 gap-6">
         <Link href="/" className="flex items-center gap-2.5 group">
           <Image src="/logo.png" alt="OCCP" width={26} height={26} className="rounded" />
-          <span className="font-pixel text-[10px] text-occp-primary text-glow tracking-wider">
+          <span className="font-pixel text-[11px] text-occp-primary text-glow tracking-wider">
             OCCP
           </span>
         </Link>
@@ -46,7 +49,7 @@ export function Nav() {
                   <span className="text-occp-accent mr-1">&gt;</span>
                 )}
                 {label}
-                <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-2 py-1 rounded bg-occp-dark border border-[var(--muted)] text-[9px] text-[var(--text-muted)] font-mono whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
+                <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-2.5 py-1.5 rounded bg-occp-dark border border-[var(--muted)] text-[10px] text-[var(--text-muted)] font-mono whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
                   {desc}
                 </span>
               </Link>
@@ -55,6 +58,7 @@ export function Nav() {
         )}
 
         <div className="ml-auto flex items-center gap-4 text-xs font-mono">
+          <LanguageSelector />
           <span className="text-occp-accent/60">[v0.6.0]</span>
           {isAuthenticated && (
             <div className="flex items-center gap-3">
@@ -65,7 +69,7 @@ export function Nav() {
                 onClick={logout}
                 className="text-[var(--text-muted)] hover:text-occp-danger transition-colors"
               >
-                LOGOUT
+                {t.nav.logout}
               </button>
             </div>
           )}
