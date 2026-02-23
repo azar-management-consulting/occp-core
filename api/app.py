@@ -40,8 +40,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     # Persistent storage
     db = Database(url=settings.database_url)
     await db.connect()
-    task_store = TaskStore(db)
-    audit_store = AuditStore(db)
+    # Create a long-lived session for app-scoped stores
+    session = db.session()
+    task_store = TaskStore(session)
+    audit_store = AuditStore(session)
 
     engine = PolicyEngine(audit_store=audit_store)
 
@@ -50,7 +52,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     if last_audit:
         engine.set_chain_head(last_audit)
 
-    agent_store = AgentStore(db)
+    agent_store = AgentStore(session)
 
     state = AppState(settings=settings)
     state.db = db

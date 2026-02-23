@@ -1,77 +1,77 @@
-"""Async SQLite audit entry persistence."""
+"""Audit entry persistence — SQLAlchemy 2.0 ORM backend.
+
+The hash-chain logic remains in ``PolicyEngine``; this store only
+persists and retrieves entries.
+"""
 
 from __future__ import annotations
 
-import json
 from datetime import datetime
-from typing import Any
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from policy_engine.models import AuditEntry
-from store.database import Database
+from store.models import AuditEntryRow
 
 
 class AuditStore:
     """Persist and retrieve tamper-evident audit entries."""
 
-    def __init__(self, db: Database) -> None:
-        self._db = db
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
 
     async def append(self, entry: AuditEntry) -> None:
         """Insert a new audit entry."""
-        await self._db.conn.execute(
-            """INSERT INTO audit_entries
-               (id, timestamp, actor, action, task_id, detail, prev_hash, hash)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                entry.id,
-                entry.timestamp.isoformat(),
-                entry.actor,
-                entry.action,
-                entry.task_id,
-                json.dumps(entry.detail),
-                entry.prev_hash,
-                entry.hash,
-            ),
+        row = AuditEntryRow(
+            id=entry.id,
+            timestamp=entry.timestamp.isoformat(),
+            actor=entry.actor,
+            action=entry.action,
+            task_id=entry.task_id,
+            detail=entry.detail,
+            prev_hash=entry.prev_hash,
+            hash=entry.hash,
         )
-        await self._db.conn.commit()
+        self._session.add(row)
+        await self._session.commit()
 
     async def list_all(self) -> list[AuditEntry]:
         """Return all audit entries ordered by timestamp."""
-        cursor = await self._db.conn.execute(
-            "SELECT * FROM audit_entries ORDER BY timestamp ASC"
-        )
-        rows = await cursor.fetchall()
-        return [self._row_to_entry(r) for r in rows]
+        stmt = select(AuditEntryRow).order_by(AuditEntryRow.timestamp.asc())
+        result = await self._session.execute(stmt)
+        return [self._row_to_entry(r) for r in result.scalars().all()]
 
     async def count(self) -> int:
         """Total audit entry count."""
-        cursor = await self._db.conn.execute(
-            "SELECT COUNT(*) FROM audit_entries"
-        )
-        row = await cursor.fetchone()
-        return row[0]
+        stmt = select(func.count()).select_from(AuditEntryRow)
+        result = await self._session.execute(stmt)
+        return result.scalar_one()
 
     async def get_last(self) -> AuditEntry | None:
         """Get the last audit entry (for hash chaining)."""
-        cursor = await self._db.conn.execute(
-            "SELECT * FROM audit_entries ORDER BY rowid DESC LIMIT 1"
+        stmt = (
+            select(AuditEntryRow)
+            .order_by(AuditEntryRow.timestamp.desc())
+            .limit(1)
         )
-        row = await cursor.fetchone()
+        result = await self._session.execute(stmt)
+        row = result.scalar_one_or_none()
         if row is None:
             return None
         return self._row_to_entry(row)
 
     @staticmethod
-    def _row_to_entry(row: Any) -> AuditEntry:
-        """Convert sqlite Row to AuditEntry."""
+    def _row_to_entry(row: AuditEntryRow) -> AuditEntry:
+        """Convert ORM row to domain AuditEntry model."""
         entry = AuditEntry(
-            actor=row["actor"],
-            action=row["action"],
-            task_id=row["task_id"],
-            detail=json.loads(row["detail"]) if row["detail"] else {},
+            actor=row.actor,
+            action=row.action,
+            task_id=row.task_id or "",
+            detail=row.detail if row.detail else {},
         )
-        object.__setattr__(entry, "id", row["id"])
-        entry.timestamp = datetime.fromisoformat(row["timestamp"])
-        entry.prev_hash = row["prev_hash"]
-        entry.hash = row["hash"]
+        object.__setattr__(entry, "id", row.id)
+        entry.timestamp = datetime.fromisoformat(row.timestamp)
+        entry.prev_hash = row.prev_hash
+        entry.hash = row.hash
         return entry

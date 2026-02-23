@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import os
-
 import pytest
 
 from orchestrator.models import AgentConfig
@@ -16,7 +14,7 @@ async def agent_store(tmp_path):
     db_path = tmp_path / "test_agents.db"
     db = Database(url=f"sqlite+aiosqlite:///{db_path}")
     await db.connect()
-    store = AgentStore(db)
+    store = AgentStore(db.session())
     yield store
     await db.close()
 
