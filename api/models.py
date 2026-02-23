@@ -131,3 +131,16 @@ class StatusResponse(BaseModel):
     status: str = "running"
     tasks_count: int = 0
     audit_entries: int = 0
+
+
+class HealthCheck(BaseModel):
+    name: str
+    status: str  # "ok" | "error"
+    latency_ms: float = 0.0
+    detail: str = ""
+
+
+class HealthResponse(BaseModel):
+    status: str  # "healthy" | "degraded" | "unhealthy"
+    version: str
+    checks: list[HealthCheck] = Field(default_factory=list)
