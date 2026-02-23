@@ -6,11 +6,11 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 
 const links = [
-  { href: "/", label: "CONTROL" },
-  { href: "/pipeline", label: "PIPELINE" },
-  { href: "/agents", label: "AGENTS" },
-  { href: "/policy", label: "POLICY" },
-  { href: "/audit", label: "AUDIT" },
+  { href: "/", label: "CONTROL", desc: "Mission overview" },
+  { href: "/pipeline", label: "PIPELINE", desc: "Run VAP tasks" },
+  { href: "/agents", label: "AGENTS", desc: "Agent registry" },
+  { href: "/policy", label: "POLICY", desc: "Guard evaluation" },
+  { href: "/audit", label: "AUDIT", desc: "Immutable log" },
 ];
 
 export function Nav() {
@@ -31,11 +31,12 @@ export function Nav() {
 
         {isAuthenticated && (
           <div className="flex gap-0.5">
-            {links.map(({ href, label }) => (
+            {links.map(({ href, label, desc }) => (
               <Link
                 key={href}
                 href={href}
-                className={`px-3 py-1.5 rounded text-xs font-mono tracking-wide transition-all duration-200 ${
+                title={desc}
+                className={`group relative px-3 py-1.5 rounded text-xs font-mono tracking-wide transition-all duration-200 ${
                   pathname === href
                     ? "bg-occp-primary/15 text-occp-primary text-glow border border-occp-primary/30"
                     : "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/5"
@@ -45,6 +46,9 @@ export function Nav() {
                   <span className="text-occp-accent mr-1">&gt;</span>
                 )}
                 {label}
+                <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-2 py-1 rounded bg-occp-dark border border-[var(--muted)] text-[9px] text-[var(--text-muted)] font-mono whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
+                  {desc}
+                </span>
               </Link>
             ))}
           </div>

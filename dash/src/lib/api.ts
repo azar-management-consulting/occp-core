@@ -98,8 +98,23 @@ export interface AuditLog {
   total: number;
 }
 
+export interface LLMProviderHealth {
+  healthy: boolean;
+  total_calls: number;
+  failures: number;
+  success_rate: number;
+  avg_latency_ms: number;
+  consecutive_failures: number;
+}
+
+export interface LLMHealthData {
+  status: string;
+  providers: Record<string, LLMProviderHealth>;
+}
+
 export const api = {
   status: () => apiFetch<StatusData>("/status"),
+  llmHealth: () => apiFetch<LLMHealthData>("/llm/health"),
   listTasks: () => apiFetch<{ tasks: TaskData[]; total: number }>("/tasks"),
   createTask: (data: { name: string; description: string; agent_type: string; risk_level: string }) =>
     apiFetch<TaskData>("/tasks", { method: "POST", body: JSON.stringify(data) }),
