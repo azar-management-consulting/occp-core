@@ -9,8 +9,8 @@
   --muted: #2d2d6b;
   --border: #3a3a7a;
   --text: #e0e0ff;
-  --text-muted: #8888bb;
-  --primary: #7878ff;
+  --text-muted: #9a9ad0;
+  --primary: #8888ff;
   --accent: #6ce5d8;
   --success: #75ce64;
   --warning: #edf171;
@@ -22,6 +22,8 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-mono), "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 /* CRT Scanlines */
@@ -46,45 +48,50 @@ body {
 /* Retro Grid Background */
 .retro-grid {
   background-image: linear-gradient(
-      rgba(120, 120, 255, 0.02) 1px,
+      rgba(136, 136, 255, 0.02) 1px,
       transparent 1px
     ),
-    linear-gradient(90deg, rgba(120, 120, 255, 0.02) 1px, transparent 1px);
+    linear-gradient(90deg, rgba(136, 136, 255, 0.02) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
 /* CRT Glow */
 .crt-glow {
-  box-shadow: 0 0 10px rgba(120, 120, 255, 0.08),
-    inset 0 0 40px rgba(120, 120, 255, 0.02);
+  box-shadow: 0 0 15px rgba(136, 136, 255, 0.08),
+    inset 0 0 50px rgba(136, 136, 255, 0.02);
 }
 
 /* Text Glow Effects */
 .text-glow {
-  text-shadow: 0 0 10px rgba(120, 120, 255, 0.5);
+  text-shadow: 0 0 12px rgba(136, 136, 255, 0.5);
 }
 .text-glow-cyan {
-  text-shadow: 0 0 10px rgba(108, 229, 216, 0.5);
+  text-shadow: 0 0 12px rgba(108, 229, 216, 0.5);
 }
 .text-glow-green {
-  text-shadow: 0 0 10px rgba(117, 206, 100, 0.5);
+  text-shadow: 0 0 12px rgba(117, 206, 100, 0.5);
+}
+
+/* Section Description — uniform helper text under h2 headings */
+.section-desc {
+  @apply text-sm text-[var(--text-muted)] font-mono mt-1.5 leading-relaxed;
 }
 
 /* Retro Card */
 .retro-card {
   background: var(--surface);
   border: 1px solid var(--muted);
-  border-radius: 0.5rem;
+  border-radius: 0.625rem;
   transition: all 0.3s ease;
 }
 .retro-card:hover {
   border-color: var(--border);
-  box-shadow: 0 0 20px rgba(120, 120, 255, 0.06);
+  box-shadow: 0 0 20px rgba(136, 136, 255, 0.06);
 }
 
 /* Retro Input */
 .retro-input {
-  @apply text-sm px-4 py-2.5 rounded transition-all duration-200;
+  @apply text-sm px-4 py-3 rounded-lg transition-all duration-200;
   background: var(--bg);
   border: 1px solid var(--muted);
   color: var(--text);
@@ -93,16 +100,16 @@ body {
 .retro-input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 15px rgba(120, 120, 255, 0.15);
+  box-shadow: 0 0 15px rgba(136, 136, 255, 0.15);
 }
 .retro-input::placeholder {
   color: var(--text-muted);
-  opacity: 0.4;
+  opacity: 0.5;
 }
 
 /* Retro Select */
 .retro-select {
-  @apply text-sm px-3 py-2.5 rounded transition-all duration-200;
+  @apply text-sm px-4 py-3 rounded-lg transition-all duration-200;
   background: var(--bg);
   border: 1px solid var(--muted);
   color: var(--text);
@@ -111,19 +118,19 @@ body {
 .retro-select:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 15px rgba(120, 120, 255, 0.15);
+  box-shadow: 0 0 15px rgba(136, 136, 255, 0.15);
 }
 
 /* Retro Buttons */
 .retro-btn {
-  @apply text-sm px-4 py-2.5 rounded font-mono transition-all duration-200;
+  @apply text-sm px-5 py-3 rounded-lg font-mono transition-all duration-200;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
 }
 .retro-btn:hover {
   border-color: var(--primary);
-  box-shadow: 0 0 15px rgba(120, 120, 255, 0.15);
+  box-shadow: 0 0 15px rgba(136, 136, 255, 0.15);
 }
 .retro-btn:disabled {
   opacity: 0.4;
@@ -131,13 +138,13 @@ body {
 }
 
 .retro-btn-primary {
-  @apply text-sm px-5 py-2.5 rounded font-mono font-bold transition-all duration-200;
+  @apply text-sm px-6 py-3 rounded-lg font-mono font-bold transition-all duration-200;
   background: var(--primary);
   color: #fff;
   border: 1px solid var(--primary);
 }
 .retro-btn-primary:hover {
-  box-shadow: 0 0 20px rgba(120, 120, 255, 0.4);
+  box-shadow: 0 0 20px rgba(136, 136, 255, 0.4);
 }
 .retro-btn-primary:disabled {
   opacity: 0.4;
@@ -146,7 +153,7 @@ body {
 
 /* Retro Textarea */
 .retro-textarea {
-  @apply text-sm px-4 py-3 rounded transition-all duration-200;
+  @apply text-sm px-4 py-3 rounded-lg transition-all duration-200;
   background: var(--bg);
   border: 1px solid var(--muted);
   color: var(--text);
@@ -156,16 +163,23 @@ body {
 .retro-textarea:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 15px rgba(120, 120, 255, 0.15);
+  box-shadow: 0 0 15px rgba(136, 136, 255, 0.15);
+}
+
+/* Field hint text below inputs */
+.field-hint {
+  @apply text-xs font-mono mt-1;
+  color: var(--text-muted);
+  opacity: 0.7;
 }
 
 /* VAP Stages */
 .vap-stage {
-  @apply flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300;
+  @apply flex items-center gap-3 px-5 py-3.5 rounded-lg transition-all duration-300;
 }
 .vap-stage.active {
-  background: rgba(120, 120, 255, 0.1);
-  border: 1px solid rgba(120, 120, 255, 0.3);
+  background: rgba(136, 136, 255, 0.1);
+  border: 1px solid rgba(136, 136, 255, 0.3);
 }
 .vap-stage.completed {
   background: rgba(117, 206, 100, 0.1);
@@ -194,6 +208,6 @@ body {
 
 /* Selection */
 ::selection {
-  background: rgba(120, 120, 255, 0.3);
+  background: rgba(136, 136, 255, 0.3);
   color: var(--text);
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { LLMHealthData, LLMProviderHealth } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 
 const PROVIDER_META: Record<string, { label: string; icon: string }> = {
   anthropic: { label: "ANTHROPIC", icon: "◆" },
@@ -35,6 +36,7 @@ function HealthBar({ rate }: { rate: number }) {
 
 function ProviderRow({ name, health }: { name: string; health: LLMProviderHealth }) {
   const meta = PROVIDER_META[name] || { label: name.toUpperCase(), icon: "●" };
+  const t = useT();
   return (
     <div className="retro-card p-4 space-y-3">
       <div className="flex items-center justify-between">
@@ -42,16 +44,16 @@ function ProviderRow({ name, health }: { name: string; health: LLMProviderHealth
           <span className={`text-sm ${health.healthy ? "text-occp-success" : "text-occp-danger"}`}>
             {meta.icon}
           </span>
-          <span className="font-pixel text-[9px] tracking-wider">{meta.label}</span>
+          <span className="font-pixel text-[11px] tracking-wider">{meta.label}</span>
         </div>
         <span
-          className={`text-[9px] font-pixel px-2 py-0.5 rounded tracking-wider ${
+          className={`text-[11px] font-pixel px-2 py-0.5 rounded tracking-wider ${
             health.healthy
               ? "bg-occp-success/15 text-occp-success border border-occp-success/30"
               : "bg-occp-danger/15 text-occp-danger border border-occp-danger/30"
           }`}
         >
-          {health.healthy ? "ONLINE" : "DEGRADED"}
+          {health.healthy ? t.home.online : "DEGRADED"}
         </span>
       </div>
 
@@ -59,17 +61,17 @@ function ProviderRow({ name, health }: { name: string; health: LLMProviderHealth
 
       <div className="grid grid-cols-3 gap-2 text-center">
         <div>
-          <p className="text-[9px] text-[var(--text-muted)] font-mono uppercase">Calls</p>
+          <p className="text-[11px] text-[var(--text-muted)] font-mono uppercase">{t.home.calls}</p>
           <p className="text-sm font-bold font-mono text-occp-primary">{health.total_calls}</p>
         </div>
         <div>
-          <p className="text-[9px] text-[var(--text-muted)] font-mono uppercase">Latency</p>
+          <p className="text-[11px] text-[var(--text-muted)] font-mono uppercase">{t.home.latency}</p>
           <p className="text-sm font-bold font-mono text-occp-accent">
             {health.avg_latency_ms > 0 ? `${Math.round(health.avg_latency_ms)}ms` : "—"}
           </p>
         </div>
         <div>
-          <p className="text-[9px] text-[var(--text-muted)] font-mono uppercase">Errors</p>
+          <p className="text-[11px] text-[var(--text-muted)] font-mono uppercase">{t.home.errors}</p>
           <p className={`text-sm font-bold font-mono ${health.failures > 0 ? "text-occp-danger" : "text-occp-success"}`}>
             {health.failures}
           </p>
@@ -82,6 +84,7 @@ function ProviderRow({ name, health }: { name: string; health: LLMProviderHealth
 export function LLMHealthPanel() {
   const [data, setData] = useState<LLMHealthData | null>(null);
   const [loading, setLoading] = useState(true);
+  const t = useT();
 
   useEffect(() => {
     api
@@ -100,12 +103,12 @@ export function LLMHealthPanel() {
   if (loading) {
     return (
       <div className="space-y-3">
-        <h2 className="font-pixel text-[10px] text-occp-accent tracking-wider uppercase">
-          LLM Providers
+        <h2 className="font-pixel text-[12px] text-occp-accent tracking-wider uppercase">
+          {t.home.llmTitle}
         </h2>
         <div className="retro-card p-6 text-center crt-glow">
-          <p className="font-pixel text-[9px] text-[var(--text-muted)] animate-pulse">
-            LOADING PROVIDER STATUS...
+          <p className="font-pixel text-[11px] text-[var(--text-muted)] animate-pulse">
+            {t.home.loading}
           </p>
         </div>
       </div>
@@ -115,11 +118,11 @@ export function LLMHealthPanel() {
   if (!data) {
     return (
       <div className="space-y-3">
-        <h2 className="font-pixel text-[10px] text-occp-accent tracking-wider uppercase">
-          LLM Providers
+        <h2 className="font-pixel text-[12px] text-occp-accent tracking-wider uppercase">
+          {t.home.llmTitle}
         </h2>
         <div className="retro-card p-6 text-center border-occp-danger/30">
-          <p className="font-pixel text-[9px] text-occp-danger">PROVIDER STATUS UNAVAILABLE</p>
+          <p className="font-pixel text-[11px] text-occp-danger">{t.home.unavailable}</p>
         </div>
       </div>
     );
@@ -137,17 +140,20 @@ export function LLMHealthPanel() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="font-pixel text-[10px] text-occp-accent tracking-wider uppercase">
-          LLM Providers
-        </h2>
+        <div>
+          <h2 className="font-pixel text-[12px] text-occp-accent tracking-wider uppercase">
+            {t.home.llmTitle}
+          </h2>
+          <p className="section-desc">{t.home.llmDesc}</p>
+        </div>
         <span
-          className={`text-[9px] font-pixel px-2 py-0.5 rounded tracking-wider ${
+          className={`text-[11px] font-pixel px-2 py-0.5 rounded tracking-wider ${
             data.status === "healthy"
               ? "text-occp-success"
               : "text-occp-warning"
           }`}
         >
-          {data.status === "healthy" ? "● ALL SYSTEMS GO" : "▲ DEGRADED"}
+          {data.status === "healthy" ? t.home.allGo : t.home.degraded}
         </span>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
