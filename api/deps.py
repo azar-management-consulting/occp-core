@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from store.task_store import TaskStore
     from store.audit_store import AuditStore
     from store.agent_store import AgentStore
+    from store.user_store import UserStore
 
 
 class AppState:
@@ -30,6 +31,7 @@ class AppState:
         self.task_store: TaskStore | None = None
         self.audit_store: AuditStore | None = None
         self.agent_store: AgentStore | None = None
+        self.user_store: UserStore | None = None
         self.adapter_registry: AdapterRegistry | None = None
         self.pipeline: Pipeline | None = None
         self.policy_engine: PolicyEngine = PolicyEngine()

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Index, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, Index, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from store.base import Base, JSONBText
@@ -95,3 +95,30 @@ class AgentConfigRow(Base):
     )
     created_at: Mapped[str] = mapped_column(String(64), nullable=False)
     updated_at: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
+# ── Users ────────────────────────────────────────────────────────────
+
+
+class UserRow(Base):
+    """Registered user with hashed password and RBAC role."""
+
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    username: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[str] = mapped_column(String(32), nullable=False, default="viewer")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    display_name: Mapped[str] = mapped_column(String(128), default="")
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    metadata_: Mapped[dict] = mapped_column(
+        "metadata", JSONBText(), default=dict
+    )
+    created_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    updated_at: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    __table_args__ = (
+        Index("idx_users_username", "username"),
+        Index("idx_users_role", "role"),
+    )
