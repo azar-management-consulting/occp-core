@@ -32,10 +32,12 @@ services:
     build:
       context: ./dash
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.occp.ai/api/v1}
     ports:
       - "127.0.0.1:${OCCP_DASH_PORT:-3000}:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://api:8000/api/v1
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.occp.ai/api/v1}
     depends_on:
       api:
         condition: service_healthy
