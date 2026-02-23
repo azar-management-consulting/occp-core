@@ -38,6 +38,17 @@ CREATE TABLE IF NOT EXISTS audit_entries (
 
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_created ON tasks(created_at);
+CREATE TABLE IF NOT EXISTS agent_configs (
+    agent_type      TEXT PRIMARY KEY,
+    display_name    TEXT NOT NULL,
+    capabilities    TEXT DEFAULT '[]',  -- JSON array
+    max_concurrent  INTEGER DEFAULT 1,
+    timeout_seconds INTEGER DEFAULT 300,
+    metadata        TEXT DEFAULT '{}',  -- JSON
+    created_at      TEXT NOT NULL,
+    updated_at      TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_audit_task ON audit_entries(task_id);
 CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit_entries(timestamp);
 """

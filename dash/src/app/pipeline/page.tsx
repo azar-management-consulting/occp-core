@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import type { TaskData, PipelineResult } from "@/lib/api";
+import type { TaskData, PipelineResult, AgentData } from "@/lib/api";
 import { usePipelineWS } from "@/lib/ws";
 import { TaskCard } from "@/components/task-card";
 import { VAPProgress } from "@/components/vap-progress";
 
 export default function PipelinePage() {
   const [tasks, setTasks] = useState<TaskData[]>([]);
+  const [agents, setAgents] = useState<AgentData[]>([]);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [result, setResult] = useState<PipelineResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -17,10 +18,12 @@ export default function PipelinePage() {
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [agentType, setAgentType] = useState("general");
   const [riskLevel, setRiskLevel] = useState("low");
 
   useEffect(() => {
     api.listTasks().then((t) => setTasks(t.tasks)).catch(() => {});
+    api.listAgents().then((a) => setAgents(a.agents)).catch(() => {});
   }, []);
 
   const refreshTasks = async () => {
@@ -36,7 +39,7 @@ export default function PipelinePage() {
       const task = await api.createTask({
         name,
         description,
-        agent_type: "general",
+        agent_type: agentType,
         risk_level: riskLevel,
       });
       setName("");
@@ -83,7 +86,7 @@ export default function PipelinePage() {
         <h2 className="font-pixel text-[10px] text-occp-accent tracking-wider uppercase">
           New Task
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input
             type="text"
             placeholder="Task name"
@@ -98,6 +101,21 @@ export default function PipelinePage() {
             onChange={(e) => setDescription(e.target.value)}
             className="retro-input"
           />
+          <select
+            value={agentType}
+            onChange={(e) => setAgentType(e.target.value)}
+            className="retro-select"
+          >
+            {agents.length > 0 ? (
+              agents.map((a) => (
+                <option key={a.agent_type} value={a.agent_type}>
+                  {a.display_name} ({a.agent_type})
+                </option>
+              ))
+            ) : (
+              <option value="general">General Assistant</option>
+            )}
+          </select>
           <div className="flex gap-2">
             <select
               value={riskLevel}

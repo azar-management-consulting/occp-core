@@ -15,12 +15,15 @@ from adapters.mock_executor import MockExecutor
 from adapters.basic_validator import BasicValidator
 from adapters.log_shipper import LogShipper
 
+from orchestrator.adapter_registry import AdapterRegistry
+from orchestrator.models import AgentConfig
 from orchestrator.pipeline import Pipeline
 from policy_engine.engine import PolicyEngine
 
 from store.database import Database
 from store.task_store import TaskStore
 from store.audit_store import AuditStore
+from store.agent_store import AgentStore
 
 from api.deps import AppState, set_state
 from api.ws_manager import ConnectionManager
@@ -47,10 +50,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     if last_audit:
         engine.set_chain_head(last_audit)
 
+    agent_store = AgentStore(db)
+
     state = AppState(settings=settings)
     state.db = db
     state.task_store = task_store
     state.audit_store = audit_store
+    state.agent_store = agent_store
 
     # Multi-LLM planner with automatic failover chain
     multi_planner = MultiLLMPlanner()
@@ -89,14 +95,52 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
     state.multi_planner = multi_planner
 
+    # Adapter registry — per-agent-type routing with defaults
+    mock_executor = MockExecutor()
+    basic_validator = BasicValidator()
+    log_shipper = LogShipper()
+    adapter_registry = AdapterRegistry(
+        default_planner=multi_planner,
+        default_executor=mock_executor,
+        default_validator=basic_validator,
+        default_shipper=log_shipper,
+    )
+    state.adapter_registry = adapter_registry
+
     state.pipeline = Pipeline(
         planner=multi_planner,
         policy_engine=engine,
-        executor=MockExecutor(),
-        validator=BasicValidator(),
-        shipper=LogShipper(),
+        executor=mock_executor,
+        validator=basic_validator,
+        shipper=log_shipper,
+        adapter_registry=adapter_registry,
     )
     state.policy_engine = engine
+
+    # Seed default agent configs (idempotent upsert)
+    _DEFAULT_AGENTS = [
+        AgentConfig(
+            agent_type="general",
+            display_name="General Assistant",
+            capabilities=["planning", "execution", "validation"],
+        ),
+        AgentConfig(
+            agent_type="demo",
+            display_name="Demo Agent",
+            capabilities=["echo", "testing"],
+        ),
+        AgentConfig(
+            agent_type="code-reviewer",
+            display_name="Code Reviewer",
+            capabilities=["code-analysis", "pr-review", "security-scan"],
+            max_concurrent=3,
+            timeout_seconds=600,
+        ),
+    ]
+    for agent_cfg in _DEFAULT_AGENTS:
+        await agent_store.upsert(agent_cfg)
+    logger.info("Seeded %d default agent configs", len(_DEFAULT_AGENTS))
+
     set_state(state)
     logger.info("OCCP API started (env=%s, db=%s)", settings.occp_env, settings.database_url)
     yield
