@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.6.0 – Security Hardening & GDPR Compliance
+
+### Core
+- **StructuredValidator**: Plan schema validation with risk-level step limits
+- **OutputSanitizationGuard**: 7-pattern output sanitization (credentials, tokens, API keys, PII)
+- **PromptInjectionGuard**: Expanded from 5 to 24 detection patterns
+- **Pipeline resilience**: Per-stage timing metrics, configurable `execute_retries`
+
+### Dashboard
+- **GDPR legal pages**: Privacy Policy, Security Policy, Terms of Service (`/docs/privacy`, `/docs/security`, `/docs/terms`)
+- **X-Powered-By header removed**: Next.js no longer leaks server identity
+
+### Infrastructure
+- Version bump to 0.6.0 across all modules (API, CLI, SDK, orchestrator, policy engine, tests)
+- 165 passing tests (+20 new security & validation tests)
+
+---
+
 ## 0.5.0 – Agent Management Dashboard
 
 ### Dashboard

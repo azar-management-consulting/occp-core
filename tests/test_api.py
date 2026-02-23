@@ -51,7 +51,7 @@ class TestStatus:
         assert resp.status_code == 200
         data = resp.json()
         assert data["platform"] == "OCCP"
-        assert data["version"] == "0.5.0"
+        assert data["version"] == "0.6.0"
         assert data["status"] == "running"
 
 
