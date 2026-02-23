@@ -97,12 +97,14 @@ def _auth(token: str) -> dict[str, str]:
 
 class TestAgentsAPI:
     @pytest.mark.asyncio
-    async def test_list_empty(self, client: AsyncClient) -> None:
+    async def test_list_seeded_defaults(self, client: AsyncClient) -> None:
+        """Lifespan seeds 3 default agents (general, demo, code-reviewer)."""
         resp = await client.get("/api/v1/agents")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["total"] == 0
-        assert data["agents"] == []
+        assert data["total"] == 3
+        types = {a["agent_type"] for a in data["agents"]}
+        assert types == {"general", "demo", "code-reviewer"}
 
     @pytest.mark.asyncio
     async def test_register_and_get(self, client: AsyncClient) -> None:
@@ -168,4 +170,19 @@ class TestAgentsAPI:
         }, headers=_auth(token))
 
         resp = await client.get("/api/v1/agents")
-        assert resp.json()["total"] == 2
+        # 3 seeded defaults + 2 newly registered = 5
+        assert resp.json()["total"] == 5
+
+    @pytest.mark.asyncio
+    async def test_routing_info(self, client: AsyncClient) -> None:
+        """GET /agents/{type}/routing returns adapter source per stage."""
+        resp = await client.get("/api/v1/agents/general/routing")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["planner"] == "default"
+        assert data["executor"] == "default"
+
+    @pytest.mark.asyncio
+    async def test_routing_info_missing(self, client: AsyncClient) -> None:
+        resp = await client.get("/api/v1/agents/nonexistent/routing")
+        assert resp.status_code == 404

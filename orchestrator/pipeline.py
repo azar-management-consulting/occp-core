@@ -15,6 +15,7 @@ from orchestrator.exceptions import (
 from orchestrator.models import PipelineResult, Task, TaskStatus
 
 if TYPE_CHECKING:
+    from orchestrator.adapter_registry import AdapterRegistry
     from policy_engine.engine import PolicyEngine
 
 logger = logging.getLogger(__name__)
@@ -60,6 +61,7 @@ class Pipeline:
     Features:
     - Per-stage wall-clock timing (``evidence["_timings"]``)
     - Configurable retry for the Execute stage (transient failures)
+    - Optional :class:`AdapterRegistry` for per-agent-type adapter routing
 
     Usage::
 
@@ -69,6 +71,7 @@ class Pipeline:
             executor=my_executor,
             validator=my_validator,
             shipper=my_shipper,
+            adapter_registry=my_registry,
             execute_retries=2,
         )
         result = await pipeline.run(task)
@@ -82,6 +85,7 @@ class Pipeline:
         executor: Executor,
         validator: Validator,
         shipper: Shipper,
+        adapter_registry: AdapterRegistry | None = None,
         execute_retries: int = 0,
     ) -> None:
         self._planner = planner
@@ -89,20 +93,49 @@ class Pipeline:
         self._executor = executor
         self._validator = validator
         self._shipper = shipper
+        self._registry = adapter_registry
         self._execute_retries = max(0, execute_retries)
+
+    # -- Adapter resolution (registry-aware) --
+
+    def _resolve_planner(self, agent_type: str) -> Planner:
+        if self._registry:
+            return self._registry.get_planner(agent_type)
+        return self._planner
+
+    def _resolve_executor(self, agent_type: str) -> Executor:
+        if self._registry:
+            return self._registry.get_executor(agent_type)
+        return self._executor
+
+    def _resolve_validator(self, agent_type: str) -> Validator:
+        if self._registry:
+            return self._registry.get_validator(agent_type)
+        return self._validator
+
+    def _resolve_shipper(self, agent_type: str) -> Shipper:
+        if self._registry:
+            return self._registry.get_shipper(agent_type)
+        return self._shipper
 
     async def run(self, task: Task) -> PipelineResult:
         """Execute the full VAP pipeline for *task*."""
         started = datetime.now(timezone.utc)
         evidence: dict[str, Any] = {}
         timings: dict[str, float] = {}
+        agent_type = task.agent_type
+
+        # Record routing info when registry is available
+        if self._registry:
+            evidence["_routing"] = self._registry.get_routing_info(agent_type)
 
         try:
             # 1. Plan
             task.transition(TaskStatus.PLANNING)
-            logger.info("Pipeline PLAN – task=%s", task.id)
+            logger.info("Pipeline PLAN – task=%s agent_type=%s", task.id, agent_type)
             t0 = time.monotonic()
-            task.plan = await self._planner.create_plan(task)
+            planner = self._resolve_planner(agent_type)
+            task.plan = await planner.create_plan(task)
             timings["plan"] = round(time.monotonic() - t0, 4)
             evidence["plan"] = task.plan
 
@@ -118,7 +151,7 @@ class Pipeline:
 
             # 3. Execute (with optional retry)
             task.transition(TaskStatus.EXECUTING)
-            logger.info("Pipeline EXECUTE – task=%s", task.id)
+            logger.info("Pipeline EXECUTE – task=%s agent_type=%s", task.id, agent_type)
             t0 = time.monotonic()
             exec_output = await self._execute_with_retry(task)
             timings["execute"] = round(time.monotonic() - t0, 4)
@@ -128,7 +161,8 @@ class Pipeline:
             task.transition(TaskStatus.VALIDATING)
             logger.info("Pipeline VALIDATE – task=%s", task.id)
             t0 = time.monotonic()
-            failures = await self._validator.validate(task)
+            validator = self._resolve_validator(agent_type)
+            failures = await validator.validate(task)
             timings["validate"] = round(time.monotonic() - t0, 4)
             if failures:
                 raise ValidationError(task.id, failures)
@@ -138,7 +172,8 @@ class Pipeline:
             task.transition(TaskStatus.SHIPPING)
             logger.info("Pipeline SHIP – task=%s", task.id)
             t0 = time.monotonic()
-            ship_output = await self._shipper.ship(task)
+            shipper = self._resolve_shipper(agent_type)
+            ship_output = await shipper.ship(task)
             timings["ship"] = round(time.monotonic() - t0, 4)
             evidence["ship"] = ship_output
 
@@ -189,10 +224,11 @@ class Pipeline:
 
     async def _execute_with_retry(self, task: Task) -> dict[str, Any]:
         """Execute with retry on transient failures."""
+        executor = self._resolve_executor(task.agent_type)
         last_exc: Exception | None = None
         for attempt in range(1 + self._execute_retries):
             try:
-                return await self._executor.execute(task)
+                return await executor.execute(task)
             except ExecutionError:
                 raise  # Explicit execution failures are not retried
             except Exception as exc:

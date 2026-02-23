@@ -1,8 +1,6 @@
-"""Agent registry CRUD endpoints."""
+"""Agent registry CRUD endpoints with persistent storage."""
 
 from __future__ import annotations
-
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -34,7 +32,7 @@ def _agent_to_response(cfg: AgentConfig) -> AgentResponse:
 async def list_agents(
     state: AppState = Depends(get_state),
 ) -> AgentListResponse:
-    agents = state.scheduler.list_agents()
+    agents = await state.list_agents()
     return AgentListResponse(
         agents=[_agent_to_response(a) for a in agents],
         total=len(agents),
@@ -46,7 +44,7 @@ async def get_agent(
     agent_type: str,
     state: AppState = Depends(get_state),
 ) -> AgentResponse:
-    cfg = state.scheduler.get_agent(agent_type)
+    cfg = await state.get_agent(agent_type)
     if cfg is None:
         raise HTTPException(status_code=404, detail=f"Agent '{agent_type}' not found")
     return _agent_to_response(cfg)
@@ -58,7 +56,7 @@ async def register_agent(
     _user: str = Depends(get_current_user),
     state: AppState = Depends(get_state),
 ) -> AgentResponse:
-    """Register or update an agent type in the scheduler."""
+    """Register or update an agent type (persisted to DB)."""
     config = AgentConfig(
         agent_type=body.agent_type,
         display_name=body.display_name,
@@ -67,12 +65,7 @@ async def register_agent(
         timeout_seconds=body.timeout_seconds,
         metadata=body.metadata,
     )
-
-    # Provide a no-op factory for API-registered agents
-    async def _noop_factory(_cfg: AgentConfig, _task: Any = None):  # type: ignore[no-untyped-def]
-        return {"status": "ok", "agent_type": _cfg.agent_type}
-
-    state.scheduler.register(config, _noop_factory)
+    await state.upsert_agent(config)
     return _agent_to_response(config)
 
 
@@ -82,7 +75,21 @@ async def unregister_agent(
     _user: str = Depends(get_current_user),
     state: AppState = Depends(get_state),
 ) -> None:
-    cfg = state.scheduler.get_agent(agent_type)
+    cfg = await state.get_agent(agent_type)
     if cfg is None:
         raise HTTPException(status_code=404, detail=f"Agent '{agent_type}' not found")
-    state.scheduler.unregister(agent_type)
+    await state.delete_agent(agent_type)
+
+
+@router.get("/agents/{agent_type}/routing")
+async def get_agent_routing(
+    agent_type: str,
+    state: AppState = Depends(get_state),
+) -> dict[str, str]:
+    """Return which adapter source (default/override) is used per pipeline stage."""
+    cfg = await state.get_agent(agent_type)
+    if cfg is None:
+        raise HTTPException(status_code=404, detail=f"Agent '{agent_type}' not found")
+    if state.adapter_registry:
+        return state.adapter_registry.get_routing_info(agent_type)
+    return {"planner": "default", "executor": "default", "validator": "default", "shipper": "default"}
