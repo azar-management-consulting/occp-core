@@ -27,13 +27,13 @@ export function TaskCard({ id, name, description, status, risk_level, created_at
     <div className="retro-card p-5 space-y-4">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="font-mono font-bold text-sm">{name}</h3>
-          <p className="text-xs text-[var(--text-muted)] font-mono mt-1 line-clamp-2">
+          <h3 className="font-mono font-bold text-base">{name}</h3>
+          <p className="text-sm text-[var(--text-muted)] font-mono mt-1 line-clamp-2">
             {description}
           </p>
         </div>
         <span
-          className={`text-[11px] px-2 py-0.5 rounded font-pixel tracking-wider ${riskColors[risk_level] || ""}`}
+          className={`text-[12px] px-2.5 py-1 rounded font-pixel tracking-wider ${riskColors[risk_level] || ""}`}
         >
           {risk_level.toUpperCase()}
         </span>
@@ -41,7 +41,7 @@ export function TaskCard({ id, name, description, status, risk_level, created_at
 
       <VAPProgress status={status} />
 
-      <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] font-mono">
+      <div className="flex items-center justify-between text-[12px] text-[var(--text-muted)] font-mono">
         <span>{t.common.id}: {id.slice(0, 12)}</span>
         <span>{new Date(created_at).toLocaleString()}</span>
       </div>
@@ -49,7 +49,7 @@ export function TaskCard({ id, name, description, status, risk_level, created_at
       {status === "pending" && onRun && (
         <button
           onClick={onRun}
-          className="retro-btn-primary w-full py-2 font-pixel text-[11px] tracking-wider"
+          className="retro-btn-primary w-full py-2.5 font-pixel text-[12px] tracking-wider"
         >
           {t.common.runPipeline}
         </button>
