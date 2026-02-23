@@ -53,6 +53,15 @@ class Settings(BaseSettings):
         "https://dash.occp.ai",
     ]
 
+    # ── Sandbox executor ───────────────────────────────────────────────
+    sandbox_backend: str = ""  # nsjail | bwrap | process | mock | "" (auto-detect)
+    sandbox_time_limit: int = 30  # seconds
+    sandbox_memory_limit: int = 256  # MB
+    sandbox_enable_network: bool = False
+    sandbox_nsjail_bin: str = "nsjail"
+    sandbox_bwrap_bin: str = "bwrap"
+    sandbox_nsjail_config: str = ""
+
     # ── Channels (future) ─────────────────────────────────────────────
     slack_bot_token: str = ""
     slack_signing_secret: str = ""
