@@ -118,7 +118,7 @@ class TestBasicValidator:
 
         validator = BasicValidator()
         task = _make_task()
-        task.plan = {"steps": ["step1"]}
+        task.plan = {"strategy": "test", "steps": ["step1"]}
         issues = await validator.validate(task)
         assert issues == []
 

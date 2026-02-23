@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends
 
 from api.deps import AppState, get_state
 from api.models import AuditEntryResponse, AuditLogResponse
+from policy_engine.engine import PolicyEngine
 
 router = APIRouter(tags=["audit"])
 
@@ -19,6 +20,9 @@ async def get_audit_log(
         entries = await state.audit_store.list_all()
     else:
         entries = state.policy_engine.audit_log
+
+    # Verify using the actual entries source (persistent > in-memory)
+    chain_valid = PolicyEngine.verify_entries(entries)
 
     return AuditLogResponse(
         entries=[
@@ -34,6 +38,6 @@ async def get_audit_log(
             )
             for e in entries
         ],
-        chain_valid=state.policy_engine.verify_audit_chain(),
+        chain_valid=chain_valid,
         total=len(entries),
     )

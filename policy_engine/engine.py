@@ -11,6 +11,7 @@ from typing import Any
 from policy_engine.exceptions import PolicyLoadError
 from policy_engine.guards import (
     GuardResult,
+    OutputSanitizationGuard,
     PIIGuard,
     PromptInjectionGuard,
     ResourceLimitGuard,
@@ -190,9 +191,16 @@ class PolicyEngine:
         return list(self._audit_chain)
 
     def verify_audit_chain(self) -> bool:
-        """Verify integrity of the audit hash chain."""
+        """Verify integrity of the in-memory audit hash chain."""
+        return self.verify_entries(self._audit_chain)
+
+    @staticmethod
+    def verify_entries(entries: list[AuditEntry]) -> bool:
+        """Verify integrity of any audit entry list (in-memory or persistent)."""
+        if not entries:
+            return True
         prev = ""
-        for entry in self._audit_chain:
+        for entry in entries:
             expected = AuditEntry(
                 id=entry.id,
                 timestamp=entry.timestamp,

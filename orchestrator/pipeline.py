@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -17,6 +18,8 @@ if TYPE_CHECKING:
     from policy_engine.engine import PolicyEngine
 
 logger = logging.getLogger(__name__)
+
+_STAGE_NAMES = ("plan", "gate", "execute", "validate", "ship")
 
 
 # ---------------------------------------------------------------------------
@@ -54,6 +57,10 @@ class Shipper(Protocol):
 class Pipeline:
     """Orchestrates the full VAP lifecycle for a single :class:`Task`.
 
+    Features:
+    - Per-stage wall-clock timing (``evidence["_timings"]``)
+    - Configurable retry for the Execute stage (transient failures)
+
     Usage::
 
         pipeline = Pipeline(
@@ -62,6 +69,7 @@ class Pipeline:
             executor=my_executor,
             validator=my_validator,
             shipper=my_shipper,
+            execute_retries=2,
         )
         result = await pipeline.run(task)
     """
@@ -74,43 +82,54 @@ class Pipeline:
         executor: Executor,
         validator: Validator,
         shipper: Shipper,
+        execute_retries: int = 0,
     ) -> None:
         self._planner = planner
         self._policy_engine = policy_engine
         self._executor = executor
         self._validator = validator
         self._shipper = shipper
+        self._execute_retries = max(0, execute_retries)
 
     async def run(self, task: Task) -> PipelineResult:
         """Execute the full VAP pipeline for *task*."""
         started = datetime.now(timezone.utc)
         evidence: dict[str, Any] = {}
+        timings: dict[str, float] = {}
 
         try:
             # 1. Plan
             task.transition(TaskStatus.PLANNING)
             logger.info("Pipeline PLAN – task=%s", task.id)
+            t0 = time.monotonic()
             task.plan = await self._planner.create_plan(task)
+            timings["plan"] = round(time.monotonic() - t0, 4)
             evidence["plan"] = task.plan
 
             # 2. Gate
             task.transition(TaskStatus.GATED)
             logger.info("Pipeline GATE – task=%s", task.id)
+            t0 = time.monotonic()
             gate_result = await self._policy_engine.evaluate(task)
+            timings["gate"] = round(time.monotonic() - t0, 4)
             if not gate_result.approved:
                 raise GateRejectedError(task.id, gate_result.reason)
             evidence["gate"] = gate_result.__dict__
 
-            # 3. Execute
+            # 3. Execute (with optional retry)
             task.transition(TaskStatus.EXECUTING)
             logger.info("Pipeline EXECUTE – task=%s", task.id)
-            exec_output = await self._executor.execute(task)
+            t0 = time.monotonic()
+            exec_output = await self._execute_with_retry(task)
+            timings["execute"] = round(time.monotonic() - t0, 4)
             evidence["execution"] = exec_output
 
             # 4. Validate
             task.transition(TaskStatus.VALIDATING)
             logger.info("Pipeline VALIDATE – task=%s", task.id)
+            t0 = time.monotonic()
             failures = await self._validator.validate(task)
+            timings["validate"] = round(time.monotonic() - t0, 4)
             if failures:
                 raise ValidationError(task.id, failures)
             evidence["validation"] = {"passed": True}
@@ -118,10 +137,13 @@ class Pipeline:
             # 5. Ship
             task.transition(TaskStatus.SHIPPING)
             logger.info("Pipeline SHIP – task=%s", task.id)
+            t0 = time.monotonic()
             ship_output = await self._shipper.ship(task)
+            timings["ship"] = round(time.monotonic() - t0, 4)
             evidence["ship"] = ship_output
 
             task.transition(TaskStatus.COMPLETED)
+            evidence["_timings"] = timings
             return PipelineResult(
                 task_id=task.id,
                 success=True,
@@ -133,11 +155,13 @@ class Pipeline:
 
         except GateRejectedError:
             task.transition(TaskStatus.REJECTED)
+            evidence["_timings"] = timings
             raise
 
         except (ExecutionError, ValidationError) as exc:
             task.transition(TaskStatus.FAILED)
             task.error = str(exc)
+            evidence["_timings"] = timings
             return PipelineResult(
                 task_id=task.id,
                 success=False,
@@ -151,6 +175,7 @@ class Pipeline:
         except Exception as exc:
             task.transition(TaskStatus.FAILED)
             task.error = str(exc)
+            evidence["_timings"] = timings
             logger.exception("Unexpected pipeline error for task=%s", task.id)
             return PipelineResult(
                 task_id=task.id,
@@ -161,3 +186,23 @@ class Pipeline:
                 evidence=evidence,
                 error=str(exc),
             )
+
+    async def _execute_with_retry(self, task: Task) -> dict[str, Any]:
+        """Execute with retry on transient failures."""
+        last_exc: Exception | None = None
+        for attempt in range(1 + self._execute_retries):
+            try:
+                return await self._executor.execute(task)
+            except ExecutionError:
+                raise  # Explicit execution failures are not retried
+            except Exception as exc:
+                last_exc = exc
+                if attempt < self._execute_retries:
+                    logger.warning(
+                        "Execute attempt %d/%d failed for task=%s: %s – retrying",
+                        attempt + 1,
+                        1 + self._execute_retries,
+                        task.id,
+                        exc,
+                    )
+        raise ExecutionError(task.id, f"All {1 + self._execute_retries} attempts failed: {last_exc}")

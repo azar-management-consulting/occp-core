@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from orchestrator.models import AgentConfig
@@ -67,7 +69,7 @@ async def register_agent(
     )
 
     # Provide a no-op factory for API-registered agents
-    async def _noop_factory(_cfg: AgentConfig):  # type: ignore[no-untyped-def]
+    async def _noop_factory(_cfg: AgentConfig, _task: Any = None):  # type: ignore[no-untyped-def]
         return {"status": "ok", "agent_type": _cfg.agent_type}
 
     state.scheduler.register(config, _noop_factory)

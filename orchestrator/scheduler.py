@@ -11,7 +11,7 @@ from orchestrator.models import AgentConfig, Task
 
 logger = logging.getLogger(__name__)
 
-AgentFactory = Callable[[AgentConfig], Coroutine[Any, Any, Any]]
+AgentFactory = Callable[[AgentConfig, Task], Coroutine[Any, Any, Any]]
 
 
 class Scheduler:
@@ -85,7 +85,7 @@ class Scheduler:
                     "Dispatching task=%s to agent=%s", task.id, agent_type
                 )
                 return await asyncio.wait_for(
-                    factory(config),
+                    factory(config, task),
                     timeout=config.timeout_seconds,
                 )
         except asyncio.TimeoutError as exc:

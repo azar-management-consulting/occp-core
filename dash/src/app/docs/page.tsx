@@ -194,6 +194,7 @@ export default function DocsPage() {
                 { label: "ARCHITECTURE", href: "#architecture" },
                 { label: "API", href: "#api" },
                 { label: "MODULES", href: "#modules" },
+                { label: "SECURITY", href: "#security" },
               ].map((l) => (
                 <a
                   key={l.label}
@@ -629,35 +630,170 @@ export default function DocsPage() {
         </div>
       </section>
 
+      {/* ── SECURITY ──────────────────────────────────── */}
+      <section id="security" className="max-w-6xl mx-auto px-6 pb-20">
+        <div className="flex items-center gap-3 mb-8">
+          <span className="font-pixel text-[10px] text-occp-danger opacity-40">07</span>
+          <h2 className="font-pixel text-[10px] text-occp-danger uppercase tracking-widest">
+            Security &amp; Compliance
+          </h2>
+          <div className="flex-1 h-px bg-gradient-to-r from-occp-danger/20 to-transparent" />
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Security posture */}
+          <div className="retro-card p-6">
+            <div className="font-pixel text-[8px] text-occp-success mb-4 uppercase tracking-wider">
+              Hardening Status
+            </div>
+            <div className="space-y-2 font-mono text-[11px]">
+              {[
+                { label: "Non-root container", value: "uid=1001" },
+                { label: "Read-only rootfs", value: "API + Dash" },
+                { label: "No-new-privileges", value: "enabled" },
+                { label: "Port binding", value: "127.0.0.1" },
+                { label: "TLS termination", value: "Caddy" },
+                { label: "Branch protection", value: "enforced" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between">
+                  <span className="text-[var(--text-muted)]">{item.label}</span>
+                  <span className="flex items-center gap-2">
+                    <span className="text-occp-success">{item.value}</span>
+                    <span className="text-[8px] text-occp-success font-pixel">PASS</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Guards */}
+          <div className="space-y-3">
+            <div className="retro-card p-4">
+              <div className="font-pixel text-[7px] text-[var(--primary)] mb-1.5 uppercase tracking-wider">
+                PII Guard
+              </div>
+              <p className="text-xs text-[var(--text-muted)]">
+                Detects and blocks personally identifiable information (emails, SSNs, credit cards) before it reaches the LLM.
+              </p>
+            </div>
+            <div className="retro-card p-4">
+              <div className="font-pixel text-[7px] text-occp-warning mb-1.5 uppercase tracking-wider">
+                Prompt Injection Guard
+              </div>
+              <p className="text-xs text-[var(--text-muted)]">
+                Pattern-matching detection of system prompt overrides, role manipulation, and instruction bypass attempts.
+              </p>
+            </div>
+            <div className="retro-card p-4">
+              <div className="font-pixel text-[7px] text-occp-accent mb-1.5 uppercase tracking-wider">
+                Resource Limit Guard
+              </div>
+              <p className="text-xs text-[var(--text-muted)]">
+                Enforces payload size limits, execution timeouts, and concurrency caps to prevent resource exhaustion.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Legal links */}
+        <div className="mt-8 retro-card p-6">
+          <div className="font-pixel text-[8px] text-[var(--text-muted)] mb-4 uppercase tracking-wider">
+            Legal &amp; Compliance
+          </div>
+          <div className="grid sm:grid-cols-3 gap-4">
+            <Link href="/docs/privacy" className="block group">
+              <div className="retro-card p-4 hover:border-[var(--primary)] transition-all">
+                <div className="font-pixel text-[8px] text-[var(--primary)] mb-1.5 uppercase tracking-wider group-hover:text-glow">
+                  Privacy Policy
+                </div>
+                <p className="text-[10px] text-[var(--text-muted)]">
+                  GDPR Art. 13-14 compliant data processing disclosure. EU data residency.
+                </p>
+              </div>
+            </Link>
+            <Link href="/docs/terms" className="block group">
+              <div className="retro-card p-4 hover:border-[var(--primary)] transition-all">
+                <div className="font-pixel text-[8px] text-occp-accent mb-1.5 uppercase tracking-wider group-hover:text-glow-cyan">
+                  Terms of Service
+                </div>
+                <p className="text-[10px] text-[var(--text-muted)]">
+                  Usage terms, license info, liability limitations. Governed by EU/Hungarian law.
+                </p>
+              </div>
+            </Link>
+            <Link href="/docs/security" className="block group">
+              <div className="retro-card p-4 hover:border-[var(--primary)] transition-all">
+                <div className="font-pixel text-[8px] text-occp-danger mb-1.5 uppercase tracking-wider group-hover:text-glow">
+                  Security Policy
+                </div>
+                <p className="text-[10px] text-[var(--text-muted)]">
+                  Vulnerability reporting, hardening details, responsible disclosure program.
+                </p>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ── FOOTER ─────────────────────────────────────── */}
       <footer className="border-t border-[var(--muted)]/30">
         <div className="max-w-6xl mx-auto px-6 py-10">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+          <div className="grid sm:grid-cols-3 gap-8 mb-8">
+            {/* Brand */}
+            <div>
               <span className="font-pixel text-[9px] text-[var(--primary)] text-glow">OCCP</span>
-              <span className="text-[var(--text-muted)] text-xs">
-                OpenCloud Control Plane v0.5.0
-              </span>
+              <p className="text-[var(--text-muted)] text-xs mt-2 leading-relaxed">
+                OpenCloud Control Plane v0.5.0. Open-source AI agent governance with verified autonomy.
+              </p>
             </div>
-            <div className="flex items-center gap-6">
-              <a
-                href="https://github.com/azar-management-consulting/occp-core"
-                target="_blank"
-                rel="noopener"
-                className="text-[var(--text-muted)] text-xs hover:text-[var(--text)] transition-colors"
-              >
-                GitHub
-              </a>
-              <Link
-                href="/login"
-                className="text-[var(--text-muted)] text-xs hover:text-[var(--text)] transition-colors"
-              >
-                Dashboard
-              </Link>
-              <span className="text-[var(--text-muted)] text-xs">MIT License</span>
+
+            {/* Product */}
+            <div>
+              <div className="font-pixel text-[7px] text-[var(--text-muted)] uppercase tracking-wider mb-3">
+                Product
+              </div>
+              <div className="space-y-2">
+                <Link href="/docs#overview" className="block text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
+                  Documentation
+                </Link>
+                <Link href="/docs#api" className="block text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
+                  API Reference
+                </Link>
+                <a
+                  href="https://github.com/azar-management-consulting/occp-core"
+                  target="_blank"
+                  rel="noopener"
+                  className="block text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
+                >
+                  GitHub
+                </a>
+                <Link href="/login" className="block text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
+                  Dashboard
+                </Link>
+              </div>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <div className="font-pixel text-[7px] text-[var(--text-muted)] uppercase tracking-wider mb-3">
+                Legal
+              </div>
+              <div className="space-y-2">
+                <Link href="/docs/privacy" className="block text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
+                  Privacy Policy
+                </Link>
+                <Link href="/docs/terms" className="block text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
+                  Terms of Service
+                </Link>
+                <Link href="/docs/security" className="block text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
+                  Security Policy
+                </Link>
+                <span className="block text-xs text-[var(--text-muted)]">MIT License</span>
+              </div>
             </div>
           </div>
-          <div className="mt-6 text-center">
+
+          <div className="border-t border-[var(--muted)]/20 pt-6 text-center">
             <div className="font-mono text-[10px] text-[var(--text-muted)]/40">
               **** AZAR MANAGEMENT CONSULTING ****
             </div>

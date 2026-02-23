@@ -6,6 +6,10 @@ import { useAuth } from "@/lib/auth";
 
 const PUBLIC_PATHS = ["/login", "/docs"];
 
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
   const pathname = usePathname();
@@ -13,7 +17,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (loading) return;
-    if (!isAuthenticated && !PUBLIC_PATHS.includes(pathname)) {
+    if (!isAuthenticated && !isPublicPath(pathname)) {
       router.replace("/login");
     }
   }, [isAuthenticated, loading, pathname, router]);
@@ -26,7 +30,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isAuthenticated && !PUBLIC_PATHS.includes(pathname)) {
+  if (!isAuthenticated && !isPublicPath(pathname)) {
     return null;
   }
 

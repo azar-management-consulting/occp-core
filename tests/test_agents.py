@@ -27,7 +27,7 @@ class TestSchedulerRegistry:
         s = Scheduler()
         cfg = AgentConfig(agent_type="test", display_name="Test Agent")
 
-        async def factory(_cfg):
+        async def factory(_cfg, _task=None):
             return {}
 
         s.register(cfg, factory)
@@ -39,7 +39,7 @@ class TestSchedulerRegistry:
         s = Scheduler()
         cfg = AgentConfig(agent_type="finder", display_name="Finder")
 
-        async def factory(_cfg):
+        async def factory(_cfg, _task=None):
             return {}
 
         s.register(cfg, factory)
@@ -51,7 +51,7 @@ class TestSchedulerRegistry:
         s = Scheduler()
         cfg = AgentConfig(agent_type="temp", display_name="Temp")
 
-        async def factory(_cfg):
+        async def factory(_cfg, _task=None):
             return {}
 
         s.register(cfg, factory)
