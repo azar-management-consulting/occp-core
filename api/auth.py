@@ -1,7 +1,8 @@
 """JWT authentication helpers for OCCP API.
 
-Provides token creation/verification and a FastAPI dependency that
-protects endpoints behind Bearer token auth.
+Provides token creation/verification and FastAPI dependencies:
+- ``get_current_user`` — returns username string (backward compat)
+- ``get_current_user_payload`` — returns dict with sub, role (RBAC-aware)
 """
 
 from __future__ import annotations
@@ -59,13 +60,10 @@ def decode_token(token: str, settings: Settings) -> dict[str, Any]:
         )
 
 
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
-) -> str:
-    """FastAPI dependency – extracts and validates the Bearer token.
-
-    Returns the ``sub`` claim (username) on success.
-    """
+def _extract_payload(
+    credentials: HTTPAuthorizationCredentials | None,
+) -> dict[str, Any]:
+    """Shared extraction logic for both dependency variants."""
     if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -83,4 +81,29 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token missing 'sub' claim",
         )
-    return sub
+    return payload
+
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
+) -> str:
+    """FastAPI dependency – returns the username (``sub`` claim).
+
+    Backward-compatible: existing endpoints keep using this.
+    """
+    payload = _extract_payload(credentials)
+    return payload["sub"]
+
+
+async def get_current_user_payload(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
+) -> dict[str, Any]:
+    """FastAPI dependency – returns full token payload (sub, role, etc.).
+
+    Use this for RBAC-aware endpoints via ``PermissionChecker``.
+    """
+    payload = _extract_payload(credentials)
+    # Ensure role is always present (default viewer for legacy tokens)
+    if "role" not in payload:
+        payload["role"] = "viewer"
+    return payload

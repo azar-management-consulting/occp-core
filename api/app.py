@@ -24,6 +24,7 @@ from store.database import Database
 from store.task_store import TaskStore
 from store.audit_store import AuditStore
 from store.agent_store import AgentStore
+from store.user_store import UserStore
 
 from api.deps import AppState, set_state
 from api.ws_manager import ConnectionManager
@@ -40,8 +41,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     # Persistent storage
     db = Database(url=settings.database_url)
     await db.connect()
-    task_store = TaskStore(db)
-    audit_store = AuditStore(db)
+    # Create a long-lived session for app-scoped stores
+    session = db.session()
+    task_store = TaskStore(session)
+    audit_store = AuditStore(session)
 
     engine = PolicyEngine(audit_store=audit_store)
 
@@ -50,13 +53,25 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     if last_audit:
         engine.set_chain_head(last_audit)
 
-    agent_store = AgentStore(db)
+    agent_store = AgentStore(session)
+    user_store = UserStore(session)
+
+    # Seed admin user from env vars if no users exist yet (idempotent bootstrap)
+    if await user_store.count() == 0:
+        await user_store.create(
+            username=settings.admin_user,
+            password=settings.admin_password,
+            role="system_admin",
+            display_name="Admin",
+        )
+        logger.info("Seeded admin user '%s' (system_admin)", settings.admin_user)
 
     state = AppState(settings=settings)
     state.db = db
     state.task_store = task_store
     state.audit_store = audit_store
     state.agent_store = agent_store
+    state.user_store = user_store
 
     # Multi-LLM planner with automatic failover chain
     multi_planner = MultiLLMPlanner()

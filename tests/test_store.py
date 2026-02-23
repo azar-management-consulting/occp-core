@@ -22,12 +22,12 @@ async def db(tmp_path):
 
 @pytest.fixture
 async def task_store(db):
-    return TaskStore(db)
+    return TaskStore(db.session())
 
 
 @pytest.fixture
 async def audit_store(db):
-    return AuditStore(db)
+    return AuditStore(db.session())
 
 
 def _make_task(name: str = "test-task") -> Task:
@@ -137,12 +137,15 @@ class TestAuditStore:
 
 class TestDatabase:
     async def test_connect_creates_tables(self, tmp_path) -> None:
+        from sqlalchemy import inspect as sa_inspect
+
         db = Database(url=f"sqlite+aiosqlite:///{tmp_path}/fresh.db")
         await db.connect()
-        cursor = await db.conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-        )
-        tables = [row[0] for row in await cursor.fetchall()]
+        async with db.engine.connect() as conn:
+            tables = await conn.run_sync(
+                lambda sync_conn: sa_inspect(sync_conn).get_table_names()
+            )
         assert "tasks" in tables
         assert "audit_entries" in tables
+        assert "agent_configs" in tables
         await db.close()

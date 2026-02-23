@@ -1,0 +1,40 @@
+# OCCP RBAC Policy — hierarchical role permissions
+#
+# Format: p, role, resource, action
+# Format: g, child_role, parent_role  (child inherits parent's perms)
+
+# ── Role Hierarchy ──────────────────────────────────────────────
+# operator inherits viewer
+g, operator, viewer
+# org_admin inherits operator
+g, org_admin, operator
+# system_admin inherits org_admin
+g, system_admin, org_admin
+
+# ── Viewer Permissions ──────────────────────────────────────────
+p, viewer, tasks, read
+p, viewer, agents, read
+p, viewer, audit, read
+p, viewer, status, read
+p, viewer, policy, evaluate
+
+# ── Operator Permissions (+ viewer) ─────────────────────────────
+p, operator, tasks, create
+p, operator, tasks, update
+p, operator, tasks, execute
+p, operator, pipeline, run
+
+# ── Org Admin Permissions (+ operator) ──────────────────────────
+p, org_admin, tasks, delete
+p, org_admin, agents, create
+p, org_admin, agents, update
+p, org_admin, agents, delete
+p, org_admin, users, read
+p, org_admin, users, create
+p, org_admin, users, update
+p, org_admin, policy, read
+
+# ── System Admin Permissions (+ org_admin) ──────────────────────
+p, system_admin, users, delete
+p, system_admin, policy, update
+p, system_admin, system, manage
