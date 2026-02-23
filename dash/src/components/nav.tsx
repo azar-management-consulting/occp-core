@@ -51,7 +51,7 @@ export function Nav() {
         )}
 
         <div className="ml-auto flex items-center gap-4 text-xs font-mono">
-          <span className="text-occp-accent/60">[v0.5.0]</span>
+          <span className="text-occp-accent/60">[v0.6.0]</span>
           {isAuthenticated && (
             <div className="flex items-center gap-3">
               <span className="text-[var(--text-muted)]">

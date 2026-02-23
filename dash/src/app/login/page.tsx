@@ -108,7 +108,7 @@ export default function LoginPage() {
         </form>
 
         <p className="text-center font-pixel text-[7px] text-[var(--text-muted)]/40 tracking-wider">
-          OCCP V0.5.0 &mdash; READY
+          OCCP V0.6.0 &mdash; READY
           <span className="inline-block w-1.5 h-2.5 bg-occp-primary ml-1 animate-blink align-middle" />
         </p>
       </div>

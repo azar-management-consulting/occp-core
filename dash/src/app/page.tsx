@@ -41,7 +41,7 @@ export default function MissionControl() {
           </div>
           <div className="space-y-2 min-w-0">
             <div className="font-pixel text-[9px] text-occp-primary/50 tracking-wider">
-              **** OPENCLOUD CONTROL PLANE V0.5.0 ****
+              **** OPENCLOUD CONTROL PLANE V0.6.0 ****
             </div>
             <h1 className="font-pixel text-base sm:text-lg leading-relaxed tracking-wide">
               <span className="text-occp-primary text-glow">OCCP</span>{" "}

@@ -215,7 +215,7 @@ export default function DocsPage() {
             >
               GITHUB
             </a>
-            <span className="font-pixel text-[7px] text-occp-accent">v0.5.0</span>
+            <span className="font-pixel text-[7px] text-occp-accent">v0.6.0</span>
             <Link href="/login" className="retro-btn-primary !text-[8px] !px-3 !py-1.5 font-pixel">
               DASHBOARD
             </Link>
@@ -743,7 +743,7 @@ export default function DocsPage() {
             <div>
               <span className="font-pixel text-[9px] text-[var(--primary)] text-glow">OCCP</span>
               <p className="text-[var(--text-muted)] text-xs mt-2 leading-relaxed">
-                OpenCloud Control Plane v0.5.0. Open-source AI agent governance with verified autonomy.
+                OpenCloud Control Plane v0.6.0. Open-source AI agent governance with verified autonomy.
               </p>
             </div>
 

@@ -1,6 +1,6 @@
 {
   "name": "@occp/sdk",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "OpenCloud Control Plane – TypeScript SDK",
   "type": "module",
   "main": "dist/index.js",
