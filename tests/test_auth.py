@@ -14,7 +14,7 @@ from api.auth import create_access_token, decode_token
 @pytest.fixture
 def settings() -> Settings:
     return Settings(
-        jwt_secret="test-secret-key-for-unit-tests",
+        jwt_secret="test-secret-key-for-unit-tests!!",
         jwt_algorithm="HS256",
         jwt_expire_minutes=60,
         admin_user="admin",
@@ -67,7 +67,7 @@ class TestTokenDecoding:
         assert "expired" in exc_info.value.detail.lower()
 
     def test_decode_invalid_signature(self, settings: Settings) -> None:
-        token = jwt.encode({"sub": "frank"}, "wrong-secret", algorithm="HS256")
+        token = jwt.encode({"sub": "frank"}, "wrong-secret-key-that-is-at-least-32-bytes-long!", algorithm="HS256")
         from fastapi import HTTPException
         with pytest.raises(HTTPException) as exc_info:
             decode_token(token, settings)
