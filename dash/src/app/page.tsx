@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { StatusData, TaskData } from "@/lib/api";
 import { TaskCard } from "@/components/task-card";
+import { LLMHealthPanel } from "@/components/llm-health-panel";
 
 export default function MissionControl() {
   const [status, setStatus] = useState<StatusData | null>(null);
@@ -96,6 +97,9 @@ export default function MissionControl() {
           </button>
         </div>
       )}
+
+      {/* LLM Providers Health */}
+      <LLMHealthPanel />
 
       {/* VAP Pipeline */}
       <div className="space-y-3">
