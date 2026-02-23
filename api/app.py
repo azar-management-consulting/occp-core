@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from adapters.echo_planner import EchoPlanner
 from adapters.multi_llm_planner import MultiLLMPlanner
 from adapters.mock_executor import MockExecutor
+from adapters.sandbox_executor import SandboxBackend, SandboxConfig, SandboxExecutor
 from adapters.basic_validator import BasicValidator
 from adapters.log_shipper import LogShipper
 
@@ -110,22 +111,41 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
     state.multi_planner = multi_planner
 
+    # Sandbox executor — auto-detects best isolation backend
+    sandbox_cfg = SandboxConfig(
+        backend=(
+            SandboxBackend(settings.sandbox_backend)
+            if settings.sandbox_backend
+            else None
+        ),
+        time_limit_seconds=settings.sandbox_time_limit,
+        memory_limit_mb=settings.sandbox_memory_limit,
+        enable_network=settings.sandbox_enable_network,
+        nsjail_bin=settings.sandbox_nsjail_bin,
+        bwrap_bin=settings.sandbox_bwrap_bin,
+        nsjail_config=settings.sandbox_nsjail_config,
+    )
+    sandbox_executor = SandboxExecutor(config=sandbox_cfg)
+    logger.info("Sandbox executor: backend=%s", sandbox_executor.backend.value)
+
     # Adapter registry — per-agent-type routing with defaults
-    mock_executor = MockExecutor()
     basic_validator = BasicValidator()
     log_shipper = LogShipper()
     adapter_registry = AdapterRegistry(
         default_planner=multi_planner,
-        default_executor=mock_executor,
+        default_executor=sandbox_executor,
         default_validator=basic_validator,
         default_shipper=log_shipper,
     )
+    # Keep mock executor registered for demo agent type
+    mock_executor = MockExecutor()
+    adapter_registry.register("demo", executor=mock_executor)
     state.adapter_registry = adapter_registry
 
     state.pipeline = Pipeline(
         planner=multi_planner,
         policy_engine=engine,
-        executor=mock_executor,
+        executor=sandbox_executor,
         validator=basic_validator,
         shipper=log_shipper,
         adapter_registry=adapter_registry,
@@ -168,7 +188,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 def create_app() -> FastAPI:
     app = FastAPI(
         title="OCCP – OpenCloud Control Plane",
-        version="0.6.0",
+        version="0.7.0",
         description="Agent Control Plane with Verified Autonomy Pipeline",
         lifespan=lifespan,
     )
