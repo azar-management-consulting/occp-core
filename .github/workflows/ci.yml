@@ -35,6 +35,14 @@ jobs:
             --cov=sdk \
             --cov-report=term-missing \
             --cov-report=xml
+      - name: Verify test count floor
+        run: |
+          count=$(pytest --co -q 2>/dev/null | tail -1 | grep -oP '^\d+')
+          echo "Collected $count tests"
+          if [ "$count" -lt 310 ]; then
+            echo "::error::Test count $count is below floor of 310 (was 313 at v0.7.0)"
+            exit 1
+          fi
       - name: Upload coverage
         if: matrix.python-version == '3.12'
         uses: actions/upload-artifact@v4
