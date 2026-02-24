@@ -12,6 +12,10 @@ COPY store/ store/
 COPY cli/ cli/
 COPY sdk/ sdk/
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends bubblewrap && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN pip install --no-cache-dir -e '.[llm]'
 
 RUN groupadd --system --gid 1001 occp && \

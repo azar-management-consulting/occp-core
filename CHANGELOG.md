@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.7.0 – ORM Migration, RBAC & Sandbox Isolation
+
+### Core
+- **SQLAlchemy 2.0 ORM**: Full migration from raw SQL to async Mapped models
+  - Cross-dialect types: JSONBText (JSONB/TEXT), GUID (UUID/CHAR)
+  - Dual-backend engine factory (aiosqlite / asyncpg)
+- **Casbin RBAC**: 4-role hierarchy (system_admin > org_admin > operator > viewer)
+  - UserStore with argon2-cffi password hashing
+  - PermissionChecker enforced on all protected routes
+  - POST /auth/register (admin-only user creation)
+- **Sandbox Executor**: nsjail → bwrap → process fallback chain
+  - Auto-detection based on available binaries + kernel capabilities
+
+### Security
+- SecurityHeadersMiddleware (HSTS, X-Content-Type-Options, X-Frame-Options)
+- Content-Security-Policy on dashboard
+- RateLimitMiddleware (20 req/60s on auth endpoints)
+- RequestLoggingMiddleware with structlog JSON output
+- Default credential rejection in production mode
+
+### Infrastructure
+- Alembic async migrations with dual-backend support
+- Docker: healthcheck, read_only, no-new-privileges, bubblewrap
+- 328+ passing tests (from 165)
+
+---
+
 ## 0.6.0 – Security Hardening & GDPR Compliance
 
 ### Core

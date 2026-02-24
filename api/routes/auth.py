@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from api.auth import create_access_token, decode_token
+from api.rbac import PermissionChecker
 from api.deps import AppState, get_state
 
 router = APIRouter(tags=["auth"])
@@ -46,8 +47,8 @@ async def login(
     if state.user_store:
         user = await state.user_store.authenticate(body.username, body.password)
 
-    # Fallback: env-var admin credentials (bootstrap / tests without seeded user)
-    if user is None:
+    # Fallback: env-var admin credentials (bootstrap / tests only — disabled in production)
+    if user is None and not settings.is_production:
         if body.username == settings.admin_user and body.password == settings.admin_password:
             # Synthetic admin for backward compat
             from store.user_store import User
@@ -95,4 +96,43 @@ async def refresh_token(
         access_token=new_token,
         expires_in=settings.jwt_expire_minutes * 60,
         role=role,
+    )
+
+
+class RegisterRequest(BaseModel):
+    username: str = Field(..., min_length=1, max_length=100)
+    password: str = Field(..., min_length=8, max_length=200)
+    role: str = Field(default="viewer", pattern=r"^(viewer|operator|org_admin|system_admin)$")
+    display_name: str = ""
+
+
+@router.post("/auth/register", response_model=TokenResponse, status_code=201,
+             dependencies=[Depends(PermissionChecker("users", "create"))])
+async def register_user(
+    body: RegisterRequest,
+    state: AppState = Depends(get_state),
+) -> TokenResponse:
+    """Create a new user (requires users:create permission)."""
+    if state.user_store is None:
+        raise HTTPException(status_code=503, detail="User store not available")
+
+    existing = await state.user_store.get_by_username(body.username)
+    if existing:
+        raise HTTPException(status_code=409, detail="Username already exists")
+
+    user = await state.user_store.create(
+        username=body.username,
+        password=body.password,
+        role=body.role,
+        display_name=body.display_name or body.username,
+    )
+    token = create_access_token(
+        user.username,
+        state.settings,
+        extra={"role": user.role},
+    )
+    return TokenResponse(
+        access_token=token,
+        expires_in=state.settings.jwt_expire_minutes * 60,
+        role=user.role,
     )

@@ -79,6 +79,16 @@ class Settings(BaseSettings):
     # ── Validators ────────────────────────────────────────────────────
 
     @model_validator(mode="after")
+    def _reject_default_password_in_prod(self) -> "Settings":
+        """Refuse to start with 'changeme' password in production."""
+        if self.is_production and self.admin_password == "changeme":
+            raise ValueError(
+                "FATAL: OCCP_ADMIN_PASSWORD is 'changeme' in production. "
+                "Set a strong password via OCCP_ADMIN_PASSWORD environment variable."
+            )
+        return self
+
+    @model_validator(mode="after")
     def _auto_generate_jwt_secret(self) -> "Settings":
         """Generate a random JWT secret if none was provided."""
         if not self.jwt_secret:

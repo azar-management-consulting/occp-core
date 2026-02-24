@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from orchestrator.exceptions import GateRejectedError
 from orchestrator.models import TaskStatus
 
-from api.auth import get_current_user
+from api.rbac import PermissionChecker
 from api.deps import AppState, get_state
 from api.models import PipelineRunResponse
 
@@ -22,7 +22,7 @@ router = APIRouter(tags=["pipeline"])
 @router.post("/pipeline/run/{task_id}", response_model=PipelineRunResponse)
 async def run_pipeline(
     task_id: str,
-    _user: str = Depends(get_current_user),
+    user: dict = Depends(PermissionChecker("pipeline", "run")),
     state: AppState = Depends(get_state),
 ) -> PipelineRunResponse:
     task = await state.get_task(task_id)

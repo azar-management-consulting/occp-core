@@ -184,3 +184,218 @@ class TestLoginWithRole:
         })
         assert resp.status_code == 200
         assert resp.json()["role"] == "system_admin"
+
+
+# ---------------------------------------------------------------------------
+# HTTP-level RBAC enforcement tests
+# ---------------------------------------------------------------------------
+
+
+async def _login(client: AsyncClient, username: str = "rbac_admin",
+                 password: str = "rbac_pass_123") -> str:
+    resp = await client.post("/api/v1/auth/login", json={
+        "username": username, "password": password,
+    })
+    assert resp.status_code == 200, f"Login failed: {resp.text}"
+    return resp.json()["access_token"]
+
+
+def _auth(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
+async def _register(client: AsyncClient, admin_token: str,
+                    username: str, password: str, role: str) -> str:
+    """Register a user via the API and return their token."""
+    resp = await client.post("/api/v1/auth/register", json={
+        "username": username, "password": password, "role": role,
+    }, headers=_auth(admin_token))
+    assert resp.status_code == 201, f"Register failed: {resp.text}"
+    return resp.json()["access_token"]
+
+
+class TestHTTPUnauthenticated:
+    """All protected endpoints must return 401 without a token."""
+
+    @pytest.fixture
+    async def client(self, tmp_path):
+        db_path = tmp_path / "test_rbac_http.db"
+        os.environ["OCCP_DATABASE_URL"] = f"sqlite+aiosqlite:///{db_path}"
+        os.environ["OCCP_ADMIN_USER"] = "rbac_admin"
+        os.environ["OCCP_ADMIN_PASSWORD"] = "rbac_pass_123"
+        try:
+            from api.app import create_app
+            app = create_app()
+            async with app.router.lifespan_context(app):
+                transport = ASGITransport(app=app)
+                async with AsyncClient(transport=transport, base_url="http://test") as ac:
+                    yield ac
+        finally:
+            os.environ.pop("OCCP_DATABASE_URL", None)
+            os.environ.pop("OCCP_ADMIN_USER", None)
+            os.environ.pop("OCCP_ADMIN_PASSWORD", None)
+            get_enforcer.cache_clear()
+
+    @pytest.mark.asyncio
+    async def test_get_tasks_no_token(self, client: AsyncClient) -> None:
+        assert (await client.get("/api/v1/tasks")).status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_post_tasks_no_token(self, client: AsyncClient) -> None:
+        resp = await client.post("/api/v1/tasks", json={
+            "name": "x", "description": "x", "agent_type": "demo",
+        })
+        assert resp.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_get_agents_no_token(self, client: AsyncClient) -> None:
+        assert (await client.get("/api/v1/agents")).status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_get_audit_no_token(self, client: AsyncClient) -> None:
+        assert (await client.get("/api/v1/audit")).status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_post_pipeline_no_token(self, client: AsyncClient) -> None:
+        assert (await client.post("/api/v1/pipeline/run/x")).status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_post_policy_no_token(self, client: AsyncClient) -> None:
+        resp = await client.post("/api/v1/policy/evaluate", json={"content": "t"})
+        assert resp.status_code == 401
+
+
+class TestHTTPViewerForbidden:
+    """Viewer can read, but cannot create/execute/delete."""
+
+    @pytest.fixture
+    async def client(self, tmp_path):
+        db_path = tmp_path / "test_rbac_viewer.db"
+        os.environ["OCCP_DATABASE_URL"] = f"sqlite+aiosqlite:///{db_path}"
+        os.environ["OCCP_ADMIN_USER"] = "rbac_admin"
+        os.environ["OCCP_ADMIN_PASSWORD"] = "rbac_pass_123"
+        try:
+            from api.app import create_app
+            app = create_app()
+            async with app.router.lifespan_context(app):
+                transport = ASGITransport(app=app)
+                async with AsyncClient(transport=transport, base_url="http://test") as ac:
+                    yield ac
+        finally:
+            os.environ.pop("OCCP_DATABASE_URL", None)
+            os.environ.pop("OCCP_ADMIN_USER", None)
+            os.environ.pop("OCCP_ADMIN_PASSWORD", None)
+            get_enforcer.cache_clear()
+
+    @pytest.mark.asyncio
+    async def test_viewer_can_read_tasks(self, client: AsyncClient) -> None:
+        admin_tk = await _login(client)
+        viewer_tk = await _register(client, admin_tk, "v1", "viewpass1", "viewer")
+        assert (await client.get("/api/v1/tasks", headers=_auth(viewer_tk))).status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_viewer_cannot_create_task(self, client: AsyncClient) -> None:
+        admin_tk = await _login(client)
+        viewer_tk = await _register(client, admin_tk, "v2", "viewpass2", "viewer")
+        resp = await client.post("/api/v1/tasks", json={
+            "name": "x", "description": "x", "agent_type": "demo",
+        }, headers=_auth(viewer_tk))
+        assert resp.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_viewer_cannot_run_pipeline(self, client: AsyncClient) -> None:
+        admin_tk = await _login(client)
+        viewer_tk = await _register(client, admin_tk, "v3", "viewpass3", "viewer")
+        resp = await client.post("/api/v1/pipeline/run/x", headers=_auth(viewer_tk))
+        assert resp.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_viewer_cannot_register_user(self, client: AsyncClient) -> None:
+        admin_tk = await _login(client)
+        viewer_tk = await _register(client, admin_tk, "v4", "viewpass4", "viewer")
+        resp = await client.post("/api/v1/auth/register", json={
+            "username": "evil", "password": "evilpass1", "role": "system_admin",
+        }, headers=_auth(viewer_tk))
+        assert resp.status_code == 403
+
+
+class TestHTTPOperatorPermissions:
+    """Operator inherits viewer + can create tasks, run pipeline."""
+
+    @pytest.fixture
+    async def client(self, tmp_path):
+        db_path = tmp_path / "test_rbac_op.db"
+        os.environ["OCCP_DATABASE_URL"] = f"sqlite+aiosqlite:///{db_path}"
+        os.environ["OCCP_ADMIN_USER"] = "rbac_admin"
+        os.environ["OCCP_ADMIN_PASSWORD"] = "rbac_pass_123"
+        try:
+            from api.app import create_app
+            app = create_app()
+            async with app.router.lifespan_context(app):
+                transport = ASGITransport(app=app)
+                async with AsyncClient(transport=transport, base_url="http://test") as ac:
+                    yield ac
+        finally:
+            os.environ.pop("OCCP_DATABASE_URL", None)
+            os.environ.pop("OCCP_ADMIN_USER", None)
+            os.environ.pop("OCCP_ADMIN_PASSWORD", None)
+            get_enforcer.cache_clear()
+
+    @pytest.mark.asyncio
+    async def test_operator_can_create_task(self, client: AsyncClient) -> None:
+        admin_tk = await _login(client)
+        op_tk = await _register(client, admin_tk, "op1", "operpass1", "operator")
+        resp = await client.post("/api/v1/tasks", json={
+            "name": "op-task", "description": "d", "agent_type": "demo",
+        }, headers=_auth(op_tk))
+        assert resp.status_code == 201
+
+    @pytest.mark.asyncio
+    async def test_operator_cannot_delete_agent(self, client: AsyncClient) -> None:
+        admin_tk = await _login(client)
+        op_tk = await _register(client, admin_tk, "op2", "operpass2", "operator")
+        resp = await client.delete("/api/v1/agents/general", headers=_auth(op_tk))
+        assert resp.status_code == 403
+
+
+class TestHTTPAdminRegister:
+    """system_admin can register new users."""
+
+    @pytest.fixture
+    async def client(self, tmp_path):
+        db_path = tmp_path / "test_rbac_reg.db"
+        os.environ["OCCP_DATABASE_URL"] = f"sqlite+aiosqlite:///{db_path}"
+        os.environ["OCCP_ADMIN_USER"] = "rbac_admin"
+        os.environ["OCCP_ADMIN_PASSWORD"] = "rbac_pass_123"
+        try:
+            from api.app import create_app
+            app = create_app()
+            async with app.router.lifespan_context(app):
+                transport = ASGITransport(app=app)
+                async with AsyncClient(transport=transport, base_url="http://test") as ac:
+                    yield ac
+        finally:
+            os.environ.pop("OCCP_DATABASE_URL", None)
+            os.environ.pop("OCCP_ADMIN_USER", None)
+            os.environ.pop("OCCP_ADMIN_PASSWORD", None)
+            get_enforcer.cache_clear()
+
+    @pytest.mark.asyncio
+    async def test_admin_registers_viewer(self, client: AsyncClient) -> None:
+        admin_tk = await _login(client)
+        resp = await client.post("/api/v1/auth/register", json={
+            "username": "newviewer", "password": "newpass12", "role": "viewer",
+        }, headers=_auth(admin_tk))
+        assert resp.status_code == 201
+        assert resp.json()["role"] == "viewer"
+
+    @pytest.mark.asyncio
+    async def test_register_duplicate_username(self, client: AsyncClient) -> None:
+        admin_tk = await _login(client)
+        await client.post("/api/v1/auth/register", json={
+            "username": "dup", "password": "duppass12", "role": "viewer",
+        }, headers=_auth(admin_tk))
+        resp2 = await client.post("/api/v1/auth/register", json={
+            "username": "dup", "password": "duppass12", "role": "viewer",
+        }, headers=_auth(admin_tk))
+        assert resp2.status_code == 409

@@ -167,14 +167,18 @@ class TestSDKIntegration:
         task_id = task["id"]
 
         # Get task
-        resp2 = await ac.get(f"http://test/api/v1/tasks/{task_id}")
+        resp2 = await ac.get(f"http://test/api/v1/tasks/{task_id}", headers=headers)
         assert resp2.status_code == 200
         assert resp2.json()["id"] == task_id
 
     @pytest.mark.asyncio
     async def test_list_tasks(self, live_base_url) -> None:
         ac = live_base_url
-        resp = await ac.get("http://test/api/v1/tasks")
+        login_resp = await ac.post("http://test/api/v1/auth/login", json={
+            "username": "sdkuser", "password": "sdkpass123",
+        })
+        headers = {"Authorization": f"Bearer {login_resp.json()['access_token']}"}
+        resp = await ac.get("http://test/api/v1/tasks", headers=headers)
         assert resp.status_code == 200
         data = resp.json()
         assert "tasks" in data
@@ -183,7 +187,11 @@ class TestSDKIntegration:
     @pytest.mark.asyncio
     async def test_list_agents(self, live_base_url) -> None:
         ac = live_base_url
-        resp = await ac.get("http://test/api/v1/agents")
+        login_resp = await ac.post("http://test/api/v1/auth/login", json={
+            "username": "sdkuser", "password": "sdkpass123",
+        })
+        headers = {"Authorization": f"Bearer {login_resp.json()['access_token']}"}
+        resp = await ac.get("http://test/api/v1/agents", headers=headers)
         assert resp.status_code == 200
         data = resp.json()
         assert "agents" in data
@@ -192,7 +200,11 @@ class TestSDKIntegration:
     @pytest.mark.asyncio
     async def test_get_audit_log(self, live_base_url) -> None:
         ac = live_base_url
-        resp = await ac.get("http://test/api/v1/audit")
+        login_resp = await ac.post("http://test/api/v1/auth/login", json={
+            "username": "sdkuser", "password": "sdkpass123",
+        })
+        headers = {"Authorization": f"Bearer {login_resp.json()['access_token']}"}
+        resp = await ac.get("http://test/api/v1/audit", headers=headers)
         assert resp.status_code == 200
         data = resp.json()
         assert "entries" in data

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from orchestrator.models import RiskLevel, Task
 
-from api.auth import get_current_user
+from api.rbac import PermissionChecker
 from api.deps import AppState, get_state
 from api.models import TaskCreate, TaskListResponse, TaskResponse
 
@@ -31,7 +31,7 @@ def _task_to_response(task: Task) -> TaskResponse:
 @router.post("/tasks", response_model=TaskResponse, status_code=201)
 async def create_task(
     body: TaskCreate,
-    _user: str = Depends(get_current_user),
+    user: dict = Depends(PermissionChecker("tasks", "create")),
     state: AppState = Depends(get_state),
 ) -> TaskResponse:
     task = Task(
@@ -45,7 +45,8 @@ async def create_task(
     return _task_to_response(task)
 
 
-@router.get("/tasks", response_model=TaskListResponse)
+@router.get("/tasks", response_model=TaskListResponse,
+            dependencies=[Depends(PermissionChecker("tasks", "read"))])
 async def list_tasks(state: AppState = Depends(get_state)) -> TaskListResponse:
     all_tasks = await state.list_tasks()
     return TaskListResponse(
@@ -54,7 +55,8 @@ async def list_tasks(state: AppState = Depends(get_state)) -> TaskListResponse:
     )
 
 
-@router.get("/tasks/{task_id}", response_model=TaskResponse)
+@router.get("/tasks/{task_id}", response_model=TaskResponse,
+            dependencies=[Depends(PermissionChecker("tasks", "read"))])
 async def get_task(
     task_id: str,
     state: AppState = Depends(get_state),

@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT">
   <img src="https://img.shields.io/badge/docker-compose-blue?logo=docker" alt="Docker Compose">
-  <img src="https://img.shields.io/badge/version-0.6.0-orange" alt="Version 0.6.0">
+  <img src="https://img.shields.io/badge/version-0.7.0-orange" alt="Version 0.7.0">
 </p>
 
 ---
@@ -103,18 +103,25 @@ docker compose --profile dev up
 | `sdk/` | Python + TypeScript SDKs |
 | `config/` | YAML config templates (sandbox, channels, skills) |
 | `scripts/` | Install, onboarding wizard, security report |
-| `tests/` | 74+ tests, 85%+ coverage |
+| `store/` | SQLAlchemy 2.0 ORM — TaskStore, AuditStore, AgentStore, UserStore |
+| `tests/` | 328+ tests, 85%+ coverage |
 
 ## API Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/api/v1/status` | Health check + version |
+| `POST` | `/api/v1/auth/login` | JWT login |
+| `POST` | `/api/v1/auth/refresh` | Token refresh |
+| `POST` | `/api/v1/auth/register` | Create user (admin-only) |
 | `POST` | `/api/v1/tasks` | Create a new task |
 | `GET` | `/api/v1/tasks` | List all tasks |
 | `GET` | `/api/v1/tasks/{id}` | Get task details |
 | `POST` | `/api/v1/pipeline/run/{id}` | Run VAP pipeline on task |
 | `POST` | `/api/v1/policy/evaluate` | Test content against policy guards |
+| `GET` | `/api/v1/agents` | List registered agents |
+| `POST` | `/api/v1/agents` | Register agent (admin/operator) |
+| `DELETE`| `/api/v1/agents/{type}` | Unregister agent (admin) |
 | `GET` | `/api/v1/audit` | Audit log with hash chain |
 | `WS` | `/api/v1/ws/pipeline/{id}` | Real-time pipeline events |
 
@@ -138,6 +145,29 @@ occp status             # Check API health
 occp run TASK_ID        # Run pipeline on existing task
 occp export --format json  # Export audit log
 ```
+
+---
+
+## RBAC (Role-Based Access Control)
+
+| Role | Permissions |
+|------|------------|
+| `system_admin` | Full access — user management, agent CRUD, pipeline, audit |
+| `org_admin` | Agent management, pipeline execution, audit read |
+| `operator` | Task & pipeline execution, agent read |
+| `viewer` | Read-only access to tasks, agents, audit |
+
+Enforced via Casbin on every protected endpoint. WebSocket connections require `?token=` query param.
+
+## Sandbox Executor
+
+Code execution uses isolated sandboxing with automatic fallback:
+
+1. **nsjail** — Linux namespace jail (preferred, requires `SYS_ADMIN`)
+2. **bwrap** — Bubblewrap (user-namespace, no caps needed)
+3. **process** — subprocess with resource limits (fallback)
+
+Auto-detected at startup based on available binaries and kernel capabilities.
 
 ---
 

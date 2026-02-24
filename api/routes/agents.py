@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from orchestrator.models import AgentConfig
 
-from api.auth import get_current_user
+from api.rbac import PermissionChecker
 from api.deps import AppState, get_state
 from api.models import (
     AgentListResponse,
@@ -28,7 +28,8 @@ def _agent_to_response(cfg: AgentConfig) -> AgentResponse:
     )
 
 
-@router.get("/agents", response_model=AgentListResponse)
+@router.get("/agents", response_model=AgentListResponse,
+            dependencies=[Depends(PermissionChecker("agents", "read"))])
 async def list_agents(
     state: AppState = Depends(get_state),
 ) -> AgentListResponse:
@@ -39,7 +40,8 @@ async def list_agents(
     )
 
 
-@router.get("/agents/{agent_type}", response_model=AgentResponse)
+@router.get("/agents/{agent_type}", response_model=AgentResponse,
+            dependencies=[Depends(PermissionChecker("agents", "read"))])
 async def get_agent(
     agent_type: str,
     state: AppState = Depends(get_state),
@@ -53,7 +55,7 @@ async def get_agent(
 @router.post("/agents", response_model=AgentResponse, status_code=201)
 async def register_agent(
     body: AgentRegistrationRequest,
-    _user: str = Depends(get_current_user),
+    user: dict = Depends(PermissionChecker("agents", "create")),
     state: AppState = Depends(get_state),
 ) -> AgentResponse:
     """Register or update an agent type (persisted to DB)."""
@@ -72,7 +74,7 @@ async def register_agent(
 @router.delete("/agents/{agent_type}", status_code=204)
 async def unregister_agent(
     agent_type: str,
-    _user: str = Depends(get_current_user),
+    user: dict = Depends(PermissionChecker("agents", "delete")),
     state: AppState = Depends(get_state),
 ) -> None:
     cfg = await state.get_agent(agent_type)
@@ -81,7 +83,8 @@ async def unregister_agent(
     await state.delete_agent(agent_type)
 
 
-@router.get("/agents/{agent_type}/routing")
+@router.get("/agents/{agent_type}/routing",
+            dependencies=[Depends(PermissionChecker("agents", "read"))])
 async def get_agent_routing(
     agent_type: str,
     state: AppState = Depends(get_state),

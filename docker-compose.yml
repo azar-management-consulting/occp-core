@@ -23,6 +23,7 @@ services:
       retries: 3
     security_opt:
       - no-new-privileges:true
+      - seccomp=unconfined
     read_only: true
     tmpfs:
       - /tmp

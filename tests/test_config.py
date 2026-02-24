@@ -43,7 +43,10 @@ class TestSettingsOverride:
     """Env vars override defaults (OCCP_ prefix)."""
 
     def test_env_override(self) -> None:
-        with patch.dict(os.environ, {"OCCP_OCCP_ENV": "production"}):
+        with patch.dict(os.environ, {
+            "OCCP_OCCP_ENV": "production",
+            "OCCP_ADMIN_PASSWORD": "strong-prod-pw-123",
+        }):
             s = Settings(_env_file=None)
             assert s.occp_env == "production"
 
@@ -66,9 +69,17 @@ class TestSettingsHelpers:
         assert s.is_production is False
 
     def test_is_production_true(self) -> None:
-        with patch.dict(os.environ, {"OCCP_OCCP_ENV": "production"}):
+        with patch.dict(os.environ, {
+            "OCCP_OCCP_ENV": "production",
+            "OCCP_ADMIN_PASSWORD": "strong-prod-pw-123",
+        }):
             s = Settings(_env_file=None)
             assert s.is_production is True
+
+    def test_production_rejects_default_password(self) -> None:
+        with patch.dict(os.environ, {"OCCP_OCCP_ENV": "production"}):
+            with pytest.raises(ValueError, match="FATAL"):
+                Settings(_env_file=None)
 
     def test_has_anthropic_false(self) -> None:
         s = Settings(_env_file=None)

@@ -77,6 +77,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         )
         logger.info("Seeded admin user '%s' (system_admin)", settings.admin_user)
 
+    # Sync admin password from env if changed from default
+    if await user_store.count() > 0 and settings.admin_password != "changeme":
+        admin = await user_store.get_by_username(settings.admin_user)
+        if admin:
+            await user_store.update_password(settings.admin_user, settings.admin_password)
+            logger.info("Admin password synced from environment")
+
     state = AppState(settings=settings)
     state.db = db
     state.task_store = task_store
