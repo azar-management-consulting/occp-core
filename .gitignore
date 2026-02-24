@@ -48,3 +48,18 @@ config/occp.config.yaml
 
 # SQLite database
 data/
+
+# Claude Code sessions
+.claude/
+
+# Prompt engineering (local only)
+prompts/
+
+# UV lock (not committed)
+uv.lock
+
+# Next.js generated types
+dash/next-env.d.ts
+
+# Stale pip artifacts
+=*
