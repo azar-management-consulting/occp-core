@@ -127,7 +127,7 @@ class TestTasks:
         assert data["name"] == "test-task"
         assert data["status"] == "pending"
 
-        resp2 = await client.get(f"/api/v1/tasks/{task_id}")
+        resp2 = await client.get(f"/api/v1/tasks/{task_id}", headers=_auth(token))
         assert resp2.status_code == 200
         assert resp2.json()["id"] == task_id
 
@@ -140,14 +140,15 @@ class TestTasks:
             "agent_type": "demo",
             "risk_level": "low",
         }, headers=_auth(token))
-        resp = await client.get("/api/v1/tasks")
+        resp = await client.get("/api/v1/tasks", headers=_auth(token))
         assert resp.status_code == 200
         data = resp.json()
         assert data["total"] >= 1
 
     @pytest.mark.asyncio
     async def test_get_missing_task(self, client: AsyncClient) -> None:
-        resp = await client.get("/api/v1/tasks/nonexistent")
+        token = await _get_token(client)
+        resp = await client.get("/api/v1/tasks/nonexistent", headers=_auth(token))
         assert resp.status_code == 404
 
 
@@ -249,7 +250,8 @@ class TestLLMHealth:
 class TestAudit:
     @pytest.mark.asyncio
     async def test_audit_log(self, client: AsyncClient) -> None:
-        resp = await client.get("/api/v1/audit")
+        token = await _get_token(client)
+        resp = await client.get("/api/v1/audit", headers=_auth(token))
         assert resp.status_code == 200
         data = resp.json()
         assert "entries" in data

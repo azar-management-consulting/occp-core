@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends
 
+from api.rbac import PermissionChecker
 from api.deps import AppState, get_state
 from api.models import AuditEntryResponse, AuditLogResponse
 from policy_engine.engine import PolicyEngine
@@ -11,7 +12,8 @@ from policy_engine.engine import PolicyEngine
 router = APIRouter(tags=["audit"])
 
 
-@router.get("/audit", response_model=AuditLogResponse)
+@router.get("/audit", response_model=AuditLogResponse,
+            dependencies=[Depends(PermissionChecker("audit", "read"))])
 async def get_audit_log(
     state: AppState = Depends(get_state),
 ) -> AuditLogResponse:

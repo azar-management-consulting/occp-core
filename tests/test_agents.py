@@ -99,7 +99,8 @@ class TestAgentsAPI:
     @pytest.mark.asyncio
     async def test_list_seeded_defaults(self, client: AsyncClient) -> None:
         """Lifespan seeds 3 default agents (general, demo, code-reviewer)."""
-        resp = await client.get("/api/v1/agents")
+        token = await _get_token(client)
+        resp = await client.get("/api/v1/agents", headers=_auth(token))
         assert resp.status_code == 200
         data = resp.json()
         assert data["total"] == 3
@@ -120,7 +121,7 @@ class TestAgentsAPI:
         assert data["agent_type"] == "coder"
         assert data["max_concurrent"] == 3
 
-        resp2 = await client.get("/api/v1/agents/coder")
+        resp2 = await client.get("/api/v1/agents/coder", headers=_auth(token))
         assert resp2.status_code == 200
         assert resp2.json()["display_name"] == "Code Agent"
 
@@ -134,7 +135,8 @@ class TestAgentsAPI:
 
     @pytest.mark.asyncio
     async def test_get_missing_agent(self, client: AsyncClient) -> None:
-        resp = await client.get("/api/v1/agents/nonexistent")
+        token = await _get_token(client)
+        resp = await client.get("/api/v1/agents/nonexistent", headers=_auth(token))
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -148,7 +150,7 @@ class TestAgentsAPI:
         resp = await client.delete("/api/v1/agents/deleteme", headers=_auth(token))
         assert resp.status_code == 204
 
-        resp2 = await client.get("/api/v1/agents/deleteme")
+        resp2 = await client.get("/api/v1/agents/deleteme", headers=_auth(token))
         assert resp2.status_code == 404
 
     @pytest.mark.asyncio
@@ -169,14 +171,15 @@ class TestAgentsAPI:
             "display_name": "Agent 2",
         }, headers=_auth(token))
 
-        resp = await client.get("/api/v1/agents")
+        resp = await client.get("/api/v1/agents", headers=_auth(token))
         # 3 seeded defaults + 2 newly registered = 5
         assert resp.json()["total"] == 5
 
     @pytest.mark.asyncio
     async def test_routing_info(self, client: AsyncClient) -> None:
         """GET /agents/{type}/routing returns adapter source per stage."""
-        resp = await client.get("/api/v1/agents/general/routing")
+        token = await _get_token(client)
+        resp = await client.get("/api/v1/agents/general/routing", headers=_auth(token))
         assert resp.status_code == 200
         data = resp.json()
         assert data["planner"] == "default"
@@ -184,5 +187,6 @@ class TestAgentsAPI:
 
     @pytest.mark.asyncio
     async def test_routing_info_missing(self, client: AsyncClient) -> None:
-        resp = await client.get("/api/v1/agents/nonexistent/routing")
+        token = await _get_token(client)
+        resp = await client.get("/api/v1/agents/nonexistent/routing", headers=_auth(token))
         assert resp.status_code == 404
