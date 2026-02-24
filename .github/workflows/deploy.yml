@@ -38,12 +38,17 @@ jobs:
             # Fix volume ownership for non-root container user (occp:1001)
             docker run --rm -v occp_occp-data:/data alpine chown -R 1001:1001 /data
             docker compose up -d
-            # Sync landing page to Apache webroot
-            rsync -a --delete /opt/occp/landing/ /var/www/occp.ai/ 2>/dev/null || \
-              cp -r /opt/occp/landing/* /var/www/html/ 2>/dev/null || true
-            # Copy llms.txt to webroot
-            cp /opt/occp/llms.txt /var/www/occp.ai/ 2>/dev/null || \
-              cp /opt/occp/llms.txt /var/www/html/ 2>/dev/null || true
+            # Sync landing page to Apache webroot (detect DocumentRoot)
+            WEBROOT=$(apache2ctl -S 2>/dev/null | grep -i "occp.ai" | grep -oP 'documentroot:\s*"\K[^"]+' || \
+              grep -rh "DocumentRoot" /etc/apache2/sites-enabled/ 2>/dev/null | grep -i occp | awk '{print $2}' | tr -d '"' || \
+              echo "")
+            if [ -n "$WEBROOT" ] && [ -d "$WEBROOT" ]; then
+              cp /opt/occp/landing/index.html "$WEBROOT/"
+              cp /opt/occp/llms.txt "$WEBROOT/" 2>/dev/null || true
+              echo "Landing synced to $WEBROOT"
+            else
+              echo "WARN: Could not detect Apache DocumentRoot for occp.ai — landing page not synced"
+            fi
             sleep 10
             curl -sf http://localhost:8000/api/v1/health || exit 1
             curl -sf http://localhost:3000/ || exit 1
