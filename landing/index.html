@@ -1391,7 +1391,7 @@
     <section class="hero" aria-labelledby="hero-headline">
       <div class="hero-inner">
         <div class="hero-badge" role="status">
-          VERIFIED AUTONOMY PIPELINE &nbsp;·&nbsp; v0.6.0
+          VERIFIED AUTONOMY PIPELINE &nbsp;·&nbsp; v0.7.0
         </div>
 
         <h1 class="hero-headline" id="hero-headline">
@@ -1415,7 +1415,7 @@
           </div>
           <div class="install-box-body">
             <code class="install-cmd">
-              <span class="cmd-prefix">$ </span><span id="install-text">pip install occp</span>
+              <span class="cmd-prefix">$ </span><span id="install-text">pip install -e ".[dev]" && occp demo</span>
             </code>
             <button class="copy-btn" onclick="copyInstall(this)" aria-label="Copy install command">
               copy
@@ -1583,16 +1583,16 @@
 
           <!-- 6 -->
           <article class="feature-card" role="listitem">
-            <span class="feature-tag">Observability</span>
-            <span class="feature-icon" aria-hidden="true">📡</span>
-            <h3 class="feature-title">Real-Time WebSocket</h3>
+            <span class="feature-tag">Isolation</span>
+            <span class="feature-icon" aria-hidden="true">🔒</span>
+            <h3 class="feature-title">Sandbox Isolation</h3>
             <p class="feature-desc">
-              Live task streaming, dashboard updates in real-time, and multi-agent coordination over persistent WebSocket connections.
+              Code execution in nsjail, bubblewrap, or process-level sandboxes. Auto-detected at startup based on available binaries and kernel capabilities.
             </p>
             <div class="feature-tags-list">
-              <span class="tag-pill">live streaming</span>
-              <span class="tag-pill">multi-agent</span>
-              <span class="tag-pill">real-time</span>
+              <span class="tag-pill">nsjail</span>
+              <span class="tag-pill">bubblewrap</span>
+              <span class="tag-pill">auto-fallback</span>
             </div>
           </article>
 
@@ -1662,7 +1662,7 @@
         <div class="stat-item" role="listitem">
           <div class="stat-bracket">
             <span class="stat-bracket-l" aria-hidden="true">[</span>
-            <span class="stat-number" data-target="178" id="stat-0">178</span>
+            <span class="stat-number" data-target="328" id="stat-0">328</span>
             <span class="stat-bracket-r" aria-hidden="true">]</span>
           </div>
           <div class="stat-label">Tests Passing</div>
@@ -1680,10 +1680,10 @@
         <div class="stat-item" role="listitem">
           <div class="stat-bracket">
             <span class="stat-bracket-l" aria-hidden="true">[</span>
-            <span class="stat-number" data-target="3" id="stat-2">3</span>
+            <span class="stat-number" data-target="4" id="stat-2">4</span>
             <span class="stat-bracket-r" aria-hidden="true">]</span>
           </div>
-          <div class="stat-label">LLM Providers</div>
+          <div class="stat-label">Security Guards</div>
         </div>
 
         <div class="stat-item" role="listitem">
@@ -1715,7 +1715,7 @@
             <span class="badge badge-green">MIT License</span>
             <span class="badge badge-green">Free Core Forever</span>
             <span class="badge badge-amber">★ Enterprise Edition</span>
-            <span class="badge badge-purple">v0.6.0 Stable</span>
+            <span class="badge badge-purple">v0.7.0</span>
           </div>
 
           <div class="oss-ctas">
@@ -1757,7 +1757,7 @@
             The Control Plane that governs AI agents.<br>
             Every action verified. Every decision logged.
           </p>
-          <span class="footer-version" aria-label="Version 0.6.0">v0.6.0</span>
+          <span class="footer-version" aria-label="Version 0.7.0">v0.7.0</span>
         </div>
 
         <nav class="footer-links-group" aria-label="Footer navigation">
@@ -1772,10 +1772,10 @@
 
       <div class="footer-bottom">
         <span class="footer-copyright">
-          &copy; 2025 Azar Management Consulting. All rights reserved.
+          &copy; 2025-2026 Azar Management Consulting. All rights reserved.
         </span>
         <span class="footer-system" aria-hidden="true">
-          OCCP/0.6.0 &nbsp;|&nbsp; VAP ACTIVE &nbsp;|&nbsp; <span class="cursor cursor-amber" style="width:0.4em; height:0.8em;"></span>
+          OCCP/0.7.0 &nbsp;|&nbsp; VAP ACTIVE &nbsp;|&nbsp; <span class="cursor cursor-amber" style="width:0.4em; height:0.8em;"></span>
         </span>
       </div>
     </div>
@@ -1802,7 +1802,7 @@
 
     // Copy install command
     function copyInstall(btn) {
-      var text = 'pip install occp';
+      var text = 'pip install -e ".[dev]" && occp demo';
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(function() {
           btn.textContent = 'copied!';

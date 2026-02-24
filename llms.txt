@@ -1,0 +1,21 @@
+# OCCP — OpenCloud Control Plane
+
+> Agent Control Plane with Verified Autonomy Pipeline.
+> Every autonomous action verified before execution.
+
+## Docs
+
+- [Quick Start](docs/QuickStart.md): Installation and first steps
+- [API Reference](docs/API.md): Full REST API documentation
+- [Architecture](docs/ARCHITECTURE.md): System design and data flow
+- [Comparison](docs/COMPARISON.md): OCCP vs OpenClaw, Cordum, EV
+- [Security](security/SECRETS_POLICY.md): Secret management policy
+- [Roadmap](docs/ROADMAP_v080.md): v0.8.0 planned features
+- [Changelog](CHANGELOG.md): Version history
+
+## Source
+
+- [GitHub](https://github.com/azar-management-consulting/occp-core)
+- [API](https://api.occp.ai)
+- [Dashboard](https://dash.occp.ai)
+- [Website](https://occp.ai)
