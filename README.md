@@ -13,6 +13,7 @@
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT">
   <img src="https://img.shields.io/badge/docker-compose-blue?logo=docker" alt="Docker Compose">
   <img src="https://img.shields.io/badge/version-0.7.0-orange" alt="Version 0.7.0">
+  <img src="https://img.shields.io/badge/llms.txt-available-green" alt="llms.txt">
 </p>
 
 ---
@@ -182,9 +183,10 @@ Auto-detected at startup based on available binaries and kernel capabilities.
 ## Documentation
 
 - [QuickStart](docs/QuickStart.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [API Reference](docs/API.md)
+- [Competitor Comparison](docs/COMPARISON.md)
 - [Secret Management](docs/SECRETS.md)
-- [OpenClaw Comparison](docs/OPENCLAW_COMPARISON.md)
-- [Phase 1.2 – Secure Onboarding](docs/PHASE_1_2.md)
 
 ## Contributing
 

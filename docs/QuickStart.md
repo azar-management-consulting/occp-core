@@ -1,37 +1,60 @@
-# QuickStart
+# Quick Start
 
-Ez a dokumentum részletesen bemutatja, hogyan telepítheted az OCCP-t helyi fejlesztői környezetbe.
+Get OCCP running in under 5 minutes.
 
-## Előfeltételek
-- Docker és Docker Compose telepítve.
-- Python 3.10+ és `pip`.
+## Prerequisites
 
-## Telepítés Dockerrel
-1. Klónozd a repót és lépj be a mappába:
+- Python 3.11+ and pip
+- Docker and Docker Compose (for full stack)
+- Git
 
-   ```bash
-   git clone <repo-url> occp-core
-   cd occp-core
-   ```
-2. Másold az `.env.example`-t `.env`-re és állítsd be a változókat.
-3. Futtasd a következőt:
+## Option A: Docker Compose (recommended)
 
-   ```bash
-   docker compose up -d
-   ```
-4. Nyisd meg a `http://localhost:3000` címet a böngésződben.
+```bash
+git clone https://github.com/azar-management-consulting/occp-core.git
+cd occp-core
+cp .env.example .env  # edit with your settings
+docker compose up -d
+```
 
-## Telepítés CLI-vel
-1. Telepítsd a CLI-t:
+- API: http://localhost:8000/api/v1/status
+- Dashboard: http://localhost:3000
 
-   ```bash
-   pip install occp-cli
-   ```
-2. Indítsd el a rendszert:
+## Option B: Local Development
 
-   ```bash
-   occp start
-   ```
+```bash
+git clone https://github.com/azar-management-consulting/occp-core.git
+cd occp-core
+pip install -e ".[dev]"
+occp demo              # run the full VAP demo
+occp demo --inject     # test prompt injection blocking
+occp start             # launch API server on :8000
+```
 
-## Első workflow futtatása
-Használd a webes felületet vagy a CLI-t egy JSON/YAML workflow futtatásához. Bővebb példa a `docs` mappában lesz.
+## First Steps
+
+1. **Login**: POST to `/api/v1/auth/login` with your admin credentials
+2. **Create a task**: POST to `/api/v1/tasks` with a Bearer token
+3. **Run pipeline**: POST to `/api/v1/pipeline/run/{task_id}`
+4. **Check audit**: GET `/api/v1/audit` for the full hash-chain log
+
+## API Endpoints
+
+See the full [API reference](API.md) or visit https://api.occp.ai/docs
+for the interactive OpenAPI documentation.
+
+## RBAC Roles
+
+| Role | Access Level |
+|------|-------------|
+| `system_admin` | Full access — user management, all operations |
+| `org_admin` | Agent management, pipeline, audit |
+| `operator` | Task and pipeline execution |
+| `viewer` | Read-only access |
+
+## Next Steps
+
+- [Architecture Overview](ARCHITECTURE.md)
+- [Security Policy](../security/SECRETS_POLICY.md)
+- [Competitor Comparison](COMPARISON.md)
+- [v0.8.0 Roadmap](ROADMAP_v080.md)
