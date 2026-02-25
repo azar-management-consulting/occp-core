@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT">
   <img src="https://img.shields.io/badge/docker-compose-blue?logo=docker" alt="Docker Compose">
-  <img src="https://img.shields.io/badge/version-0.7.0-orange" alt="Version 0.7.0">
+  <img src="https://img.shields.io/badge/version-0.8.0-orange" alt="Version 0.8.0">
   <img src="https://img.shields.io/badge/llms.txt-available-green" alt="llms.txt">
 </p>
 
