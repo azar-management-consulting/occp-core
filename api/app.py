@@ -33,10 +33,12 @@ from store.task_store import TaskStore
 from store.audit_store import AuditStore
 from store.agent_store import AgentStore
 from store.user_store import UserStore
+from store.onboarding_store import OnboardingStore
 
 from api.deps import AppState, set_state
 from api.ws_manager import ConnectionManager
 from api.routes import agents, audit, auth, pipeline, policy, status, tasks, ws
+from api.routes import onboarding, mcp, skills, llm
 from config.settings import Settings
 
 logger = logging.getLogger(__name__)
@@ -90,6 +92,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     state.audit_store = audit_store
     state.agent_store = agent_store
     state.user_store = user_store
+    state.onboarding_store = OnboardingStore(session)
 
     # Multi-LLM planner with automatic failover chain
     multi_planner = MultiLLMPlanner()
@@ -188,6 +191,36 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
             max_concurrent=3,
             timeout_seconds=600,
         ),
+        AgentConfig(
+            agent_type="onboarding-wizard",
+            display_name="Onboarding Wizard",
+            capabilities=["onboarding", "setup", "wizard"],
+        ),
+        AgentConfig(
+            agent_type="mcp-installer",
+            display_name="MCP Installer",
+            capabilities=["mcp-install", "mcp-config", "connector-setup"],
+        ),
+        AgentConfig(
+            agent_type="llm-setup",
+            display_name="LLM Setup",
+            capabilities=["llm-config", "token-validation", "provider-health"],
+        ),
+        AgentConfig(
+            agent_type="skills-manager",
+            display_name="Skills Manager",
+            capabilities=["skills-inventory", "enable-disable", "token-budget"],
+        ),
+        AgentConfig(
+            agent_type="session-policy",
+            display_name="Session Policy",
+            capabilities=["session-scope", "secure-mode", "tool-policy"],
+        ),
+        AgentConfig(
+            agent_type="ux-copy",
+            display_name="UX Copy Agent",
+            capabilities=["ui-text", "i18n", "crt-style"],
+        ),
     ]
     for agent_cfg in _DEFAULT_AGENTS:
         await agent_store.upsert(agent_cfg)
@@ -205,7 +238,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 def create_app() -> FastAPI:
     app = FastAPI(
         title="OCCP – OpenCloud Control Plane",
-        version="0.7.0",
+        version="0.8.0",
         description="Agent Control Plane with Verified Autonomy Pipeline",
         lifespan=lifespan,
     )
@@ -253,6 +286,10 @@ def create_app() -> FastAPI:
     app.include_router(agents.router, prefix=prefix)
     app.include_router(audit.router, prefix=prefix)
     app.include_router(ws.router, prefix=prefix)
+    app.include_router(onboarding.router, prefix=prefix)
+    app.include_router(mcp.router, prefix=prefix)
+    app.include_router(skills.router, prefix=prefix)
+    app.include_router(llm.router, prefix=prefix)
 
     return app
 

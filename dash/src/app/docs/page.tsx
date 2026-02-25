@@ -215,7 +215,7 @@ export default function DocsPage() {
             >
               GITHUB
             </a>
-            <span className="font-pixel text-[7px] text-occp-accent">v0.6.0</span>
+            <span className="font-pixel text-[7px] text-occp-accent">v0.8.0</span>
             <Link href="/login" className="retro-btn-primary !text-[8px] !px-3 !py-1.5 font-pixel">
               DASHBOARD
             </Link>
@@ -332,6 +332,30 @@ export default function DocsPage() {
               title="Real-time Pipeline"
               desc="WebSocket-powered live monitoring of VAP stage transitions."
               color="var(--warning)"
+            />
+            <FeatureCard
+              icon="&#x1F50C;"
+              title="MCP Connectors"
+              desc="Model Context Protocol catalog — install and configure tool integrations."
+              color="var(--purple)"
+            />
+            <FeatureCard
+              icon="&#x1F9E0;"
+              title="Skills Inventory"
+              desc="Agent capabilities with token impact analysis and trust scoring."
+              color="var(--danger)"
+            />
+            <FeatureCard
+              icon="&#x1F680;"
+              title="Onboarding Wizard"
+              desc="Guided 6-step setup for LLM, MCP, skills, policies, and session scope."
+              color="var(--accent)"
+            />
+            <FeatureCard
+              icon="&#x2699;&#xFE0F;"
+              title="LLM Health v2"
+              desc="Multi-provider status with cascade failover chain monitoring."
+              color="var(--success)"
             />
           </div>
         </div>
@@ -540,6 +564,35 @@ export default function DocsPage() {
             <span className="font-pixel text-[7px] text-[var(--text-muted)] uppercase tracking-wider">Audit</span>
           </div>
           <EndpointRow method="GET" path="/audit" desc="Query immutable audit log" />
+
+          {/* Onboarding */}
+          <div className="px-4 py-2 bg-[var(--surface-bright)] border-b border-[var(--muted)]/30">
+            <span className="font-pixel text-[7px] text-occp-accent uppercase tracking-wider">Onboarding</span>
+          </div>
+          <EndpointRow method="GET" path="/onboarding/status" desc="Current onboarding state & progress" />
+          <EndpointRow method="POST" path="/onboarding/start" desc="Initialize onboarding wizard" />
+          <EndpointRow method="POST" path="/onboarding/step/:step" desc="Complete a wizard step" />
+
+          {/* MCP */}
+          <div className="px-4 py-2 bg-[var(--surface-bright)] border-b border-[var(--muted)]/30">
+            <span className="font-pixel text-[7px] text-c64-purple uppercase tracking-wider">MCP Connectors</span>
+          </div>
+          <EndpointRow method="GET" path="/mcp/catalog" desc="List available MCP server connectors" />
+          <EndpointRow method="POST" path="/mcp/install" desc="Install & configure a connector" />
+
+          {/* Skills */}
+          <div className="px-4 py-2 bg-[var(--surface-bright)] border-b border-[var(--muted)]/30">
+            <span className="font-pixel text-[7px] text-occp-danger uppercase tracking-wider">Skills</span>
+          </div>
+          <EndpointRow method="GET" path="/skills" desc="List skills with token impact" />
+          <EndpointRow method="POST" path="/skills/:id/enable" desc="Enable a skill" />
+          <EndpointRow method="POST" path="/skills/:id/disable" desc="Disable a skill" />
+
+          {/* LLM Health */}
+          <div className="px-4 py-2 bg-[var(--surface-bright)] border-b border-[var(--muted)]/30">
+            <span className="font-pixel text-[7px] text-occp-success uppercase tracking-wider">LLM Health</span>
+          </div>
+          <EndpointRow method="GET" path="/llm/health" desc="Multi-provider status & failover chain" />
         </div>
       </section>
 
@@ -590,11 +643,32 @@ export default function DocsPage() {
             color="var(--purple)"
           />
           <NavCard
-            href="https://github.com/azar-management-consulting/occp-core"
+            href="/mcp"
             num="06"
+            title="MCP Connectors"
+            desc="Model Context Protocol catalog. Install, configure and manage tool server integrations."
+            color="var(--purple)"
+          />
+          <NavCard
+            href="/skills"
+            num="07"
+            title="Skills Inventory"
+            desc="Agent capabilities with token impact analysis, trust scoring, and enable/disable controls."
+            color="var(--danger)"
+          />
+          <NavCard
+            href="/settings"
+            num="08"
+            title="Settings"
+            desc="LLM provider health monitoring, tool policy groups, and session configuration."
+            color="var(--accent)"
+          />
+          <NavCard
+            href="https://github.com/azar-management-consulting/occp-core"
+            num="09"
             title="Source Code"
             desc="MIT licensed. FastAPI backend, Next.js dashboard, Python SDK, TypeScript SDK, CLI."
-            color="var(--danger)"
+            color="var(--success)"
           />
         </div>
       </section>
@@ -743,7 +817,7 @@ export default function DocsPage() {
             <div>
               <span className="font-pixel text-[9px] text-[var(--primary)] text-glow">OCCP</span>
               <p className="text-[var(--text-muted)] text-xs mt-2 leading-relaxed">
-                OpenCloud Control Plane v0.6.0. Open-source AI agent governance with verified autonomy.
+                OpenCloud Control Plane v0.8.0. Open-source AI agent governance with verified autonomy.
               </p>
             </div>
 

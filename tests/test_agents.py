@@ -98,14 +98,18 @@ def _auth(token: str) -> dict[str, str]:
 class TestAgentsAPI:
     @pytest.mark.asyncio
     async def test_list_seeded_defaults(self, client: AsyncClient) -> None:
-        """Lifespan seeds 3 default agents (general, demo, code-reviewer)."""
+        """Lifespan seeds 9 default agents (v0.8.0: +onboarding, mcp, llm, skills, session, ux-copy)."""
         token = await _get_token(client)
         resp = await client.get("/api/v1/agents", headers=_auth(token))
         assert resp.status_code == 200
         data = resp.json()
-        assert data["total"] == 3
+        assert data["total"] == 9
         types = {a["agent_type"] for a in data["agents"]}
-        assert types == {"general", "demo", "code-reviewer"}
+        assert types == {
+            "general", "demo", "code-reviewer",
+            "onboarding-wizard", "mcp-installer", "llm-setup",
+            "skills-manager", "session-policy", "ux-copy",
+        }
 
     @pytest.mark.asyncio
     async def test_register_and_get(self, client: AsyncClient) -> None:
@@ -172,8 +176,8 @@ class TestAgentsAPI:
         }, headers=_auth(token))
 
         resp = await client.get("/api/v1/agents", headers=_auth(token))
-        # 3 seeded defaults + 2 newly registered = 5
-        assert resp.json()["total"] == 5
+        # 9 seeded defaults + 2 newly registered = 11
+        assert resp.json()["total"] == 11
 
     @pytest.mark.asyncio
     async def test_routing_info(self, client: AsyncClient) -> None:

@@ -112,6 +112,64 @@ export interface LLMHealthData {
   providers: Record<string, LLMProviderHealth>;
 }
 
+// ── V0.8.0 Onboarding / MCP / Skills / LLM ──────────────────
+
+export interface OnboardingStatus {
+  token_present: boolean;
+  wizard_state: string;
+  current_step: number;
+  completed_steps: string[];
+  total_steps: number;
+  run_id: string;
+}
+
+export interface OnboardingStartResult {
+  run_id: string;
+  wizard_state: string;
+  current_step: number;
+  steps: string[];
+}
+
+export interface MCPConnector {
+  id: string;
+  name: string;
+  description: string;
+  package: string;
+  category: string;
+}
+
+export interface MCPInstallResult {
+  connector_id: string;
+  connector_name: string;
+  mcp_json: Record<string, unknown>;
+  instructions: string;
+}
+
+export interface SkillData {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  enabled: boolean;
+  trusted: boolean;
+  token_impact_chars: number;
+  token_impact_tokens: number;
+}
+
+export interface LLMProviderStatus {
+  provider: string;
+  configured: boolean;
+  model: string;
+  status: string;
+}
+
+export interface LLMHealthV2 {
+  status: string;
+  active_provider: string;
+  providers: LLMProviderStatus[];
+  token_present: boolean;
+}
+
 export const api = {
   status: () => apiFetch<StatusData>("/status"),
   llmHealth: () => apiFetch<LLMHealthData>("/llm/health"),
@@ -134,4 +192,30 @@ export const api = {
   }) => apiFetch<AgentData>("/agents", { method: "POST", body: JSON.stringify(data) }),
   deleteAgent: (agentType: string) =>
     apiFetch<void>(`/agents/${agentType}`, { method: "DELETE" }),
+
+  // ── V0.8.0 Onboarding ──
+  onboardingStatus: () => apiFetch<OnboardingStatus>("/onboarding/status"),
+  onboardingStart: () =>
+    apiFetch<OnboardingStartResult>("/onboarding/start", { method: "POST" }),
+  onboardingStep: (step: string) =>
+    apiFetch<Record<string, unknown>>(`/onboarding/step/${step}`, { method: "POST" }),
+
+  // ── V0.8.0 MCP ──
+  mcpCatalog: () => apiFetch<{ connectors: MCPConnector[]; total: number }>("/mcp/catalog"),
+  mcpInstall: (connectorId: string, envVars?: Record<string, string>) =>
+    apiFetch<MCPInstallResult>("/mcp/install", {
+      method: "POST",
+      body: JSON.stringify({ connector_id: connectorId, env_vars: envVars || {} }),
+    }),
+
+  // ── V0.8.0 Skills ──
+  listSkills: () =>
+    apiFetch<{ skills: SkillData[]; total: number; total_enabled_token_impact: number }>("/skills"),
+  enableSkill: (skillId: string) =>
+    apiFetch<{ skill_id: string; enabled: boolean }>(`/skills/${skillId}/enable`, { method: "POST" }),
+  disableSkill: (skillId: string) =>
+    apiFetch<{ skill_id: string; enabled: boolean }>(`/skills/${skillId}/disable`, { method: "POST" }),
+
+  // ── V0.8.0 LLM v2 ──
+  llmHealthV2: () => apiFetch<LLMHealthV2>("/llm/health"),
 };

@@ -34,6 +34,18 @@ p, org_admin, users, create
 p, org_admin, users, update
 p, org_admin, policy, read
 
+# ── Viewer — Onboarding / MCP / Skills / LLM read ────────────────
+p, viewer, onboarding, read
+p, viewer, mcp, read
+p, viewer, skills, read
+
+# ── Operator — Onboarding start / MCP install / Skills manage ────
+p, operator, onboarding, start
+p, operator, mcp, install
+p, operator, skills, manage
+p, operator, session, read
+p, operator, session, update
+
 # ── System Admin Permissions (+ org_admin) ──────────────────────
 p, system_admin, users, delete
 p, system_admin, policy, update
