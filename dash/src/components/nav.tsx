@@ -18,6 +18,9 @@ export function Nav() {
     { href: "/agents", label: t.nav.agents, desc: t.nav.agentsDesc },
     { href: "/policy", label: t.nav.policy, desc: t.nav.policyDesc },
     { href: "/audit", label: t.nav.audit, desc: t.nav.auditDesc },
+    { href: "/mcp", label: t.nav.mcp, desc: t.nav.mcpDesc },
+    { href: "/skills", label: t.nav.skills, desc: t.nav.skillsDesc },
+    { href: "/settings", label: t.nav.settings, desc: t.nav.settingsDesc },
   ];
 
   if (pathname === "/login") return null;
@@ -59,7 +62,7 @@ export function Nav() {
 
         <div className="ml-auto flex items-center gap-4 text-sm font-mono">
           <LanguageSelector />
-          <span className="text-occp-accent/60">[v0.6.0]</span>
+          <span className="text-occp-accent/60">[v0.8.0]</span>
           {isAuthenticated && (
             <div className="flex items-center gap-3">
               <span className="text-[var(--text-muted)]">

@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import type { StatusData, TaskData } from "@/lib/api";
 import { TaskCard } from "@/components/task-card";
 import { LLMHealthPanel } from "@/components/llm-health-panel";
+import { WelcomePanel } from "@/components/welcome-panel";
 import { useT } from "@/lib/i18n";
 
 export default function MissionControl() {
@@ -102,6 +103,9 @@ export default function MissionControl() {
           </button>
         </div>
       )}
+
+      {/* Onboarding Welcome Panel */}
+      <WelcomePanel />
 
       {/* LLM Providers Health */}
       <LLMHealthPanel />

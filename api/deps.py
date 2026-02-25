@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from store.audit_store import AuditStore
     from store.agent_store import AgentStore
     from store.user_store import UserStore
+    from store.onboarding_store import OnboardingStore
 
 
 class AppState:
@@ -37,6 +38,7 @@ class AppState:
         self.policy_engine: PolicyEngine = PolicyEngine()
         self.scheduler: Scheduler = Scheduler()
         self.ws_manager: ConnectionManager = ConnectionManager()
+        self.onboarding_store: OnboardingStore | None = None
         self.multi_planner: Any = None  # MultiLLMPlanner (set in lifespan)
 
     # -- Task helpers (async, with store-or-dict fallback) --

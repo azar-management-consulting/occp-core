@@ -30,6 +30,12 @@ export interface T {
     agentsDesc: string;
     policyDesc: string;
     auditDesc: string;
+    mcp: string;
+    mcpDesc: string;
+    skills: string;
+    skillsDesc: string;
+    settings: string;
+    settingsDesc: string;
     logout: string;
   };
   home: {
@@ -160,6 +166,96 @@ export interface T {
     runPipeline: string;
     id: string;
   };
+  mcp: {
+    title: string;
+    subtitle: string;
+    catalog: string;
+    installed: string;
+    install: string;
+    installing: string;
+    configTitle: string;
+    configDesc: string;
+    noConnectors: string;
+    category: string;
+    package: string;
+  };
+  skills: {
+    title: string;
+    subtitle: string;
+    enable: string;
+    disable: string;
+    enabled: string;
+    disabled: string;
+    tokenImpact: string;
+    totalImpact: string;
+    trusted: string;
+    untrusted: string;
+    noSkills: string;
+  };
+  settings: {
+    title: string;
+    subtitle: string;
+    llmTitle: string;
+    llmDesc: string;
+    provider: string;
+    configured: string;
+    notConfigured: string;
+    model: string;
+    status: string;
+    toolsTitle: string;
+    toolsDesc: string;
+    active: string;
+    llmPageTitle: string;
+    llmPageDesc: string;
+    envVars: string;
+    testConnection: string;
+    testing: string;
+    testOk: string;
+    testFail: string;
+    keyPresent: string;
+    keyMissing: string;
+    toolsPageTitle: string;
+    toolsPageDesc: string;
+    roleViewer: string;
+    roleOperator: string;
+    roleAdmin: string;
+    modeHost: string;
+    modeSandbox: string;
+    elevated: string;
+    allowed: string;
+    blocked: string;
+  };
+  onboarding: {
+    title: string;
+    subtitle: string;
+    tokenMissing: string;
+    tokenMissingDesc: string;
+    addToken: string;
+    welcomeGreet: string;
+    startGuided: string;
+    stepProgress: string;
+    stepLlm: string;
+    stepMcp: string;
+    stepSkills: string;
+    stepPolicies: string;
+    stepSession: string;
+    stepVerify: string;
+    complete: string;
+    completeDesc: string;
+    createTask: string;
+    installMcp: string;
+    addSkill: string;
+    running: string;
+    secureModeTitle: string;
+    secureModeDesc: string;
+    sessionScope: string;
+    singleUser: string;
+    singleUserDesc: string;
+    perUser: string;
+    perUserDesc: string;
+    perChannel: string;
+    perChannelDesc: string;
+  };
 }
 
 /* ── Translations ──────────────────────────────────────── */
@@ -177,10 +273,16 @@ const translations: Record<Locale, T> = {
       agentsDesc: "Agent registry & configuration",
       policyDesc: "Policy guard evaluation tool",
       auditDesc: "Immutable hash-chain audit log",
+      mcp: "MCP",
+      mcpDesc: "Model Context Protocol connectors",
+      skills: "SKILLS",
+      skillsDesc: "Agent skill inventory & token impact",
+      settings: "SETTINGS",
+      settingsDesc: "LLM providers & tool policies",
       logout: "LOGOUT",
     },
     home: {
-      bootLine: "**** OPENCLOUD CONTROL PLANE V0.6.0 ****",
+      bootLine: "**** OPENCLOUD CONTROL PLANE V0.8.0 ****",
       title: "MISSION CONTROL",
       subtitle: "Verified Autonomy Pipeline \u2014 Plan, Gate, Execute, Validate, Ship",
       ready: "READY.",
@@ -307,6 +409,96 @@ const translations: Record<Locale, T> = {
       runPipeline: "RUN PIPELINE",
       id: "ID",
     },
+    mcp: {
+      title: "MCP CONNECTORS",
+      subtitle: "Model Context Protocol server catalog — install and configure integrations",
+      catalog: "Catalog",
+      installed: "Installed",
+      install: "INSTALL",
+      installing: "INSTALLING...",
+      configTitle: "MCP Configuration",
+      configDesc: "Add this to your mcp.json or claude_desktop_config.json",
+      noConnectors: "NO CONNECTORS AVAILABLE",
+      category: "Category",
+      package: "Package",
+    },
+    skills: {
+      title: "SKILLS INVENTORY",
+      subtitle: "Agent capabilities with token impact analysis",
+      enable: "ENABLE",
+      disable: "DISABLE",
+      enabled: "ENABLED",
+      disabled: "DISABLED",
+      tokenImpact: "Token Impact",
+      totalImpact: "Total Enabled Token Impact",
+      trusted: "TRUSTED",
+      untrusted: "UNTRUSTED",
+      noSkills: "NO SKILLS AVAILABLE",
+    },
+    settings: {
+      title: "SETTINGS",
+      subtitle: "LLM provider configuration and tool policy management",
+      llmTitle: "LLM Providers",
+      llmDesc: "Configure and monitor AI model providers",
+      provider: "Provider",
+      configured: "CONFIGURED",
+      notConfigured: "NOT CONFIGURED",
+      model: "Model",
+      status: "Status",
+      toolsTitle: "Tool Policies",
+      toolsDesc: "Runtime, filesystem, web and UI tool access groups",
+      active: "Active",
+      llmPageTitle: "LLM TOKEN SETUP",
+      llmPageDesc: "Configure API keys for your LLM providers. Keys are stored as environment variables.",
+      envVars: "Environment Variables",
+      testConnection: "Test Connection",
+      testing: "Testing...",
+      testOk: "Connection OK",
+      testFail: "Connection Failed",
+      keyPresent: "KEY SET",
+      keyMissing: "NOT SET",
+      toolsPageTitle: "TOOL POLICY GROUPS",
+      toolsPageDesc: "Configure tool access by role. Host execution requires admin approval.",
+      roleViewer: "Viewer",
+      roleOperator: "Operator",
+      roleAdmin: "Admin",
+      modeHost: "Host",
+      modeSandbox: "Sandbox",
+      elevated: "Elevated",
+      allowed: "Allowed",
+      blocked: "Blocked",
+    },
+    onboarding: {
+      title: "ONBOARDING WIZARD",
+      subtitle: "Guided setup for your OCCP instance",
+      tokenMissing: "NO LLM TOKEN DETECTED",
+      tokenMissingDesc: "Add your Anthropic or OpenAI API key to unlock full capabilities.",
+      addToken: "ADD TOKEN",
+      welcomeGreet: "Welcome to OCCP! Your LLM token is active.",
+      startGuided: "START GUIDED SETUP",
+      stepProgress: "Step {current} of {total}",
+      stepLlm: "LLM Health Check",
+      stepMcp: "Install MCP Connectors",
+      stepSkills: "Baseline Skills",
+      stepPolicies: "Tool Policies",
+      stepSession: "Session Scope",
+      stepVerify: "Verification",
+      complete: "YOU'RE ALL SET",
+      completeDesc: "Your OCCP instance is fully configured. Start building.",
+      createTask: "Create Task",
+      installMcp: "Install MCP",
+      addSkill: "Add Skill",
+      running: "RUNNING...",
+      secureModeTitle: "SECURE MODE RECOMMENDED",
+      secureModeDesc: "Multi-user org detected. Per-user isolation prevents context leakage between sessions.",
+      sessionScope: "Session Scope",
+      singleUser: "Single User",
+      singleUserDesc: "Session continuity. Ideal for personal use.",
+      perUser: "Per User",
+      perUserDesc: "Isolated sessions per user. Recommended for teams.",
+      perChannel: "Per Channel",
+      perChannelDesc: "Isolated sessions per channel. For multi-tenant orgs.",
+    },
   },
 
   es: {
@@ -321,10 +513,16 @@ const translations: Record<Locale, T> = {
       agentsDesc: "Registro y configuraci\u00f3n de agentes",
       policyDesc: "Herramienta de evaluaci\u00f3n de pol\u00edticas",
       auditDesc: "Registro de auditor\u00eda inmutable",
+      mcp: "MCP",
+      mcpDesc: "Conectores del Protocolo de Contexto",
+      skills: "HABILIDADES",
+      skillsDesc: "Inventario de habilidades e impacto de tokens",
+      settings: "AJUSTES",
+      settingsDesc: "Proveedores LLM y pol\u00edticas de herramientas",
       logout: "SALIR",
     },
     home: {
-      bootLine: "**** OPENCLOUD CONTROL PLANE V0.6.0 ****",
+      bootLine: "**** OPENCLOUD CONTROL PLANE V0.8.0 ****",
       title: "CENTRO DE CONTROL",
       subtitle: "Pipeline de Autonom\u00eda Verificada \u2014 Planificar, Filtrar, Ejecutar, Validar, Entregar",
       ready: "LISTO.",
@@ -451,6 +649,96 @@ const translations: Record<Locale, T> = {
       runPipeline: "EJECUTAR PIPELINE",
       id: "ID",
     },
+    mcp: {
+      title: "CONECTORES MCP",
+      subtitle: "Cat\u00e1logo de servidores MCP \u2014 instalar y configurar integraciones",
+      catalog: "Cat\u00e1logo",
+      installed: "Instalados",
+      install: "INSTALAR",
+      installing: "INSTALANDO...",
+      configTitle: "Configuraci\u00f3n MCP",
+      configDesc: "A\u00f1ada esto a su mcp.json o claude_desktop_config.json",
+      noConnectors: "SIN CONECTORES DISPONIBLES",
+      category: "Categor\u00eda",
+      package: "Paquete",
+    },
+    skills: {
+      title: "INVENTARIO DE HABILIDADES",
+      subtitle: "Capacidades de agentes con an\u00e1lisis de impacto de tokens",
+      enable: "ACTIVAR",
+      disable: "DESACTIVAR",
+      enabled: "ACTIVADO",
+      disabled: "DESACTIVADO",
+      tokenImpact: "Impacto de Tokens",
+      totalImpact: "Impacto Total de Tokens Activados",
+      trusted: "CONFIABLE",
+      untrusted: "NO CONFIABLE",
+      noSkills: "SIN HABILIDADES DISPONIBLES",
+    },
+    settings: {
+      title: "AJUSTES",
+      subtitle: "Configuraci\u00f3n de proveedores LLM y pol\u00edticas de herramientas",
+      llmTitle: "Proveedores LLM",
+      llmDesc: "Configurar y monitorear proveedores de modelos IA",
+      provider: "Proveedor",
+      configured: "CONFIGURADO",
+      notConfigured: "NO CONFIGURADO",
+      model: "Modelo",
+      status: "Estado",
+      toolsTitle: "Pol\u00edticas de Herramientas",
+      toolsDesc: "Grupos de acceso: runtime, sistema de archivos, web y UI",
+      active: "Activo",
+      llmPageTitle: "CONFIGURACI\u00d3N DE TOKEN LLM",
+      llmPageDesc: "Configure claves API para sus proveedores LLM. Las claves se almacenan como variables de entorno.",
+      envVars: "Variables de Entorno",
+      testConnection: "Probar Conexi\u00f3n",
+      testing: "Probando...",
+      testOk: "Conexi\u00f3n OK",
+      testFail: "Conexi\u00f3n Fallida",
+      keyPresent: "CLAVE CONFIGURADA",
+      keyMissing: "NO CONFIGURADA",
+      toolsPageTitle: "GRUPOS DE POL\u00cdTICAS DE HERRAMIENTAS",
+      toolsPageDesc: "Configure el acceso a herramientas por rol. La ejecuci\u00f3n en host requiere aprobaci\u00f3n de admin.",
+      roleViewer: "Lector",
+      roleOperator: "Operador",
+      roleAdmin: "Admin",
+      modeHost: "Host",
+      modeSandbox: "Sandbox",
+      elevated: "Elevado",
+      allowed: "Permitido",
+      blocked: "Bloqueado",
+    },
+    onboarding: {
+      title: "ASISTENTE DE CONFIGURACIÓN",
+      subtitle: "Configuración guiada para tu instancia OCCP",
+      tokenMissing: "TOKEN LLM NO DETECTADO",
+      tokenMissingDesc: "Agrega tu clave API de Anthropic u OpenAI para desbloquear todas las capacidades.",
+      addToken: "AGREGAR TOKEN",
+      welcomeGreet: "¡Bienvenido a OCCP! Tu token LLM está activo.",
+      startGuided: "INICIAR CONFIGURACIÓN GUIADA",
+      stepProgress: "Paso {current} de {total}",
+      stepLlm: "Verificación de Salud LLM",
+      stepMcp: "Instalar Conectores MCP",
+      stepSkills: "Habilidades Base",
+      stepPolicies: "Políticas de Herramientas",
+      stepSession: "Alcance de Sesión",
+      stepVerify: "Verificación",
+      complete: "TODO LISTO",
+      completeDesc: "Tu instancia OCCP está completamente configurada. Comienza a construir.",
+      createTask: "Crear Tarea",
+      installMcp: "Instalar MCP",
+      addSkill: "Agregar Habilidad",
+      running: "EJECUTANDO...",
+      secureModeTitle: "MODO SEGURO RECOMENDADO",
+      secureModeDesc: "Organización multi-usuario detectada. Aislamiento por usuario previene filtraciones de contexto.",
+      sessionScope: "Alcance de Sesión",
+      singleUser: "Usuario Único",
+      singleUserDesc: "Continuidad de sesión. Ideal para uso personal.",
+      perUser: "Por Usuario",
+      perUserDesc: "Sesiones aisladas por usuario. Recomendado para equipos.",
+      perChannel: "Por Canal",
+      perChannelDesc: "Sesiones aisladas por canal. Para organizaciones multi-tenant.",
+    },
   },
 
   de: {
@@ -465,10 +753,16 @@ const translations: Record<Locale, T> = {
       agentsDesc: "Agentenregistrierung & Konfiguration",
       policyDesc: "Richtlinien-Evaluierungstool",
       auditDesc: "Unver\u00e4nderliches Hash-Chain Audit-Log",
+      mcp: "MCP",
+      mcpDesc: "Model Context Protocol Konnektoren",
+      skills: "F\u00c4HIGKEITEN",
+      skillsDesc: "Agentenf\u00e4higkeiten & Token-Auswirkung",
+      settings: "EINSTELLUNGEN",
+      settingsDesc: "LLM-Anbieter & Werkzeugrichtlinien",
       logout: "ABMELDEN",
     },
     home: {
-      bootLine: "**** OPENCLOUD CONTROL PLANE V0.6.0 ****",
+      bootLine: "**** OPENCLOUD CONTROL PLANE V0.8.0 ****",
       title: "KONTROLLZENTRUM",
       subtitle: "Verifizierte Autonomie-Pipeline \u2014 Planen, Pr\u00fcfen, Ausf\u00fchren, Validieren, Ausliefern",
       ready: "BEREIT.",
@@ -595,6 +889,96 @@ const translations: Record<Locale, T> = {
       runPipeline: "PIPELINE STARTEN",
       id: "ID",
     },
+    mcp: {
+      title: "MCP-KONNEKTOREN",
+      subtitle: "MCP-Serverkatalog \u2014 Integrationen installieren und konfigurieren",
+      catalog: "Katalog",
+      installed: "Installiert",
+      install: "INSTALLIEREN",
+      installing: "INSTALLIERE...",
+      configTitle: "MCP-Konfiguration",
+      configDesc: "F\u00fcgen Sie dies zu Ihrer mcp.json oder claude_desktop_config.json hinzu",
+      noConnectors: "KEINE KONNEKTOREN VERF\u00dcGBAR",
+      category: "Kategorie",
+      package: "Paket",
+    },
+    skills: {
+      title: "F\u00c4HIGKEITEN-INVENTAR",
+      subtitle: "Agentenf\u00e4higkeiten mit Token-Auswirkungsanalyse",
+      enable: "AKTIVIEREN",
+      disable: "DEAKTIVIEREN",
+      enabled: "AKTIVIERT",
+      disabled: "DEAKTIVIERT",
+      tokenImpact: "Token-Auswirkung",
+      totalImpact: "Gesamt aktivierte Token-Auswirkung",
+      trusted: "VERTRAUENSW\u00dcRDIG",
+      untrusted: "NICHT VERTRAUENSW\u00dcRDIG",
+      noSkills: "KEINE F\u00c4HIGKEITEN VERF\u00dcGBAR",
+    },
+    settings: {
+      title: "EINSTELLUNGEN",
+      subtitle: "LLM-Anbieterkonfiguration und Werkzeugrichtlinien-Verwaltung",
+      llmTitle: "LLM-Anbieter",
+      llmDesc: "KI-Modellanbieter konfigurieren und \u00fcberwachen",
+      provider: "Anbieter",
+      configured: "KONFIGURIERT",
+      notConfigured: "NICHT KONFIGURIERT",
+      model: "Modell",
+      status: "Status",
+      toolsTitle: "Werkzeugrichtlinien",
+      toolsDesc: "Laufzeit-, Dateisystem-, Web- und UI-Werkzeug-Zugriffsgruppen",
+      active: "Aktiv",
+      llmPageTitle: "LLM-TOKEN-EINRICHTUNG",
+      llmPageDesc: "Konfigurieren Sie API-Schl\u00fcssel f\u00fcr Ihre LLM-Anbieter. Schl\u00fcssel werden als Umgebungsvariablen gespeichert.",
+      envVars: "Umgebungsvariablen",
+      testConnection: "Verbindung testen",
+      testing: "Teste...",
+      testOk: "Verbindung OK",
+      testFail: "Verbindung fehlgeschlagen",
+      keyPresent: "SCHL\u00dcSSEL GESETZT",
+      keyMissing: "NICHT GESETZT",
+      toolsPageTitle: "WERKZEUG-RICHTLINIENGRUPPEN",
+      toolsPageDesc: "Konfigurieren Sie Werkzeugzugriff nach Rolle. Host-Ausf\u00fchrung erfordert Admin-Genehmigung.",
+      roleViewer: "Betrachter",
+      roleOperator: "Operator",
+      roleAdmin: "Admin",
+      modeHost: "Host",
+      modeSandbox: "Sandbox",
+      elevated: "Erh\u00f6ht",
+      allowed: "Erlaubt",
+      blocked: "Blockiert",
+    },
+    onboarding: {
+      title: "EINRICHTUNGSASSISTENT",
+      subtitle: "Geführte Einrichtung für Ihre OCCP-Instanz",
+      tokenMissing: "KEIN LLM-TOKEN ERKANNT",
+      tokenMissingDesc: "Fügen Sie Ihren Anthropic- oder OpenAI-API-Schlüssel hinzu, um alle Funktionen freizuschalten.",
+      addToken: "TOKEN HINZUFÜGEN",
+      welcomeGreet: "Willkommen bei OCCP! Ihr LLM-Token ist aktiv.",
+      startGuided: "GEFÜHRTE EINRICHTUNG STARTEN",
+      stepProgress: "Schritt {current} von {total}",
+      stepLlm: "LLM-Gesundheitsprüfung",
+      stepMcp: "MCP-Konnektoren installieren",
+      stepSkills: "Basis-Fähigkeiten",
+      stepPolicies: "Werkzeug-Richtlinien",
+      stepSession: "Sitzungsbereich",
+      stepVerify: "Überprüfung",
+      complete: "ALLES BEREIT",
+      completeDesc: "Ihre OCCP-Instanz ist vollständig konfiguriert. Beginnen Sie mit dem Aufbau.",
+      createTask: "Aufgabe erstellen",
+      installMcp: "MCP installieren",
+      addSkill: "Fähigkeit hinzufügen",
+      running: "WIRD AUSGEFÜHRT...",
+      secureModeTitle: "SICHERER MODUS EMPFOHLEN",
+      secureModeDesc: "Multi-User-Organisation erkannt. Benutzerisolierung verhindert Kontextlecks zwischen Sitzungen.",
+      sessionScope: "Sitzungsbereich",
+      singleUser: "Einzelbenutzer",
+      singleUserDesc: "Sitzungskontinuität. Ideal für persönliche Nutzung.",
+      perUser: "Pro Benutzer",
+      perUserDesc: "Isolierte Sitzungen pro Benutzer. Empfohlen für Teams.",
+      perChannel: "Pro Kanal",
+      perChannelDesc: "Isolierte Sitzungen pro Kanal. Für Multi-Tenant-Organisationen.",
+    },
   },
 
   fr: {
@@ -609,10 +993,16 @@ const translations: Record<Locale, T> = {
       agentsDesc: "Registre & configuration des agents",
       policyDesc: "Outil d'\u00e9valuation des politiques",
       auditDesc: "Journal d'audit cha\u00eene de hachage immuable",
+      mcp: "MCP",
+      mcpDesc: "Connecteurs du Protocole de Contexte",
+      skills: "COMP\u00c9TENCES",
+      skillsDesc: "Inventaire des comp\u00e9tences et impact tokens",
+      settings: "PARAM\u00c8TRES",
+      settingsDesc: "Fournisseurs LLM et politiques d'outils",
       logout: "D\u00c9CONNEXION",
     },
     home: {
-      bootLine: "**** OPENCLOUD CONTROL PLANE V0.6.0 ****",
+      bootLine: "**** OPENCLOUD CONTROL PLANE V0.8.0 ****",
       title: "CENTRE DE CONTR\u00d4LE",
       subtitle: "Pipeline d'Autonomie V\u00e9rifi\u00e9e \u2014 Planifier, Filtrer, Ex\u00e9cuter, Valider, Livrer",
       ready: "PR\u00caT.",
@@ -739,6 +1129,96 @@ const translations: Record<Locale, T> = {
       runPipeline: "EX\u00c9CUTER PIPELINE",
       id: "ID",
     },
+    mcp: {
+      title: "CONNECTEURS MCP",
+      subtitle: "Catalogue de serveurs MCP \u2014 installer et configurer les int\u00e9grations",
+      catalog: "Catalogue",
+      installed: "Install\u00e9s",
+      install: "INSTALLER",
+      installing: "INSTALLATION...",
+      configTitle: "Configuration MCP",
+      configDesc: "Ajoutez ceci \u00e0 votre mcp.json ou claude_desktop_config.json",
+      noConnectors: "AUCUN CONNECTEUR DISPONIBLE",
+      category: "Cat\u00e9gorie",
+      package: "Paquet",
+    },
+    skills: {
+      title: "INVENTAIRE DES COMP\u00c9TENCES",
+      subtitle: "Capacit\u00e9s des agents avec analyse d'impact tokens",
+      enable: "ACTIVER",
+      disable: "D\u00c9SACTIVER",
+      enabled: "ACTIV\u00c9",
+      disabled: "D\u00c9SACTIV\u00c9",
+      tokenImpact: "Impact Tokens",
+      totalImpact: "Impact Total des Tokens Activ\u00e9s",
+      trusted: "FIABLE",
+      untrusted: "NON FIABLE",
+      noSkills: "AUCUNE COMP\u00c9TENCE DISPONIBLE",
+    },
+    settings: {
+      title: "PARAM\u00c8TRES",
+      subtitle: "Configuration des fournisseurs LLM et gestion des politiques d'outils",
+      llmTitle: "Fournisseurs LLM",
+      llmDesc: "Configurer et surveiller les fournisseurs de mod\u00e8les IA",
+      provider: "Fournisseur",
+      configured: "CONFIGUR\u00c9",
+      notConfigured: "NON CONFIGUR\u00c9",
+      model: "Mod\u00e8le",
+      status: "Statut",
+      toolsTitle: "Politiques d'Outils",
+      toolsDesc: "Groupes d'acc\u00e8s: runtime, syst\u00e8me de fichiers, web et UI",
+      active: "Actif",
+      llmPageTitle: "CONFIGURATION TOKEN LLM",
+      llmPageDesc: "Configurez les cl\u00e9s API pour vos fournisseurs LLM. Les cl\u00e9s sont stock\u00e9es comme variables d'environnement.",
+      envVars: "Variables d'Environnement",
+      testConnection: "Tester la Connexion",
+      testing: "Test en cours...",
+      testOk: "Connexion OK",
+      testFail: "Connexion \u00c9chou\u00e9e",
+      keyPresent: "CL\u00c9 D\u00c9FINIE",
+      keyMissing: "NON D\u00c9FINIE",
+      toolsPageTitle: "GROUPES DE POLITIQUES D'OUTILS",
+      toolsPageDesc: "Configurez l'acc\u00e8s aux outils par r\u00f4le. L'ex\u00e9cution h\u00f4te n\u00e9cessite l'approbation admin.",
+      roleViewer: "Lecteur",
+      roleOperator: "Op\u00e9rateur",
+      roleAdmin: "Admin",
+      modeHost: "H\u00f4te",
+      modeSandbox: "Sandbox",
+      elevated: "\u00c9lev\u00e9",
+      allowed: "Autoris\u00e9",
+      blocked: "Bloqu\u00e9",
+    },
+    onboarding: {
+      title: "ASSISTANT DE CONFIGURATION",
+      subtitle: "Configuration guidée pour votre instance OCCP",
+      tokenMissing: "AUCUN TOKEN LLM DÉTECTÉ",
+      tokenMissingDesc: "Ajoutez votre clé API Anthropic ou OpenAI pour débloquer toutes les fonctionnalités.",
+      addToken: "AJOUTER UN TOKEN",
+      welcomeGreet: "Bienvenue sur OCCP ! Votre token LLM est actif.",
+      startGuided: "DÉMARRER LA CONFIGURATION GUIDÉE",
+      stepProgress: "Étape {current} sur {total}",
+      stepLlm: "Vérification de Santé LLM",
+      stepMcp: "Installer les Connecteurs MCP",
+      stepSkills: "Compétences de Base",
+      stepPolicies: "Politiques des Outils",
+      stepSession: "Portée de Session",
+      stepVerify: "Vérification",
+      complete: "TOUT EST PRÊT",
+      completeDesc: "Votre instance OCCP est entièrement configurée. Commencez à construire.",
+      createTask: "Créer une Tâche",
+      installMcp: "Installer MCP",
+      addSkill: "Ajouter une Compétence",
+      running: "EN COURS...",
+      secureModeTitle: "MODE SÉCURISÉ RECOMMANDÉ",
+      secureModeDesc: "Organisation multi-utilisateurs détectée. L'isolation par utilisateur empêche les fuites de contexte.",
+      sessionScope: "Portée de Session",
+      singleUser: "Utilisateur Unique",
+      singleUserDesc: "Continuité de session. Idéal pour un usage personnel.",
+      perUser: "Par Utilisateur",
+      perUserDesc: "Sessions isolées par utilisateur. Recommandé pour les équipes.",
+      perChannel: "Par Canal",
+      perChannelDesc: "Sessions isolées par canal. Pour les organisations multi-tenant.",
+    },
   },
 
   zh: {
@@ -753,10 +1233,16 @@ const translations: Record<Locale, T> = {
       agentsDesc: "\u4ee3\u7406\u6ce8\u518c\u4e0e\u914d\u7f6e",
       policyDesc: "\u7b56\u7565\u5b88\u536b\u8bc4\u4f30\u5de5\u5177",
       auditDesc: "\u4e0d\u53ef\u7be1\u6539\u54c8\u5e0c\u94fe\u5ba1\u8ba1\u65e5\u5fd7",
+      mcp: "MCP",
+      mcpDesc: "\u6a21\u578b\u4e0a\u4e0b\u6587\u534f\u8bae\u8fde\u63a5\u5668",
+      skills: "\u6280\u80fd",
+      skillsDesc: "\u4ee3\u7406\u6280\u80fd\u6e05\u5355\u4e0eToken\u5f71\u54cd",
+      settings: "\u8bbe\u7f6e",
+      settingsDesc: "LLM\u63d0\u4f9b\u5546\u548c\u5de5\u5177\u7b56\u7565",
       logout: "\u767b\u51fa",
     },
     home: {
-      bootLine: "**** OPENCLOUD CONTROL PLANE V0.6.0 ****",
+      bootLine: "**** OPENCLOUD CONTROL PLANE V0.8.0 ****",
       title: "\u4efb\u52a1\u63a7\u5236\u4e2d\u5fc3",
       subtitle: "\u9a8c\u8bc1\u81ea\u4e3b\u6d41\u6c34\u7ebf \u2014 \u89c4\u5212\u3001\u95e8\u63a7\u3001\u6267\u884c\u3001\u9a8c\u8bc1\u3001\u4ea4\u4ed8",
       ready: "\u5c31\u7eea\u3002",
@@ -883,6 +1369,96 @@ const translations: Record<Locale, T> = {
       runPipeline: "\u8fd0\u884c\u6d41\u6c34\u7ebf",
       id: "ID",
     },
+    mcp: {
+      title: "MCP\u8fde\u63a5\u5668",
+      subtitle: "MCP\u670d\u52a1\u5668\u76ee\u5f55 \u2014 \u5b89\u88c5\u548c\u914d\u7f6e\u96c6\u6210",
+      catalog: "\u76ee\u5f55",
+      installed: "\u5df2\u5b89\u88c5",
+      install: "\u5b89\u88c5",
+      installing: "\u5b89\u88c5\u4e2d...",
+      configTitle: "MCP\u914d\u7f6e",
+      configDesc: "\u5c06\u6b64\u6dfb\u52a0\u5230\u60a8\u7684mcp.json\u6216claude_desktop_config.json",
+      noConnectors: "\u65e0\u53ef\u7528\u8fde\u63a5\u5668",
+      category: "\u7c7b\u522b",
+      package: "\u5305",
+    },
+    skills: {
+      title: "\u6280\u80fd\u6e05\u5355",
+      subtitle: "\u4ee3\u7406\u80fd\u529b\u53caToken\u5f71\u54cd\u5206\u6790",
+      enable: "\u542f\u7528",
+      disable: "\u7981\u7528",
+      enabled: "\u5df2\u542f\u7528",
+      disabled: "\u5df2\u7981\u7528",
+      tokenImpact: "Token\u5f71\u54cd",
+      totalImpact: "\u5df2\u542f\u7528\u603b Token\u5f71\u54cd",
+      trusted: "\u53ef\u4fe1",
+      untrusted: "\u4e0d\u53ef\u4fe1",
+      noSkills: "\u65e0\u53ef\u7528\u6280\u80fd",
+    },
+    settings: {
+      title: "\u8bbe\u7f6e",
+      subtitle: "LLM\u63d0\u4f9b\u5546\u914d\u7f6e\u548c\u5de5\u5177\u7b56\u7565\u7ba1\u7406",
+      llmTitle: "LLM\u63d0\u4f9b\u5546",
+      llmDesc: "\u914d\u7f6e\u548c\u76d1\u63a7AI\u6a21\u578b\u63d0\u4f9b\u5546",
+      provider: "\u63d0\u4f9b\u5546",
+      configured: "\u5df2\u914d\u7f6e",
+      notConfigured: "\u672a\u914d\u7f6e",
+      model: "\u6a21\u578b",
+      status: "\u72b6\u6001",
+      toolsTitle: "\u5de5\u5177\u7b56\u7565",
+      toolsDesc: "\u8bbf\u95ee\u7ec4: \u8fd0\u884c\u65f6\u3001\u6587\u4ef6\u7cfb\u7edf\u3001\u7f51\u7edc\u548cUI",
+      active: "\u6d3b\u52a8",
+      llmPageTitle: "LLM\u4ee4\u724c\u8bbe\u7f6e",
+      llmPageDesc: "\u4e3a\u60a8\u7684LLM\u63d0\u4f9b\u5546\u914d\u7f6eAPI\u5bc6\u94a5\u3002\u5bc6\u94a5\u5b58\u50a8\u4e3a\u73af\u5883\u53d8\u91cf\u3002",
+      envVars: "\u73af\u5883\u53d8\u91cf",
+      testConnection: "\u6d4b\u8bd5\u8fde\u63a5",
+      testing: "\u6d4b\u8bd5\u4e2d...",
+      testOk: "\u8fde\u63a5\u6210\u529f",
+      testFail: "\u8fde\u63a5\u5931\u8d25",
+      keyPresent: "\u5bc6\u94a5\u5df2\u8bbe\u7f6e",
+      keyMissing: "\u672a\u8bbe\u7f6e",
+      toolsPageTitle: "\u5de5\u5177\u7b56\u7565\u7ec4",
+      toolsPageDesc: "\u6309\u89d2\u8272\u914d\u7f6e\u5de5\u5177\u8bbf\u95ee\u3002\u4e3b\u673a\u6267\u884c\u9700\u8981\u7ba1\u7406\u5458\u6279\u51c6\u3002",
+      roleViewer: "\u67e5\u770b\u8005",
+      roleOperator: "\u64cd\u4f5c\u5458",
+      roleAdmin: "\u7ba1\u7406\u5458",
+      modeHost: "\u4e3b\u673a",
+      modeSandbox: "\u6c99\u7bb1",
+      elevated: "\u63d0\u5347",
+      allowed: "\u5141\u8bb8",
+      blocked: "\u5df2\u963b\u6b62",
+    },
+    onboarding: {
+      title: "\u5f15\u5bfc\u8bbe\u7f6e\u5411\u5bfc",
+      subtitle: "OCCP\u5b9e\u4f8b\u7684\u5f15\u5bfc\u8bbe\u7f6e",
+      tokenMissing: "\u672a\u68c0\u6d4b\u5230LLM\u4ee4\u724c",
+      tokenMissingDesc: "\u6dfb\u52a0\u60a8\u7684Anthropic\u6216OpenAI API\u5bc6\u94a5\u4ee5\u89e3\u9501\u5168\u90e8\u529f\u80fd\u3002",
+      addToken: "\u6dfb\u52a0\u4ee4\u724c",
+      welcomeGreet: "\u6b22\u8fce\u4f7f\u7528OCCP\uff01\u60a8\u7684LLM\u4ee4\u724c\u5df2\u6fc0\u6d3b\u3002",
+      startGuided: "\u5f00\u59cb\u5f15\u5bfc\u8bbe\u7f6e",
+      stepProgress: "\u6b65\u9aa4 {current} / {total}",
+      stepLlm: "LLM\u5065\u5eb7\u68c0\u67e5",
+      stepMcp: "\u5b89\u88c5MCP\u8fde\u63a5\u5668",
+      stepSkills: "\u57fa\u7840\u6280\u80fd",
+      stepPolicies: "\u5de5\u5177\u7b56\u7565",
+      stepSession: "\u4f1a\u8bdd\u8303\u56f4",
+      stepVerify: "\u9a8c\u8bc1",
+      complete: "\u8bbe\u7f6e\u5b8c\u6210",
+      completeDesc: "\u60a8\u7684OCCP\u5b9e\u4f8b\u5df2\u5b8c\u5168\u914d\u7f6e\u3002\u5f00\u59cb\u6784\u5efa\u5427\u3002",
+      createTask: "\u521b\u5efa\u4efb\u52a1",
+      installMcp: "\u5b89\u88c5MCP",
+      addSkill: "\u6dfb\u52a0\u6280\u80fd",
+      running: "\u8fd0\u884c\u4e2d...",
+      secureModeTitle: "\u5efa\u8bae\u5b89\u5168\u6a21\u5f0f",
+      secureModeDesc: "\u68c0\u6d4b\u5230\u591a\u7528\u6237\u7ec4\u7ec7\u3002\u6bcf\u7528\u6237\u9694\u79bb\u53ef\u9632\u6b62\u4f1a\u8bdd\u95f4\u7684\u4e0a\u4e0b\u6587\u6cc4\u6f0f\u3002",
+      sessionScope: "\u4f1a\u8bdd\u8303\u56f4",
+      singleUser: "\u5355\u7528\u6237",
+      singleUserDesc: "\u4f1a\u8bdd\u8fde\u7eed\u6027\u3002\u9002\u5408\u4e2a\u4eba\u4f7f\u7528\u3002",
+      perUser: "\u6bcf\u7528\u6237",
+      perUserDesc: "\u6bcf\u4e2a\u7528\u6237\u72ec\u7acb\u4f1a\u8bdd\u3002\u63a8\u8350\u56e2\u961f\u4f7f\u7528\u3002",
+      perChannel: "\u6bcf\u9891\u9053",
+      perChannelDesc: "\u6bcf\u4e2a\u9891\u9053\u72ec\u7acb\u4f1a\u8bdd\u3002\u9002\u5408\u591a\u79df\u6237\u7ec4\u7ec7\u3002",
+    },
   },
 
   hu: {
@@ -897,10 +1473,16 @@ const translations: Record<Locale, T> = {
       agentsDesc: "\u00c1gens regisztr\u00e1ci\u00f3 \u00e9s konfigur\u00e1ci\u00f3",
       policyDesc: "Szab\u00e1lyz\u00e1si \u0151r ki\u00e9rt\u00e9kel\u0151 eszk\u00f6z",
       auditDesc: "Megv\u00e1ltoztathatatlan hash-l\u00e1nc audit napl\u00f3",
+      mcp: "MCP",
+      mcpDesc: "Model Context Protocol csatlakoz\u00f3k",
+      skills: "K\u00c9PESS\u00c9GEK",
+      skillsDesc: "\u00c1gens k\u00e9pess\u00e9g lista \u00e9s Token hat\u00e1s",
+      settings: "BE\u00c1LL\u00cdT\u00c1SOK",
+      settingsDesc: "LLM szolg\u00e1ltat\u00f3k \u00e9s eszk\u00f6z szab\u00e1lyok",
       logout: "KIL\u00c9P\u00c9S",
     },
     home: {
-      bootLine: "**** OPENCLOUD CONTROL PLANE V0.6.0 ****",
+      bootLine: "**** OPENCLOUD CONTROL PLANE V0.8.0 ****",
       title: "VEZ\u00c9RL\u0150K\u00d6ZPONT",
       subtitle: "Hiteles\u00edtett Auton\u00f3mia Pipeline \u2014 Tervez\u00e9s, Sz\u0171r\u00e9s, V\u00e9grehajt\u00e1s, Valid\u00e1l\u00e1s, Sz\u00e1ll\u00edt\u00e1s",
       ready: "K\u00c9SZ.",
@@ -1026,6 +1608,96 @@ const translations: Record<Locale, T> = {
       dismiss: "BEZ\u00c1R\u00c1S",
       runPipeline: "PIPELINE FUTTAT\u00c1SA",
       id: "AZON.",
+    },
+    mcp: {
+      title: "MCP CSATLAKOZ\u00d3K",
+      subtitle: "MCP szerver katal\u00f3gus \u2014 integr\u00e1ci\u00f3k telep\u00edt\u00e9se \u00e9s konfigur\u00e1l\u00e1sa",
+      catalog: "Katal\u00f3gus",
+      installed: "Telep\u00edtett",
+      install: "TELEP\u00cdT\u00c9S",
+      installing: "TELEP\u00cdT\u00c9S...",
+      configTitle: "MCP Konfigur\u00e1ci\u00f3",
+      configDesc: "Adja hozz\u00e1 az mcp.json vagy claude_desktop_config.json f\u00e1jlhoz",
+      noConnectors: "NINCS EL\u00c9RHET\u0150 CSATLAKOZ\u00d3",
+      category: "Kateg\u00f3ria",
+      package: "Csomag",
+    },
+    skills: {
+      title: "K\u00c9PESS\u00c9G LELT\u00c1R",
+      subtitle: "\u00c1gens k\u00e9pess\u00e9gek token hat\u00e1selemz\u00e9ssel",
+      enable: "AKTIV\u00c1L\u00c1S",
+      disable: "DEAKTIV\u00c1L\u00c1S",
+      enabled: "AKT\u00cdV",
+      disabled: "INAKT\u00cdV",
+      tokenImpact: "Token Hat\u00e1s",
+      totalImpact: "Akt\u00edv Token Hat\u00e1s \u00d6sszesen",
+      trusted: "MEGB\u00cdZHAT\u00d3",
+      untrusted: "NEM MEGB\u00cdZHAT\u00d3",
+      noSkills: "NINCS EL\u00c9RHET\u0150 K\u00c9PESS\u00c9G",
+    },
+    settings: {
+      title: "BE\u00c1LL\u00cdT\u00c1SOK",
+      subtitle: "LLM szolg\u00e1ltat\u00f3 konfigur\u00e1ci\u00f3 \u00e9s eszk\u00f6z szab\u00e1lyzat kezel\u00e9s",
+      llmTitle: "LLM Szolg\u00e1ltat\u00f3k",
+      llmDesc: "AI modell szolg\u00e1ltat\u00f3k konfigur\u00e1l\u00e1sa \u00e9s figyel\u00e9se",
+      provider: "Szolg\u00e1ltat\u00f3",
+      configured: "KONFIGUR\u00c1LVA",
+      notConfigured: "NINCS KONFIGUR\u00c1LVA",
+      model: "Modell",
+      status: "\u00c1llapot",
+      toolsTitle: "Eszk\u00f6z Szab\u00e1lyok",
+      toolsDesc: "Hozz\u00e1f\u00e9r\u00e9si csoportok: fut\u00e1sidej\u0171, f\u00e1jlrendszer, web \u00e9s UI",
+      active: "Akt\u00edv",
+      llmPageTitle: "LLM TOKEN BE\u00c1LL\u00cdT\u00c1S",
+      llmPageDesc: "API kulcsok konfigur\u00e1l\u00e1sa az LLM szolg\u00e1ltat\u00f3khoz. A kulcsok k\u00f6rnyezeti v\u00e1ltoz\u00f3k\u00e9nt t\u00e1rol\u00f3dnak.",
+      envVars: "K\u00f6rnyezeti V\u00e1ltoz\u00f3k",
+      testConnection: "Kapcsolat Tesztel\u00e9se",
+      testing: "Tesztel\u00e9s...",
+      testOk: "Kapcsolat OK",
+      testFail: "Kapcsolat Sikertelen",
+      keyPresent: "KULCS BE\u00c1LL\u00cdTVA",
+      keyMissing: "NINCS BE\u00c1LL\u00cdTVA",
+      toolsPageTitle: "ESZK\u00d6Z SZAB\u00c1LY CSOPORTOK",
+      toolsPageDesc: "Eszk\u00f6z hozz\u00e1f\u00e9r\u00e9s konfigur\u00e1l\u00e1sa szerep alapj\u00e1n. Host v\u00e9grehajt\u00e1s admin j\u00f3v\u00e1hagy\u00e1st ig\u00e9nyel.",
+      roleViewer: "Megtekint\u0151",
+      roleOperator: "Oper\u00e1tor",
+      roleAdmin: "Admin",
+      modeHost: "Host",
+      modeSandbox: "Sandbox",
+      elevated: "Emelt",
+      allowed: "Enged\u00e9lyezett",
+      blocked: "Tiltott",
+    },
+    onboarding: {
+      title: "BEVEZET\u0150 VAR\u00c1ZSL\u00d3",
+      subtitle: "Az OCCP p\u00e9ld\u00e1ny ir\u00e1ny\u00edtott be\u00e1ll\u00edt\u00e1sa",
+      tokenMissing: "NEM TAL\u00c1LHAT\u00d3 LLM TOKEN",
+      tokenMissingDesc: "Adja hozz\u00e1 az Anthropic vagy OpenAI API kulcs\u00e1t az \u00f6sszes funkci\u00f3 felold\u00e1s\u00e1hoz.",
+      addToken: "TOKEN HOZZ\u00c1AD\u00c1SA",
+      welcomeGreet: "\u00dcdv\u00f6z\u00f6lj\u00fck az OCCP-ben! Az LLM tokenje akt\u00edv.",
+      startGuided: "IR\u00c1NY\u00cdTOTT BE\u00c1LL\u00cdT\u00c1S IND\u00cdT\u00c1SA",
+      stepProgress: "L\u00e9p\u00e9s {current} / {total}",
+      stepLlm: "LLM \u00c1llapotellen\u0151rz\u00e9s",
+      stepMcp: "MCP Csatlakoz\u00f3k Telep\u00edt\u00e9se",
+      stepSkills: "Alap K\u00e9pess\u00e9gek",
+      stepPolicies: "Eszk\u00f6z Szab\u00e1lyok",
+      stepSession: "Munkamenet Hat\u00f3k\u00f6r",
+      stepVerify: "Ellen\u0151rz\u00e9s",
+      complete: "MINDEN K\u00c9SZ",
+      completeDesc: "Az OCCP p\u00e9ld\u00e1ny teljesen konfigur\u00e1lva. Kezdje el az \u00e9p\u00edt\u00e9st.",
+      createTask: "Feladat L\u00e9trehoz\u00e1sa",
+      installMcp: "MCP Telep\u00edt\u00e9s",
+      addSkill: "K\u00e9pess\u00e9g Hozz\u00e1ad\u00e1sa",
+      running: "FUT\u00c1S...",
+      secureModeTitle: "BIZTONS\u00c1GOS M\u00d3D AJÁNLOTT",
+      secureModeDesc: "T\u00f6bb felhaszn\u00e1l\u00f3s szervezet \u00e9szlelve. A felhaszn\u00e1l\u00f3nk\u00e9nti izol\u00e1ci\u00f3 megakad\u00e1lyozza a kontextus sziv\u00e1rg\u00e1st.",
+      sessionScope: "Munkamenet Hat\u00f3k\u00f6r",
+      singleUser: "Egy Felhaszn\u00e1l\u00f3",
+      singleUserDesc: "Munkamenet folytonoss\u00e1g. Ide\u00e1lis szem\u00e9lyes haszn\u00e1latra.",
+      perUser: "Felhaszn\u00e1l\u00f3nk\u00e9nt",
+      perUserDesc: "Izol\u00e1lt munkamenetek felhaszn\u00e1l\u00f3nk\u00e9nt. Csapatoknak aj\u00e1nlott.",
+      perChannel: "Csatorn\u00e1nk\u00e9nt",
+      perChannelDesc: "Izol\u00e1lt munkamenetek csatorn\u00e1nk\u00e9nt. T\u00f6bb b\u00e9rl\u0151s szervezeteknek.",
     },
   },
 };

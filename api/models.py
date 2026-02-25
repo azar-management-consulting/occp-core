@@ -144,3 +144,91 @@ class HealthResponse(BaseModel):
     status: str  # "healthy" | "degraded" | "unhealthy"
     version: str
     checks: list[HealthCheck] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Onboarding
+# ---------------------------------------------------------------------------
+
+class OnboardingStatusResponse(BaseModel):
+    token_present: bool
+    wizard_state: str  # token_missing | token_present | running | done
+    current_step: int = 0
+    completed_steps: list[str] = Field(default_factory=list)
+    total_steps: int = 6
+    run_id: str = ""
+
+
+class OnboardingStartResponse(BaseModel):
+    run_id: str
+    wizard_state: str
+    current_step: int = 0
+    steps: list[str] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# MCP Connectors
+# ---------------------------------------------------------------------------
+
+class MCPConnectorInfo(BaseModel):
+    id: str
+    name: str
+    description: str
+    package: str = ""
+    category: str = "integration"
+
+
+class MCPCatalogResponse(BaseModel):
+    connectors: list[MCPConnectorInfo]
+    total: int
+
+
+class MCPInstallRequest(BaseModel):
+    connector_id: str = Field(..., min_length=1, max_length=100)
+    env_vars: dict[str, str] = Field(default_factory=dict)
+
+
+class MCPInstallResponse(BaseModel):
+    connector_id: str
+    connector_name: str
+    mcp_json: dict[str, Any]
+    instructions: str = ""
+
+
+# ---------------------------------------------------------------------------
+# Skills
+# ---------------------------------------------------------------------------
+
+class SkillInfo(BaseModel):
+    id: str
+    name: str
+    description: str
+    category: str = "general"
+    enabled: bool = False
+    trusted: bool = True
+    token_impact_chars: int = 0
+    token_impact_tokens: int = 0
+
+
+class SkillsListResponse(BaseModel):
+    skills: list[SkillInfo]
+    total: int
+    total_enabled_token_impact: int = 0
+
+
+# ---------------------------------------------------------------------------
+# LLM Health
+# ---------------------------------------------------------------------------
+
+class LLMProviderStatus(BaseModel):
+    provider: str
+    configured: bool
+    model: str = ""
+    status: str = "not_configured"  # ok | not_configured | error
+
+
+class LLMHealthResponse(BaseModel):
+    status: str  # ok | fallback | error
+    active_provider: str = "echo"
+    providers: list[LLMProviderStatus] = Field(default_factory=list)
+    token_present: bool = False

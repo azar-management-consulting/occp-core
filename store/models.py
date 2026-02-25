@@ -122,3 +122,26 @@ class UserRow(Base):
         Index("idx_users_username", "username"),
         Index("idx_users_role", "role"),
     )
+
+
+# ── Onboarding Progress ─────────────────────────────────────────────
+
+
+class OnboardingProgressRow(Base):
+    """Onboarding wizard progress — maps to ``onboarding_progress`` table."""
+
+    __tablename__ = "onboarding_progress"
+
+    user_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    state: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="token_missing"
+    )
+    current_step: Mapped[int] = mapped_column(Integer, default=0)
+    completed_steps: Mapped[list] = mapped_column(JSONBText(), default=list)
+    run_id: Mapped[str] = mapped_column(String(32), default="")
+    metadata_: Mapped[dict] = mapped_column(
+        "metadata", JSONBText(), default=dict
+    )
+    completed_at: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    updated_at: Mapped[str] = mapped_column(String(64), nullable=False)
