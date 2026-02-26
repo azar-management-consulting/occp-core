@@ -1,0 +1,174 @@
+[
+  {
+    "id": "filesystem",
+    "name": "Filesystem",
+    "description": "Read and write local files.",
+    "package": "@modelcontextprotocol/server-filesystem",
+    "category": "core",
+    "config_template": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/dir"]
+    }
+  },
+  {
+    "id": "memory",
+    "name": "Memory",
+    "description": "Persistent memory across sessions.",
+    "package": "@modelcontextprotocol/server-memory",
+    "category": "core",
+    "config_template": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    }
+  },
+  {
+    "id": "github",
+    "name": "GitHub",
+    "description": "Issue tracking, PR management, repo access.",
+    "package": "@modelcontextprotocol/server-github",
+    "category": "integration",
+    "config_template": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": ["GITHUB_PERSONAL_ACCESS_TOKEN"]
+    }
+  },
+  {
+    "id": "postgres",
+    "name": "PostgreSQL",
+    "description": "Database read and query via SQL.",
+    "package": "@modelcontextprotocol/server-postgres",
+    "category": "database",
+    "config_template": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost/mydb"]
+    }
+  },
+  {
+    "id": "sqlite",
+    "name": "SQLite",
+    "description": "Query and manage SQLite databases.",
+    "package": "@modelcontextprotocol/server-sqlite",
+    "category": "database",
+    "config_template": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sqlite"]
+    }
+  },
+  {
+    "id": "git",
+    "name": "Git",
+    "description": "Repository control and operations.",
+    "package": "@modelcontextprotocol/server-git",
+    "category": "core",
+    "config_template": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-git"]
+    }
+  },
+  {
+    "id": "fetch",
+    "name": "Fetch",
+    "description": "Web fetch and URL retrieval.",
+    "package": "@modelcontextprotocol/server-fetch",
+    "category": "core",
+    "config_template": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"]
+    }
+  },
+  {
+    "id": "sequential-thinking",
+    "name": "Sequential Thinking",
+    "description": "Extended reasoning for complex tasks.",
+    "package": "@modelcontextprotocol/server-sequential-thinking",
+    "category": "core",
+    "config_template": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    }
+  },
+  {
+    "id": "google-drive",
+    "name": "Google Drive",
+    "description": "Access and manage files in Google Drive.",
+    "package": "@modelcontextprotocol/server-gdrive",
+    "category": "integration",
+    "config_template": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-gdrive"],
+      "env": ["GOOGLE_APPLICATION_CREDENTIALS"]
+    }
+  },
+  {
+    "id": "slack",
+    "name": "Slack",
+    "description": "Workspace messaging and channels.",
+    "package": "@modelcontextprotocol/server-slack",
+    "category": "integration",
+    "config_template": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-slack"],
+      "env": ["SLACK_BOT_TOKEN", "SLACK_TEAM_ID"]
+    }
+  },
+  {
+    "id": "brave-search",
+    "name": "Brave Search",
+    "description": "Web search via Brave Search API.",
+    "package": "@modelcontextprotocol/server-brave-search",
+    "category": "search",
+    "config_template": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": ["BRAVE_API_KEY"]
+    }
+  },
+  {
+    "id": "exa",
+    "name": "Exa",
+    "description": "Web search API for research and discovery.",
+    "package": "mcp.exa.ai",
+    "category": "search",
+    "config_template": {
+      "type": "streamable-http",
+      "url": "https://mcp.exa.ai/mcp",
+      "headers": ["x-api-key"]
+    }
+  },
+  {
+    "id": "puppeteer",
+    "name": "Puppeteer",
+    "description": "Browser automation and screenshots.",
+    "package": "@modelcontextprotocol/server-puppeteer",
+    "category": "integration",
+    "config_template": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+    }
+  },
+  {
+    "id": "firecrawl",
+    "name": "Firecrawl",
+    "description": "Web scraping and crawling.",
+    "package": "@mendable/firecrawl-mcp-server",
+    "category": "integration",
+    "config_template": {
+      "command": "npx",
+      "args": ["-y", "@mendable/firecrawl-mcp-server"],
+      "env": ["FIRECRAWL_API_KEY"]
+    }
+  },
+  {
+    "id": "cloudflare",
+    "name": "Cloudflare",
+    "description": "Cloudflare API integration.",
+    "package": "@cloudflare/mcp-server-cloudflare",
+    "category": "integration",
+    "config_template": {
+      "command": "npx",
+      "args": ["-y", "@cloudflare/mcp-server-cloudflare"],
+      "env": ["CLOUDFLARE_API_TOKEN"]
+    }
+  }
+]
