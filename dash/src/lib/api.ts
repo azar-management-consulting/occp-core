@@ -115,19 +115,82 @@ export interface LLMHealthData {
 // ── V0.8.0 Onboarding / MCP / Skills / LLM ──────────────────
 
 export interface OnboardingStatus {
+  user_id: string;
   token_present: boolean;
   wizard_state: string;
   current_step: number;
+  current_step_name: string;
   completed_steps: string[];
   total_steps: number;
+  steps: string[];
+  step_descriptions: Record<string, string>;
   run_id: string;
+  metadata: Record<string, unknown>;
 }
 
 export interface OnboardingStartResult {
   run_id: string;
   wizard_state: string;
   current_step: number;
+  current_step_name: string;
+  completed_steps: string[];
   steps: string[];
+}
+
+export interface OnboardingStepResult {
+  step: string;
+  step_index: number;
+  completed: boolean;
+  wizard_state: string;
+  next_step: string | null;
+  completed_steps: string[];
+  progress_pct: number;
+}
+
+export interface VerificationResult {
+  all_passed: boolean;
+  checks: { name: string; passed: boolean; detail: string }[];
+  total_checks: number;
+  passed_count: number;
+}
+
+export interface FirstTaskResult {
+  task_id: string;
+  success: boolean;
+  status: string;
+  evidence?: Record<string, unknown>;
+  error?: string;
+  note?: string;
+}
+
+// ── Token Management ──
+export interface TokenInfo {
+  id: string;
+  provider: string;
+  masked_value: string;
+  label: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TokenListResult {
+  tokens: TokenInfo[];
+  total: number;
+  has_anthropic: boolean;
+  has_openai: boolean;
+}
+
+export interface TokenStoreResult {
+  provider: string;
+  masked_value: string;
+  label: string;
+  stored: boolean;
+}
+
+export interface TokenCheckResult {
+  has_any: boolean;
+  providers: Record<string, boolean>;
 }
 
 export interface MCPConnector {
@@ -193,12 +256,35 @@ export const api = {
   deleteAgent: (agentType: string) =>
     apiFetch<void>(`/agents/${agentType}`, { method: "DELETE" }),
 
-  // ── V0.8.0 Onboarding ──
+  // ── V0.8.2 Onboarding (10-step wizard) ──
   onboardingStatus: () => apiFetch<OnboardingStatus>("/onboarding/status"),
   onboardingStart: () =>
     apiFetch<OnboardingStartResult>("/onboarding/start", { method: "POST" }),
   onboardingStep: (step: string) =>
-    apiFetch<Record<string, unknown>>(`/onboarding/step/${step}`, { method: "POST" }),
+    apiFetch<OnboardingStepResult>(`/onboarding/step/${step}`, { method: "POST" }),
+  onboardingVerify: () =>
+    apiFetch<VerificationResult>("/onboarding/verify", { method: "POST" }),
+  onboardingFirstTask: () =>
+    apiFetch<FirstTaskResult>("/onboarding/first-task", { method: "POST" }),
+
+  // ── V0.8.2 Token Management ──
+  storeToken: (provider: string, token: string, label?: string) =>
+    apiFetch<TokenStoreResult>("/tokens", {
+      method: "POST",
+      body: JSON.stringify({ provider, token, label: label || "" }),
+    }),
+  listTokens: () => apiFetch<TokenListResult>("/tokens"),
+  checkTokens: () => apiFetch<TokenCheckResult>("/tokens/check"),
+  validateToken: (provider: string) =>
+    apiFetch<{ provider: string; valid: boolean; detail: string }>(
+      `/tokens/${provider}/validate`,
+      { method: "POST" },
+    ),
+  revokeToken: (provider: string) =>
+    apiFetch<{ provider: string; revoked: boolean }>(
+      `/tokens/${provider}`,
+      { method: "DELETE" },
+    ),
 
   // ── V0.8.0 MCP ──
   mcpCatalog: () => apiFetch<{ connectors: MCPConnector[]; total: number }>("/mcp/catalog"),

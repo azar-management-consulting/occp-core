@@ -53,7 +53,7 @@ export default function TermsPage() {
               <ul className="space-y-1 text-xs">
                 <li className="flex items-start gap-2">
                   <span className="text-[var(--primary)] mt-0.5">&#x25B8;</span>
-                  <span>Verified Autonomy Pipeline (VAP) for gated AI agent execution</span>
+                  <span>Verified Autonomy Pipeline for gated AI agent execution</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[var(--primary)] mt-0.5">&#x25B8;</span>

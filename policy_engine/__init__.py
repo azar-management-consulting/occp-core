@@ -4,7 +4,7 @@ Community Edition: alapszintű policy enforcement, PII guard, audit log.
 Enterprise Edition: RBAC, compliance export, advanced guards.
 """
 
-__version__ = "0.8.0"
+__version__ = "0.8.2"
 
 from policy_engine.engine import PolicyEngine, GateResult
 from policy_engine.models import Policy, PolicyRule, AuditEntry

@@ -20,6 +20,8 @@ if TYPE_CHECKING:
     from store.agent_store import AgentStore
     from store.user_store import UserStore
     from store.onboarding_store import OnboardingStore
+    from store.token_store import TokenStore
+    from security.encryption import TokenEncryptor
 
 
 class AppState:
@@ -39,6 +41,8 @@ class AppState:
         self.scheduler: Scheduler = Scheduler()
         self.ws_manager: ConnectionManager = ConnectionManager()
         self.onboarding_store: OnboardingStore | None = None
+        self.token_store: TokenStore | None = None
+        self.token_encryptor: TokenEncryptor | None = None
         self.multi_planner: Any = None  # MultiLLMPlanner (set in lifespan)
 
     # -- Task helpers (async, with store-or-dict fallback) --

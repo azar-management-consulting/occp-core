@@ -7,9 +7,9 @@ Usage::
 
     occp start           – Launch the API server (uvicorn)
     occp status          – Show platform and agent status
-    occp run <workflow>  – Execute a workflow file through VAP
+    occp run <workflow>  – Execute a workflow file through Verified Autonomy Pipeline
     occp export          – Export audit logs
-    occp demo            – Run full VAP demo (30-second wow moment)
+    occp demo            – Run full Verified Autonomy Pipeline demo (30-second wow moment)
     occp demo --inject   – Show prompt injection blocking
 """
 
@@ -99,7 +99,7 @@ def agents(url: str) -> None:
 @click.argument("workflow", type=click.Path(exists=True))
 @click.option("--dry-run", is_flag=True, help="Validate without executing.")
 def run_workflow(workflow: str, dry_run: bool) -> None:
-    """Execute a workflow file through the VAP pipeline."""
+    """Execute a workflow file through the Verified Autonomy Pipeline."""
     wf_path = Path(workflow)
     try:
         data = json.loads(wf_path.read_text(encoding="utf-8"))
@@ -155,7 +155,7 @@ def _stage_bar(idx: int, label: str, detail: str, passed: bool = True) -> str:
 @cli.command()
 @click.option("--inject", is_flag=True, help="Demo prompt injection blocking.")
 def demo(inject: bool) -> None:
-    """Run a full VAP pipeline demo – 30s wow moment, zero config."""
+    """Run a full Verified Autonomy Pipeline demo – 30s wow moment, zero config."""
     asyncio.run(_run_demo(inject))
 
 

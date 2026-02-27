@@ -4,7 +4,7 @@
 
 <p align="center">
   <strong>OpenCloud Control Plane (OCCP)</strong><br>
-  <em>Agent Control Plane with Verified Autonomy Pipeline</em>
+  <em>First open-source control plane with a 5-stage Verified Autonomy Pipeline</em>
 </p>
 
 <p align="center">
@@ -12,8 +12,9 @@
   <img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT">
   <img src="https://img.shields.io/badge/docker-compose-blue?logo=docker" alt="Docker Compose">
-  <img src="https://img.shields.io/badge/version-0.8.0-orange" alt="Version 0.8.0">
+  <img src="https://img.shields.io/badge/version-0.8.2-orange" alt="Version 0.8.2">
   <img src="https://img.shields.io/badge/llms.txt-available-green" alt="llms.txt">
+  <a href="https://occp.ai"><img src="https://occp.ai/badge.svg" alt="OCCP Verified"></a>
 </p>
 
 ---
@@ -39,7 +40,7 @@ occp demo --inject
 
 ## What is OCCP?
 
-OCCP is an open-source **Agent Control Plane** that ensures AI agents operate safely, auditably, and within policy. Every agent task flows through the **Verified Autonomy Pipeline (VAP)**:
+OCCP is an open-source **Agent Control Plane** that ensures AI agents operate safely, auditably, and within policy. Every agent task flows through the **5-stage Verified Autonomy Pipeline (Plan → Gate → Execute → Validate → Ship)**:
 
 ```mermaid
 graph LR
@@ -95,7 +96,7 @@ docker compose --profile dev up
 
 | Module | Description |
 |--------|-------------|
-| `orchestrator/` | VAP pipeline engine — Protocol-based DI, state machine, transitions |
+| `orchestrator/` | Verified Autonomy Pipeline engine — Protocol-based DI, state machine, transitions |
 | `policy_engine/` | Policy-as-code, SHA-256 audit chain, PII/injection/resource guards |
 | `api/` | FastAPI REST API + WebSocket real-time pipeline events |
 | `adapters/` | Demo adapters — EchoPlanner, PolicyGate, MockExecutor, BasicValidator, LogShipper |
@@ -118,7 +119,7 @@ docker compose --profile dev up
 | `POST` | `/api/v1/tasks` | Create a new task |
 | `GET` | `/api/v1/tasks` | List all tasks |
 | `GET` | `/api/v1/tasks/{id}` | Get task details |
-| `POST` | `/api/v1/pipeline/run/{id}` | Run VAP pipeline on task |
+| `POST` | `/api/v1/pipeline/run/{id}` | Run Verified Autonomy Pipeline on task |
 | `POST` | `/api/v1/policy/evaluate` | Test content against policy guards |
 | `GET` | `/api/v1/agents` | List registered agents |
 | `POST` | `/api/v1/agents` | Register agent (admin/operator) |
@@ -140,7 +141,7 @@ docker compose --profile dev up
 
 ```
 occp start              # Launch API server (uvicorn)
-occp demo               # Run full VAP demo pipeline
+occp demo               # Run full Verified Autonomy Pipeline demo
 occp demo --inject      # Demo prompt injection blocking
 occp status             # Check API health
 occp run TASK_ID        # Run pipeline on existing task

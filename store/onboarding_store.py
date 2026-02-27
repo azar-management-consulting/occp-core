@@ -29,7 +29,7 @@ class OnboardingStore:
         self,
         user_id: str,
         *,
-        state: str = "token_missing",
+        state: str = "landing",
         current_step: int = 0,
         completed_steps: list[str] | None = None,
         run_id: str = "",

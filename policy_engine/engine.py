@@ -47,6 +47,7 @@ class PolicyEngine:
             PIIGuard(),
             PromptInjectionGuard(),
             ResourceLimitGuard(),
+            OutputSanitizationGuard(),
         ]
         self._audit_chain: list[AuditEntry] = []
         self._audit_store = audit_store  # Optional AuditStore for persistence
@@ -178,6 +179,31 @@ class PolicyEngine:
     # ------------------------------------------------------------------
     # Audit
     # ------------------------------------------------------------------
+
+    async def audit(
+        self,
+        *,
+        actor: str,
+        action: str,
+        task_id: str = "",
+        detail: dict[str, Any] | None = None,
+        audit_store: Any = None,
+    ) -> AuditEntry:
+        """Public audit method — append to chain and optionally persist.
+
+        Use this for non-gate events (token operations, onboarding steps, etc.)
+        that still need hash-chained audit trail integrity.
+        """
+        entry = self._append_audit(
+            actor=actor,
+            action=action,
+            task_id=task_id,
+            detail=detail or {},
+        )
+        store = audit_store or self._audit_store
+        if store:
+            await store.append(entry)
+        return entry
 
     def _append_audit(self, **kwargs: Any) -> AuditEntry:
         prev_hash = self._audit_chain[-1].hash if self._audit_chain else ""

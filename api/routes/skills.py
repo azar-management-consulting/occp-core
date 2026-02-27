@@ -1,14 +1,29 @@
-"""Skills management endpoints — Phase 1 curated allowlist."""
+"""Skills management endpoints — curated allowlist with integrity checks.
+
+Every enable/disable operation is:
+1. Integrity-checked via SkillIntegrityChecker (hash verification)
+2. Audit-trailed via PolicyEngine.audit() (hash-chained)
+"""
 
 from __future__ import annotations
 
+import logging
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
 
+from api.auth import get_current_user_payload
 from api.rbac import PermissionChecker
 from api.deps import AppState, get_state
 from api.models import SkillInfo, SkillsListResponse
+from security.supply_chain import SupplyChainScanner
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["skills"])
+
+# Singleton supply-chain scanner
+_scanner = SupplyChainScanner()
 
 # Phase 1: curated allowlist of baseline skills
 _BASELINE_SKILLS: list[dict] = [
@@ -100,27 +115,75 @@ async def list_skills() -> SkillsListResponse:
 
 @router.post(
     "/skills/{skill_id}/enable",
-    dependencies=[Depends(PermissionChecker("skills", "manage"))],
 )
-async def enable_skill(skill_id: str) -> dict:
-    """Enable a skill by ID."""
+async def enable_skill(
+    skill_id: str,
+    user: dict[str, Any] = Depends(PermissionChecker("skills", "manage")),
+    state: AppState = Depends(get_state),
+) -> dict:
+    """Enable a skill — integrity-checked and audit-trailed."""
     skill = next((s for s in _BASELINE_SKILLS if s["id"] == skill_id), None)
     if skill is None:
         raise HTTPException(status_code=404, detail=f"Skill '{skill_id}' not found")
+
     if not skill.get("trusted", False):
         raise HTTPException(status_code=403, detail=f"Skill '{skill_id}' is not in trusted allowlist")
+
+    # ── Integrity gate ───────────────────────────────────────────
+    integrity = _scanner.scan_skill_enable(skill)
+    if not integrity.valid:
+        await state.policy_engine.audit(
+            actor=user.get("sub", "unknown"),
+            action="skill_enable_blocked",
+            detail={
+                "skill_id": skill_id,
+                "reason": integrity.reason,
+            },
+        )
+        raise HTTPException(
+            status_code=403,
+            detail=f"Integrity check failed: {integrity.reason}",
+        )
+
     skill["enabled"] = True
+
+    # ── Audit trail ──────────────────────────────────────────────
+    await state.policy_engine.audit(
+        actor=user.get("sub", "unknown"),
+        action="skill_enabled",
+        detail={
+            "skill_id": skill_id,
+            "skill_name": skill["name"],
+            "hash_sha256": integrity.hash_sha256[:16] if integrity.hash_sha256 else "",
+        },
+    )
+
     return {"skill_id": skill_id, "enabled": True}
 
 
 @router.post(
     "/skills/{skill_id}/disable",
-    dependencies=[Depends(PermissionChecker("skills", "manage"))],
 )
-async def disable_skill(skill_id: str) -> dict:
-    """Disable a skill by ID."""
+async def disable_skill(
+    skill_id: str,
+    user: dict[str, Any] = Depends(PermissionChecker("skills", "manage")),
+    state: AppState = Depends(get_state),
+) -> dict:
+    """Disable a skill — audit-trailed."""
     skill = next((s for s in _BASELINE_SKILLS if s["id"] == skill_id), None)
     if skill is None:
         raise HTTPException(status_code=404, detail=f"Skill '{skill_id}' not found")
+
     skill["enabled"] = False
+
+    # ── Audit trail ──────────────────────────────────────────────
+    await state.policy_engine.audit(
+        actor=user.get("sub", "unknown"),
+        action="skill_disabled",
+        detail={
+            "skill_id": skill_id,
+            "skill_name": skill["name"],
+        },
+    )
+
     return {"skill_id": skill_id, "enabled": False}

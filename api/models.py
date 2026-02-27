@@ -147,23 +147,47 @@ class HealthResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Onboarding
+# Onboarding (10-step enterprise wizard)
 # ---------------------------------------------------------------------------
 
 class OnboardingStatusResponse(BaseModel):
+    user_id: str = ""
     token_present: bool
-    wizard_state: str  # token_missing | token_present | running | done
+    wizard_state: str  # landing | token_present | running | done
     current_step: int = 0
+    current_step_name: str = "landing_cta"
     completed_steps: list[str] = Field(default_factory=list)
-    total_steps: int = 6
+    total_steps: int = 10
+    steps: list[str] = Field(default_factory=list)
+    step_descriptions: dict[str, str] = Field(default_factory=dict)
     run_id: str = ""
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class OnboardingStartResponse(BaseModel):
     run_id: str
     wizard_state: str
     current_step: int = 0
+    current_step_name: str = ""
+    completed_steps: list[str] = Field(default_factory=list)
     steps: list[str] = Field(default_factory=list)
+
+
+class OnboardingStepResponse(BaseModel):
+    step: str
+    step_index: int = 0
+    completed: bool = True
+    wizard_state: str = "running"
+    next_step: str | None = None
+    completed_steps: list[str] = Field(default_factory=list)
+    progress_pct: int = 0
+
+
+class VerificationCheckResponse(BaseModel):
+    all_passed: bool
+    checks: list[dict[str, Any]] = Field(default_factory=list)
+    total_checks: int = 0
+    passed_count: int = 0
 
 
 # ---------------------------------------------------------------------------

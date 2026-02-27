@@ -8,7 +8,7 @@ class OccpError(Exception):
 
 
 class PipelineError(OccpError):
-    """Raised when the VAP pipeline encounters an error."""
+    """Raised when the Verified Autonomy Pipeline encounters an error."""
 
 
 class GateRejectedError(PipelineError):

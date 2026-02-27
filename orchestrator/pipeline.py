@@ -1,4 +1,4 @@
-"""Verified Autonomy Pipeline (VAP): Plan → Gate → Execute → Validate → Ship."""
+"""Verified Autonomy Pipeline: Plan → Gate → Execute → Validate → Ship."""
 
 from __future__ import annotations
 
@@ -56,7 +56,7 @@ class Shipper(Protocol):
 # ---------------------------------------------------------------------------
 
 class Pipeline:
-    """Orchestrates the full VAP lifecycle for a single :class:`Task`.
+    """Orchestrates the full Verified Autonomy Pipeline lifecycle for a single :class:`Task`.
 
     Features:
     - Per-stage wall-clock timing (``evidence["_timings"]``)
@@ -119,7 +119,7 @@ class Pipeline:
         return self._shipper
 
     async def run(self, task: Task) -> PipelineResult:
-        """Execute the full VAP pipeline for *task*."""
+        """Execute the full Verified Autonomy Pipeline for *task*."""
         started = datetime.now(timezone.utc)
         evidence: dict[str, Any] = {}
         timings: dict[str, float] = {}

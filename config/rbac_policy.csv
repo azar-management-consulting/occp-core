@@ -46,7 +46,16 @@ p, operator, skills, manage
 p, operator, session, read
 p, operator, session, update
 
+# ── Viewer — Token management (per-user isolation at store level) ──
+p, viewer, tokens, read
+p, viewer, tokens, manage
+
+# ── Org Admin — Governance read (supply-chain audit logs) ────────
+p, org_admin, governance, read
+
 # ── System Admin Permissions (+ org_admin) ──────────────────────
 p, system_admin, users, delete
 p, system_admin, policy, update
 p, system_admin, system, manage
+p, system_admin, governance, manage
+p, system_admin, supply_chain, manage

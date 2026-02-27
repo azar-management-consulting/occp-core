@@ -162,7 +162,7 @@ Get details for a specific task.
 
 ### POST `/api/v1/pipeline/run/{task_id}`
 
-Execute the full VAP pipeline on a task.
+Execute the full Verified Autonomy Pipeline on a task.
 
 - **RBAC**: `operator` — `pipeline:run`
 - **Response** `200`:

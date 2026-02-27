@@ -28,7 +28,7 @@ export default function PrivacyPage() {
           <div className="flex items-center gap-3 mb-2">
             <div className="w-3 h-3 rounded-full bg-occp-success animate-pulse" />
             <span className="font-pixel text-[7px] text-occp-success uppercase tracking-widest">
-              GDPR Compliant
+              GDPR Aligned
             </span>
           </div>
           <h1 className="font-pixel text-[12px] sm:text-[14px] text-[var(--primary)] text-glow uppercase tracking-wider mb-2">

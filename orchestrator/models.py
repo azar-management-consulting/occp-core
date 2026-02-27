@@ -46,7 +46,7 @@ class AgentConfig:
 
 @dataclass
 class Task:
-    """Represents a unit of work flowing through the VAP pipeline."""
+    """Represents a unit of work flowing through the Verified Autonomy Pipeline."""
 
     name: str
     description: str
@@ -65,7 +65,7 @@ class Task:
     error: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
-    # Valid state transitions for the VAP pipeline
+    # Valid state transitions for the Verified Autonomy Pipeline
     _VALID_TRANSITIONS: ClassVar[dict[TaskStatus, set[TaskStatus]]] = {
         TaskStatus.PENDING: {TaskStatus.PLANNING, TaskStatus.FAILED},
         TaskStatus.PLANNING: {TaskStatus.GATED, TaskStatus.FAILED},
@@ -94,7 +94,7 @@ class Task:
 
 @dataclass
 class PipelineResult:
-    """Outcome of a full VAP pipeline run."""
+    """Outcome of a full Verified Autonomy Pipeline run."""
 
     task_id: str
     success: bool

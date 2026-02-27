@@ -1,4 +1,4 @@
-"""Pipeline execution endpoint – triggers the full VAP pipeline for a task."""
+"""Pipeline execution endpoint – triggers the full Verified Autonomy Pipeline for a task."""
 
 from __future__ import annotations
 

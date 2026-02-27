@@ -110,7 +110,7 @@ export default function MissionControl() {
       {/* LLM Providers Health */}
       <LLMHealthPanel />
 
-      {/* VAP Pipeline */}
+      {/* Verified Autonomy Pipeline */}
       <div className="space-y-3">
         <div>
           <h2 className="font-pixel text-[13px] text-occp-accent tracking-wider uppercase">

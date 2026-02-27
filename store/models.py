@@ -134,7 +134,7 @@ class OnboardingProgressRow(Base):
 
     user_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     state: Mapped[str] = mapped_column(
-        String(32), nullable=False, default="token_missing"
+        String(32), nullable=False, default="landing"
     )
     current_step: Mapped[int] = mapped_column(Integer, default=0)
     completed_steps: Mapped[list] = mapped_column(JSONBText(), default=list)
@@ -145,3 +145,32 @@ class OnboardingProgressRow(Base):
     completed_at: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[str] = mapped_column(String(64), nullable=False)
     updated_at: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
+# -- Encrypted Tokens -------------------------------------------------------
+
+
+class EncryptedTokenRow(Base):
+    """Encrypted LLM API token — maps to ``encrypted_tokens`` table.
+
+    Tokens are stored as AES-256-GCM encrypted blobs.  Only masked
+    values are ever returned via API; decryption happens server-side
+    only when the pipeline needs to call an LLM provider.
+    """
+
+    __tablename__ = "encrypted_tokens"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    provider: Mapped[str] = mapped_column(String(32), nullable=False)
+    encrypted_value: Mapped[str] = mapped_column(Text, nullable=False)
+    masked_value: Mapped[str] = mapped_column(String(32), default="***")
+    label: Mapped[str] = mapped_column(String(128), default="")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    updated_at: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    __table_args__ = (
+        Index("idx_tokens_user_provider", "user_id", "provider"),
+        Index("idx_tokens_user_active", "user_id", "is_active"),
+    )

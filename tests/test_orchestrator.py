@@ -180,7 +180,7 @@ class TestScheduler:
 
 
 # ---------------------------------------------------------------------------
-# Pipeline (VAP full lifecycle)
+# Pipeline (Verified Autonomy Pipeline full lifecycle)
 # ---------------------------------------------------------------------------
 
 class _MockPlanner:

@@ -51,7 +51,7 @@ class TestStatus:
         assert resp.status_code == 200
         data = resp.json()
         assert data["platform"] == "OCCP"
-        assert data["version"] == "0.8.0"
+        assert data["version"] == "0.8.2"
         assert data["status"] == "running"
 
 
@@ -158,7 +158,7 @@ class TestPipeline:
         token = await _get_token(client)
         resp = await client.post("/api/v1/tasks", json={
             "name": "pipeline-test",
-            "description": "Run through VAP",
+            "description": "Run through Verified Autonomy Pipeline",
             "agent_type": "demo",
             "risk_level": "low",
         }, headers=_auth(token))

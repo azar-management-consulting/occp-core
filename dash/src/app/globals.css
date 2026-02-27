@@ -173,19 +173,19 @@ body {
   opacity: 0.7;
 }
 
-/* VAP Stages */
-.vap-stage {
+/* Pipeline Stages */
+.pipeline-stage {
   @apply flex items-center gap-3 px-5 py-3.5 rounded-lg transition-all duration-300;
 }
-.vap-stage.active {
+.pipeline-stage.active {
   background: rgba(136, 136, 255, 0.1);
   border: 1px solid rgba(136, 136, 255, 0.3);
 }
-.vap-stage.completed {
+.pipeline-stage.completed {
   background: rgba(117, 206, 100, 0.1);
   border: 1px solid rgba(117, 206, 100, 0.3);
 }
-.vap-stage.failed {
+.pipeline-stage.failed {
   background: rgba(210, 125, 111, 0.1);
   border: 1px solid rgba(210, 125, 111, 0.3);
 }
