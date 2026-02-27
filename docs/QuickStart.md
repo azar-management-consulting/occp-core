@@ -26,7 +26,7 @@ docker compose up -d
 git clone https://github.com/azar-management-consulting/occp-core.git
 cd occp-core
 pip install -e ".[dev]"
-occp demo              # run the full VAP demo
+occp demo              # run the full Verified Autonomy Pipeline demo
 occp demo --inject     # test prompt injection blocking
 occp start             # launch API server on :8000
 ```

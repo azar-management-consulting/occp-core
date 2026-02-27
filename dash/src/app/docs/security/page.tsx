@@ -44,7 +44,7 @@ export default function SecurityPage() {
                 1. Security Model
               </h2>
               <p className="mb-4">
-                OCCP implements a defense-in-depth security model where every layer provides independent protection. The Verified Autonomy Pipeline (VAP) ensures no AI agent action executes without passing through multiple security gates.
+                OCCP implements a defense-in-depth security model where every layer provides independent protection. The Verified Autonomy Pipeline ensures no AI agent action executes without passing through multiple security gates.
               </p>
 
               <div className="grid sm:grid-cols-2 gap-3">

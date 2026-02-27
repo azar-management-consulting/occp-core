@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.8.2 – Naming & Compliance Corrections
+
+### Naming
+- **Verified Autonomy Pipeline**: Removed all standalone "VAP" abbreviations across codebase (name collision with VeritasChain VAP provenance protocol)
+- First mention uses full form with stages; subsequent uses "Verified Autonomy Pipeline"
+
+### Compliance
+- **EU AI Act**: Art. 12, 14, 19 references added to landing, dashboard, and docs
+- **GDPR language**: "compliant" → "aligned" across all user-facing content; disclaimer added
+- **llms.txt**: "native" → "available"
+
+### Content
+- "the only" → "the first" positioning language
+- "5-minute production" → "5-minute quickstart"
+- "100 best integrations" → "Curated catalog (15+ certified, roadmap to 100)"
+- Competitor references updated: Kagent, OpenLeash, Leash positioning clarified
+
+### Infrastructure
+- Version bump to 0.8.2 across all modules (API, CLI, SDK, orchestrator, policy engine, dashboard, tests)
+
+---
+
+## 0.8.0 – Security Hardening, LLM Abstraction & Full Audit
+
+See `.claude/V080_FULL_AUDIT.md` for the complete 15/15 PASS audit report.
+
+---
+
 ## 0.7.0 – ORM Migration, RBAC & Sandbox Isolation
 
 ### Core
@@ -166,7 +194,7 @@
 
 - **Dashboard**: Next.js 14 App Router + Tailwind CSS
   - Mission Control landing page
-  - VAP pipeline status visualization
+  - Verified Autonomy Pipeline status visualization
   - Responsive design with OCCP branding
 
 ### Infrastructure

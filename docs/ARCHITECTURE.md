@@ -1,6 +1,6 @@
 # Architecture
 
-OCCP is a modular Agent Control Plane built on FastAPI, SQLAlchemy 2.0, and Casbin RBAC. Every autonomous agent action flows through the Verified Autonomy Pipeline (VAP) — a 5-stage protocol that ensures safety, auditability, and policy compliance before any output is delivered.
+OCCP is a modular Agent Control Plane built on FastAPI, SQLAlchemy 2.0, and Casbin RBAC. Every autonomous agent action flows through the 5-stage Verified Autonomy Pipeline (Plan → Gate → Execute → Validate → Ship) — a protocol that ensures safety, auditability, and policy compliance before any output is delivered.
 
 ## System Overview
 
@@ -28,7 +28,7 @@ graph LR
 
 | Module | Path | Responsibility |
 |--------|------|---------------|
-| **Orchestrator** | `orchestrator/` | VAP pipeline engine — protocol-based dependency injection, state machine, stage transitions |
+| **Orchestrator** | `orchestrator/` | Verified Autonomy Pipeline engine — protocol-based dependency injection, state machine, stage transitions |
 | **Policy Engine** | `policy_engine/` | Policy-as-code evaluation, PII/injection/resource guards, SHA-256 audit chain |
 | **API** | `api/` | FastAPI REST endpoints + WebSocket real-time events, request validation |
 | **Store** | `store/` | SQLAlchemy 2.0 async ORM — TaskStore, AuditStore, AgentStore, UserStore |
@@ -38,7 +38,7 @@ graph LR
 | **SDK** | `sdk/` | Python + TypeScript client SDKs for API consumption |
 | **Dashboard** | `dash/` | Next.js 15 dashboard — dark theme, live pipeline visualization |
 
-## Data Flow: Verified Autonomy Pipeline (VAP)
+## Data Flow: Verified Autonomy Pipeline
 
 ```
 Task Created → Plan Stage → Gate Stage → Execute Stage → Validate Stage → Ship Stage → Done

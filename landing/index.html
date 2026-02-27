@@ -425,6 +425,17 @@
       animation: fadeInUp 0.6s ease 0.35s both;
     }
 
+    .hero-developer-line {
+      font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+      color: var(--accent);
+      max-width: 640px;
+      margin-top: -1.5rem;
+      margin-bottom: 2.5rem;
+      line-height: 1.6;
+      font-weight: 500;
+      animation: fadeInUp 0.6s ease 0.45s both;
+    }
+
     /* Install box */
     .install-box {
       background: var(--bg-terminal);
@@ -561,7 +572,7 @@
       background: rgba(51, 255, 51, 0.04);
     }
 
-    /* ===== VAP PIPELINE ===== */
+    /* ===== PIPELINE ===== */
     .pipeline-section {
       background: linear-gradient(180deg, var(--bg) 0%, #0c0c0c 100%);
       border-top: 1px solid #161616;
@@ -1391,7 +1402,7 @@
     <section class="hero" aria-labelledby="hero-headline">
       <div class="hero-inner">
         <div class="hero-badge" role="status">
-          VERIFIED AUTONOMY PIPELINE &nbsp;·&nbsp; v0.8.0
+          FIRST OPEN-SOURCE CONTROL PLANE &nbsp;·&nbsp; 5-STAGE VERIFIED AUTONOMY PIPELINE &nbsp;·&nbsp; v0.8.2
         </div>
 
         <h1 class="hero-headline" id="hero-headline">
@@ -1400,8 +1411,11 @@
         </h1>
 
         <p class="hero-subheadline">
-          Every autonomous action <span class="text-amber">verified before execution</span>.<br>
-          Policy-enforced, audit-logged, enterprise-ready.
+          First open-source control plane with a 5-stage Verified Autonomy Pipeline.<br>
+          Every action verified. Every decision audited. Your infrastructure.
+        </p>
+        <p class="hero-developer-line">
+          5-minute quickstart. Curated catalog (15+ certified). Zero lock-in.
         </p>
 
         <div class="install-box" role="group" aria-label="Installation command">
@@ -1434,7 +1448,7 @@
       </div>
     </section>
 
-    <!-- ===== VAP PIPELINE ===== -->
+    <!-- ===== PIPELINE ===== -->
     <section class="section pipeline-section" id="pipeline" aria-labelledby="pipeline-title">
       <div class="section-inner">
         <span class="section-label">Verified Autonomy Pipeline</span>
@@ -1442,7 +1456,7 @@
           Five stages. Zero surprises.
         </h2>
         <p class="section-subtitle">
-          Every agent action traverses the VAP before touching your system. No shortcuts, no overrides, no exceptions.
+          Every agent action traverses the Verified Autonomy Pipeline before touching your system. No shortcuts, no overrides, no exceptions.
         </p>
 
         <div class="pipeline-wrapper">
@@ -1572,12 +1586,12 @@
             <span class="feature-icon" aria-hidden="true">🔑</span>
             <h3 class="feature-title">Enterprise Auth</h3>
             <p class="feature-desc">
-              JWT authentication, role-based access control, and GDPR-compliant data handling — ready for enterprise procurement.
+              JWT authentication, role-based access control, and EU AI Act aligned controls (Art. 12, 14, 19) — ready for enterprise procurement. <em>Not legal advice; verify compliance for your deployment.</em>
             </p>
             <div class="feature-tags-list">
               <span class="tag-pill">JWT</span>
               <span class="tag-pill">RBAC</span>
-              <span class="tag-pill">GDPR</span>
+              <span class="tag-pill">EU AI Act</span>
             </div>
           </article>
 
@@ -1602,7 +1616,7 @@
             <span class="feature-icon" aria-hidden="true">🔌</span>
             <h3 class="feature-title">MCP Connectors</h3>
             <p class="feature-desc">
-              Model Context Protocol integration. Install, configure, and manage MCP servers directly from the dashboard with guided onboarding.
+              Curated catalog (15+ certified, roadmap to 100). Install, configure, and manage MCP servers directly from the dashboard with guided onboarding.
             </p>
             <div class="feature-tags-list">
               <span class="tag-pill">MCP install</span>
@@ -1630,13 +1644,27 @@
       </div>
     </section>
 
+    <!-- ===== EU AI ACT ===== -->
+    <section class="section" id="eu-ready" aria-labelledby="eu-ready-title">
+      <div class="section-inner">
+        <span class="section-label">EU-ready</span>
+        <h2 class="section-title" id="eu-ready-title">
+          EU AI Act aligned by design.
+        </h2>
+        <p class="section-subtitle">
+          OCCP supports EU AI Act requirements: record-keeping (Art. 12), human oversight (Art. 14),
+          audit trails, and log retention (Art. 19). Not legal advice; verify compliance for your deployment.
+        </p>
+      </div>
+    </section>
+
     <!-- ===== CODE EXAMPLE ===== -->
     <section class="section code-section" id="docs" aria-labelledby="code-title">
       <div class="section-inner">
         <div class="code-wrapper">
 
           <div class="code-info">
-            <span class="section-label">Quick Start</span>
+            <span class="section-label">5-Minute Quick Start</span>
             <h2 class="section-title" id="code-title">
               Governance in<br>three lines of code.
             </h2>
@@ -1669,7 +1697,7 @@
     ),
 )
 
-<span class="cm"># Run task through the VAP</span>
+<span class="cm"># Run task through the Verified Autonomy Pipeline</span>
 <span class="va">result</span> = <span class="kw">await</span> <span class="va">pipeline</span>.<span class="fn">run</span>(<span class="va">task</span>)
 
 <span class="cm"># Every step: verified, logged, auditable</span>
@@ -1738,14 +1766,15 @@
             <span class="text-green">governance</span>, not just speed.
           </h2>
           <p>
-            OCCP core is MIT-licensed and free forever. The full VAP, policy engine, audit logging, and multi-LLM failover are open source. Enterprise Edition adds SSO, advanced analytics, SLA-backed support, and on-premise deployment.
+            OCCP core is MIT-licensed and free forever. The full Verified Autonomy Pipeline, policy engine, audit logging, and multi-LLM failover are open source.
+            llms.txt is available at occp.ai/llms.txt for AI discoverability. Enterprise Edition adds SSO, advanced analytics, SLA-backed support, and on-premise deployment.
           </p>
 
           <div class="oss-badges" aria-label="License and feature badges">
             <span class="badge badge-green">MIT License</span>
             <span class="badge badge-green">Free Core Forever</span>
             <span class="badge badge-amber">★ Enterprise Edition</span>
-            <span class="badge badge-purple">v0.8.0</span>
+            <span class="badge badge-purple">v0.8.2</span>
           </div>
 
           <div class="oss-ctas">
@@ -1787,7 +1816,7 @@
             The Control Plane that governs AI agents.<br>
             Every action verified. Every decision logged.
           </p>
-          <span class="footer-version" aria-label="Version 0.8.0">v0.8.0</span>
+          <span class="footer-version" aria-label="Version 0.8.2">v0.8.2</span>
         </div>
 
         <nav class="footer-links-group" aria-label="Footer navigation">
@@ -1805,7 +1834,7 @@
           &copy; 2025-2026 Azar Management Consulting. All rights reserved.
         </span>
         <span class="footer-system" aria-hidden="true">
-          OCCP/0.8.0 &nbsp;|&nbsp; VAP ACTIVE &nbsp;|&nbsp; <span class="cursor cursor-amber" style="width:0.4em; height:0.8em;"></span>
+          OCCP/0.8.2 &nbsp;|&nbsp; PIPELINE ACTIVE &nbsp;|&nbsp; <span class="cursor cursor-amber" style="width:0.4em; height:0.8em;"></span>
         </span>
       </div>
     </div>

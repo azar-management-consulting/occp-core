@@ -692,7 +692,7 @@ Parallel tracks: B1+B2 simultaneously. B5 anytime.
 
 | Competitor | Key Strength | OCCP Differentiator |
 |------------|-------------|---------------------|
-| **EV** (eevee.build) | K8s-native, declarative YAML governance, MIT | VAP 5-stage pipeline, hash-chain audit |
+| **EV** (eevee.build) | K8s-native, declarative YAML governance, MIT | 5-stage Verified Autonomy Pipeline, hash-chain audit |
 | **Gravitee 4.10** | Unified AI Gateway + MCP proxy + agentic IAM | Multi-LLM failover, policy-as-code |
 | **Cordum** | Policy enforcement + human approval gates | Sandbox isolation, open-core model |
 

@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     anthropic_model: str = "claude-sonnet-4-20250514"
     openai_api_key: str = ""
 
+    # ── Encryption (AES-256-GCM for token storage) ─────────────────
+    encryption_key: str = ""  # base64-encoded 32-byte key; auto-generates if empty
+
     # ── JWT auth ──────────────────────────────────────────────────────
     jwt_secret: str = ""
     jwt_algorithm: str = "HS256"

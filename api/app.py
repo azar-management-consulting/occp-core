@@ -34,11 +34,14 @@ from store.audit_store import AuditStore
 from store.agent_store import AgentStore
 from store.user_store import UserStore
 from store.onboarding_store import OnboardingStore
+from store.token_store import TokenStore
+
+from security.encryption import TokenEncryptor
 
 from api.deps import AppState, set_state
 from api.ws_manager import ConnectionManager
 from api.routes import agents, audit, auth, pipeline, policy, status, tasks, ws
-from api.routes import onboarding, mcp, skills, llm
+from api.routes import onboarding, mcp, skills, llm, tokens
 from config.settings import Settings
 
 logger = logging.getLogger(__name__)
@@ -86,6 +89,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
             await user_store.update_password(settings.admin_user, settings.admin_password)
             logger.info("Admin password synced from environment")
 
+    # Token encryption (AES-256-GCM envelope encryption)
+    encryptor = TokenEncryptor(settings.encryption_key)
+    token_store = TokenStore(session, encryptor)
+
     state = AppState(settings=settings)
     state.db = db
     state.task_store = task_store
@@ -93,6 +100,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     state.agent_store = agent_store
     state.user_store = user_store
     state.onboarding_store = OnboardingStore(session)
+    state.token_store = token_store
+    state.token_encryptor = encryptor
 
     # Multi-LLM planner with automatic failover chain
     multi_planner = MultiLLMPlanner()
@@ -238,7 +247,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 def create_app() -> FastAPI:
     app = FastAPI(
         title="OCCP – OpenCloud Control Plane",
-        version="0.8.0",
+        version="0.8.2",
         description="Agent Control Plane with Verified Autonomy Pipeline",
         lifespan=lifespan,
     )
@@ -290,6 +299,7 @@ def create_app() -> FastAPI:
     app.include_router(mcp.router, prefix=prefix)
     app.include_router(skills.router, prefix=prefix)
     app.include_router(llm.router, prefix=prefix)
+    app.include_router(tokens.router, prefix=prefix)
 
     return app
 

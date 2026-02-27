@@ -1,4 +1,4 @@
-"""OCCP Adapters – reference + production implementations for the VAP pipeline.
+"""OCCP Adapters – reference + production implementations for the Verified Autonomy Pipeline.
 
 These adapters implement the Protocol interfaces defined in
 ``orchestrator.pipeline`` (Planner, Executor, Validator, Shipper) and
