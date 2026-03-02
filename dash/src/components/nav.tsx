@@ -9,7 +9,7 @@ import { LanguageSelector } from "@/components/language-selector";
 
 export function Nav() {
   const pathname = usePathname();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, isAdmin, user, logout } = useAuth();
   const t = useT();
 
   const links = [
@@ -21,9 +21,12 @@ export function Nav() {
     { href: "/mcp", label: t.nav.mcp, desc: t.nav.mcpDesc },
     { href: "/skills", label: t.nav.skills, desc: t.nav.skillsDesc },
     { href: "/settings", label: t.nav.settings, desc: t.nav.settingsDesc },
+    ...(isAdmin
+      ? [{ href: "/admin", label: t.nav.admin, desc: t.nav.adminDesc }]
+      : []),
   ];
 
-  if (pathname === "/login") return null;
+  if (pathname === "/login" || pathname === "/register") return null;
 
   return (
     <nav className="border-b border-occp-muted/40 bg-occp-surface/80 backdrop-blur-md sticky top-0 z-50">

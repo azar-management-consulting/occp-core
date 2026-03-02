@@ -5,12 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { api } from "@/lib/api";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
-  const { login, isAuthenticated } = useAuth();
+  const { isAuthenticated, login } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -25,10 +27,11 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
+      await api.register(username, password, displayName || undefined);
       await login(username, password);
       router.replace("/");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "LOGIN FAILED");
+      setError(err instanceof Error ? err.message : "REGISTRATION FAILED");
     } finally {
       setLoading(false);
     }
@@ -44,10 +47,10 @@ export default function LoginPage() {
               **** OPENCLOUD CONTROL PLANE ****
             </div>
             <h1 className="font-pixel text-sm tracking-wide">
-              <span className="text-occp-primary text-glow">OCCP</span>{" "}
-              <span className="text-[var(--text)]">DASHBOARD</span>
+              <span className="text-occp-primary text-glow">CREATE</span>{" "}
+              <span className="text-[var(--text)]">ACCOUNT</span>
             </h1>
-            <p className="text-xs text-[var(--text-muted)] font-mono">AUTHENTICATION REQUIRED</p>
+            <p className="text-xs text-[var(--text-muted)] font-mono">NEW USER REGISTRATION</p>
           </div>
         </div>
 
@@ -69,7 +72,24 @@ export default function LoginPage() {
                 autoFocus
                 required
                 className="retro-input w-full"
-                placeholder="admin"
+                placeholder="your_username"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="display-name"
+                className="block font-pixel text-[11px] text-[var(--text-muted)] mb-2 uppercase tracking-widest"
+              >
+                Display Name
+              </label>
+              <input
+                id="display-name"
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                autoComplete="name"
+                className="retro-input w-full"
+                placeholder="optional"
               />
             </div>
             <div>
@@ -84,7 +104,7 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
+                autoComplete="new-password"
                 required
                 className="retro-input w-full"
                 placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;"
@@ -104,20 +124,20 @@ export default function LoginPage() {
             disabled={loading || !username.trim() || !password.trim()}
             className="retro-btn-primary w-full py-3 font-pixel text-[11px] tracking-wider"
           >
-            {loading ? "LOADING..." : "LOGIN"}
+            {loading ? "CREATING..." : "REGISTER"}
           </button>
         </form>
 
         <div className="text-center space-y-2">
-          <p className="font-pixel text-[11px] text-[var(--text-muted)]/40 tracking-wider">
-            OCCP V0.8.2 &mdash; READY
-            <span className="inline-block w-1.5 h-2.5 bg-occp-primary ml-1 animate-blink align-middle" />
-          </p>
-          <p className="text-[10px] text-[var(--text-muted)]/30 font-mono">
-            New user?{" "}
-            <Link href="/register" className="text-occp-primary hover:text-glow transition-colors">
-              CREATE ACCOUNT
+          <p className="text-xs text-[var(--text-muted)] font-mono">
+            Already have an account?{" "}
+            <Link href="/login" className="text-occp-primary hover:text-glow transition-colors">
+              LOGIN
             </Link>
+          </p>
+          <p className="font-pixel text-[11px] text-[var(--text-muted)]/40 tracking-wider">
+            OCCP V0.8.2
+            <span className="inline-block w-1.5 h-2.5 bg-occp-primary ml-1 animate-blink align-middle" />
           </p>
         </div>
       </div>

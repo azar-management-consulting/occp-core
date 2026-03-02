@@ -18,6 +18,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     if (typeof window !== "undefined") {
       localStorage.removeItem("occp_token");
       localStorage.removeItem("occp_user");
+      localStorage.removeItem("occp_role");
       window.location.href = "/login";
     }
     throw new Error("Session expired");
@@ -110,6 +111,40 @@ export interface LLMProviderHealth {
 export interface LLMHealthData {
   status: string;
   providers: Record<string, LLMProviderHealth>;
+}
+
+// ── V0.8.2 Users / Admin ──────────────────────────────────────
+
+export interface UserListItem {
+  id: string;
+  username: string;
+  role: string;
+  display_name: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OnboardingFunnelData {
+  landing: number;
+  running: number;
+  done: number;
+}
+
+export interface UserActivityData {
+  username: string;
+  role: string;
+  last_action: string;
+  last_seen: string;
+  onboarding_state: string;
+}
+
+export interface AdminStatsData {
+  users_total: number;
+  users_by_role: Record<string, number>;
+  registrations_last_7_days: number;
+  onboarding_funnel: OnboardingFunnelData;
+  user_activity: UserActivityData[];
 }
 
 // ── V0.8.0 Onboarding / MCP / Skills / LLM ──────────────────
@@ -304,4 +339,17 @@ export const api = {
 
   // ── V0.8.0 LLM v2 ──
   llmHealthV2: () => apiFetch<LLMHealthV2>("/llm/health"),
+
+  // ── V0.8.2 Auth / Users / Admin ──
+  me: () => apiFetch<{ username: string; role: string; display_name: string }>("/auth/me"),
+  listUsers: () =>
+    apiFetch<{ users: UserListItem[]; total: number }>("/users"),
+  adminStats: () => apiFetch<AdminStatsData>("/admin/stats"),
+
+  // ── V0.8.2 Registration ──
+  register: (username: string, password: string, displayName?: string) =>
+    apiFetch<{ access_token: string; token_type: string; role: string }>(
+      "/auth/register",
+      { method: "POST", body: JSON.stringify({ username, password, display_name: displayName || "" }) },
+    ),
 };

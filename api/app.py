@@ -42,6 +42,7 @@ from api.deps import AppState, set_state
 from api.ws_manager import ConnectionManager
 from api.routes import agents, audit, auth, pipeline, policy, status, tasks, ws
 from api.routes import onboarding, mcp, skills, llm, tokens
+from api.routes import users, admin
 from config.settings import Settings
 
 logger = logging.getLogger(__name__)
@@ -68,6 +69,20 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     last_audit = await audit_store.get_last()
     if last_audit:
         engine.set_chain_head(last_audit)
+
+    # ── Audit retention enforcement (EU AI Act Art. 19) ───────────
+    if settings.audit_retention_days > 0:
+        from datetime import datetime, timedelta, timezone
+
+        cutoff = datetime.now(timezone.utc) - timedelta(days=settings.audit_retention_days)
+        cutoff_iso = cutoff.isoformat()
+        pruned = await audit_store.prune_before(cutoff_iso)
+        if pruned:
+            logger.info(
+                "Audit retention: pruned %d entries older than %d days",
+                pruned,
+                settings.audit_retention_days,
+            )
 
     agent_store = AgentStore(session)
     user_store = UserStore(session)
@@ -300,6 +315,8 @@ def create_app() -> FastAPI:
     app.include_router(skills.router, prefix=prefix)
     app.include_router(llm.router, prefix=prefix)
     app.include_router(tokens.router, prefix=prefix)
+    app.include_router(users.router, prefix=prefix)
+    app.include_router(admin.router, prefix=prefix)
 
     return app
 

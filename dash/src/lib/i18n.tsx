@@ -36,6 +36,8 @@ export interface T {
     skillsDesc: string;
     settings: string;
     settingsDesc: string;
+    admin: string;
+    adminDesc: string;
     logout: string;
   };
   home: {
@@ -269,6 +271,27 @@ export interface T {
     verifyAll: string;
     launchTask: string;
   };
+  admin: {
+    title: string;
+    subtitle: string;
+    usersTitle: string;
+    usersSubtitle: string;
+    statsTitle: string;
+    statsSubtitle: string;
+    totalUsers: string;
+    byRole: string;
+    recentSignups: string;
+    onboardingFunnel: string;
+    userActivity: string;
+    noUsers: string;
+    role: string;
+    username: string;
+    status: string;
+    active: string;
+    inactive: string;
+    joined: string;
+    lastSeen: string;
+  };
 }
 
 /* ── Translations ──────────────────────────────────────── */
@@ -292,6 +315,8 @@ const translations: Record<Locale, T> = {
       skillsDesc: "Agent skill inventory & token impact",
       settings: "SETTINGS",
       settingsDesc: "LLM providers & tool policies",
+      admin: "ADMIN",
+      adminDesc: "User management & platform analytics",
       logout: "LOGOUT",
     },
     home: {
@@ -525,6 +550,27 @@ const translations: Record<Locale, T> = {
       verifyAll: "Verify All",
       launchTask: "Launch First Task",
     },
+    admin: {
+      title: "ADMIN PANEL",
+      subtitle: "User management & platform analytics",
+      usersTitle: "USER MANAGEMENT",
+      usersSubtitle: "All registered platform users",
+      statsTitle: "PLATFORM STATS",
+      statsSubtitle: "Analytics and onboarding metrics",
+      totalUsers: "Total Users",
+      byRole: "By Role",
+      recentSignups: "Signups (7d)",
+      onboardingFunnel: "Onboarding Funnel",
+      userActivity: "User Activity",
+      noUsers: "No users found",
+      role: "Role",
+      username: "Username",
+      status: "Status",
+      active: "Active",
+      inactive: "Inactive",
+      joined: "Joined",
+      lastSeen: "Last Seen",
+    },
   },
 
   es: {
@@ -545,6 +591,8 @@ const translations: Record<Locale, T> = {
       skillsDesc: "Inventario de habilidades e impacto de tokens",
       settings: "AJUSTES",
       settingsDesc: "Proveedores LLM y pol\u00edticas de herramientas",
+      admin: "ADMIN",
+      adminDesc: "Gestión de usuarios y analíticas",
       logout: "SALIR",
     },
     home: {
@@ -778,6 +826,27 @@ const translations: Record<Locale, T> = {
       verifyAll: "Verificar Todo",
       launchTask: "Lanzar Primera Tarea",
     },
+    admin: {
+      title: "PANEL ADMIN",
+      subtitle: "Gestión de usuarios y analíticas de plataforma",
+      usersTitle: "GESTIÓN DE USUARIOS",
+      usersSubtitle: "Todos los usuarios registrados",
+      statsTitle: "ESTADÍSTICAS",
+      statsSubtitle: "Analíticas y métricas de onboarding",
+      totalUsers: "Total Usuarios",
+      byRole: "Por Rol",
+      recentSignups: "Registros (7d)",
+      onboardingFunnel: "Embudo de Onboarding",
+      userActivity: "Actividad de Usuarios",
+      noUsers: "No se encontraron usuarios",
+      role: "Rol",
+      username: "Usuario",
+      status: "Estado",
+      active: "Activo",
+      inactive: "Inactivo",
+      joined: "Registrado",
+      lastSeen: "Última Vez",
+    },
   },
 
   de: {
@@ -798,6 +867,8 @@ const translations: Record<Locale, T> = {
       skillsDesc: "Agentenf\u00e4higkeiten & Token-Auswirkung",
       settings: "EINSTELLUNGEN",
       settingsDesc: "LLM-Anbieter & Werkzeugrichtlinien",
+      admin: "ADMIN",
+      adminDesc: "Benutzerverwaltung & Plattformanalytik",
       logout: "ABMELDEN",
     },
     home: {
@@ -1031,6 +1102,27 @@ const translations: Record<Locale, T> = {
       verifyAll: "Alle Überprüfen",
       launchTask: "Erste Aufgabe Starten",
     },
+    admin: {
+      title: "ADMIN-PANEL",
+      subtitle: "Benutzerverwaltung & Plattformanalytik",
+      usersTitle: "BENUTZERVERWALTUNG",
+      usersSubtitle: "Alle registrierten Benutzer",
+      statsTitle: "PLATTFORM-STATISTIKEN",
+      statsSubtitle: "Analytik und Onboarding-Metriken",
+      totalUsers: "Benutzer Gesamt",
+      byRole: "Nach Rolle",
+      recentSignups: "Registrierungen (7T)",
+      onboardingFunnel: "Onboarding-Trichter",
+      userActivity: "Benutzeraktivität",
+      noUsers: "Keine Benutzer gefunden",
+      role: "Rolle",
+      username: "Benutzername",
+      status: "Status",
+      active: "Aktiv",
+      inactive: "Inaktiv",
+      joined: "Beigetreten",
+      lastSeen: "Zuletzt Gesehen",
+    },
   },
 
   fr: {
@@ -1049,9 +1141,11 @@ const translations: Record<Locale, T> = {
       mcpDesc: "Connecteurs du Protocole de Contexte",
       skills: "COMP\u00c9TENCES",
       skillsDesc: "Inventaire des comp\u00e9tences et impact tokens",
-      settings: "PARAM\u00c8TRES",
+      settings: "PARAMÈTRES",
       settingsDesc: "Fournisseurs LLM et politiques d'outils",
-      logout: "D\u00c9CONNEXION",
+      admin: "ADMIN",
+      adminDesc: "Gestion des utilisateurs et analytiques",
+      logout: "DÉCONNEXION",
     },
     home: {
       bootLine: "**** OPENCLOUD CONTROL PLANE V0.8.2 ****",
@@ -1284,6 +1378,27 @@ const translations: Record<Locale, T> = {
       verifyAll: "Tout Vérifier",
       launchTask: "Lancer la Première Tâche",
     },
+    admin: {
+      title: "PANNEAU ADMIN",
+      subtitle: "Gestion des utilisateurs et analytiques de la plateforme",
+      usersTitle: "GESTION DES UTILISATEURS",
+      usersSubtitle: "Tous les utilisateurs enregistrés",
+      statsTitle: "STATISTIQUES",
+      statsSubtitle: "Analytiques et métriques d'onboarding",
+      totalUsers: "Total Utilisateurs",
+      byRole: "Par Rôle",
+      recentSignups: "Inscriptions (7j)",
+      onboardingFunnel: "Entonnoir d'Onboarding",
+      userActivity: "Activité Utilisateurs",
+      noUsers: "Aucun utilisateur trouvé",
+      role: "Rôle",
+      username: "Nom d'utilisateur",
+      status: "Statut",
+      active: "Actif",
+      inactive: "Inactif",
+      joined: "Inscrit",
+      lastSeen: "Dernière Activité",
+    },
   },
 
   zh: {
@@ -1302,14 +1417,16 @@ const translations: Record<Locale, T> = {
       mcpDesc: "\u6a21\u578b\u4e0a\u4e0b\u6587\u534f\u8bae\u8fde\u63a5\u5668",
       skills: "\u6280\u80fd",
       skillsDesc: "\u4ee3\u7406\u6280\u80fd\u6e05\u5355\u4e0eToken\u5f71\u54cd",
-      settings: "\u8bbe\u7f6e",
-      settingsDesc: "LLM\u63d0\u4f9b\u5546\u548c\u5de5\u5177\u7b56\u7565",
-      logout: "\u767b\u51fa",
+      settings: "设置",
+      settingsDesc: "LLM提供商和工具策略",
+      admin: "管理",
+      adminDesc: "用户管理和平台分析",
+      logout: "登出",
     },
     home: {
       bootLine: "**** OPENCLOUD CONTROL PLANE V0.8.2 ****",
-      title: "\u4efb\u52a1\u63a7\u5236\u4e2d\u5fc3",
-      subtitle: "\u9a8c\u8bc1\u81ea\u4e3b\u6d41\u6c34\u7ebf \u2014 \u89c4\u5212\u3001\u95e8\u63a7\u3001\u6267\u884c\u3001\u9a8c\u8bc1\u3001\u4ea4\u4ed8",
+      title: "任务控制中心",
+      subtitle: "验证自主流水线 — 规划、门控、执行、验证、交付",
       ready: "\u5c31\u7eea\u3002",
       systemStatus: "\u7cfb\u7edf\u72b6\u6001",
       systemStatusDesc: "\u5b9e\u65f6\u5e73\u53f0\u5065\u5eb7\u6307\u6807\u548c\u8fd0\u884c\u8ba1\u6570\u5668",
@@ -1534,8 +1651,29 @@ const translations: Record<Locale, T> = {
       tokenLabel: "\u6807\u7b7e\uff08\u53ef\u9009\uff09",
       tokenStored: "\u4ee4\u724c\u5b58\u50a8\u6210\u529f",
       tokenRevoked: "\u4ee4\u724c\u5df2\u64a4\u9500",
-      verifyAll: "\u5168\u90e8\u9a8c\u8bc1",
-      launchTask: "\u542f\u52a8\u9996\u4e2a\u4efb\u52a1",
+      verifyAll: "全部验证",
+      launchTask: "启动首个任务",
+    },
+    admin: {
+      title: "管理面板",
+      subtitle: "用户管理和平台分析",
+      usersTitle: "用户管理",
+      usersSubtitle: "所有注册用户",
+      statsTitle: "平台统计",
+      statsSubtitle: "分析和入门指标",
+      totalUsers: "用户总数",
+      byRole: "按角色",
+      recentSignups: "注册 (7天)",
+      onboardingFunnel: "入门漏斗",
+      userActivity: "用户活动",
+      noUsers: "未找到用户",
+      role: "角色",
+      username: "用户名",
+      status: "状态",
+      active: "活跃",
+      inactive: "非活跃",
+      joined: "加入时间",
+      lastSeen: "最后登录",
     },
   },
 
@@ -1555,9 +1693,11 @@ const translations: Record<Locale, T> = {
       mcpDesc: "Model Context Protocol csatlakoz\u00f3k",
       skills: "K\u00c9PESS\u00c9GEK",
       skillsDesc: "\u00c1gens k\u00e9pess\u00e9g lista \u00e9s Token hat\u00e1s",
-      settings: "BE\u00c1LL\u00cdT\u00c1SOK",
-      settingsDesc: "LLM szolg\u00e1ltat\u00f3k \u00e9s eszk\u00f6z szab\u00e1lyok",
-      logout: "KIL\u00c9P\u00c9S",
+      settings: "BEÁLLÍTÁSOK",
+      settingsDesc: "LLM szolgáltatók és eszköz szabályok",
+      admin: "ADMIN",
+      adminDesc: "Felhasználókezelés és platform analitika",
+      logout: "KILÉPÉS",
     },
     home: {
       bootLine: "**** OPENCLOUD CONTROL PLANE V0.8.2 ****",
@@ -1787,8 +1927,29 @@ const translations: Record<Locale, T> = {
       tokenLabel: "C\u00edmke (opcion\u00e1lis)",
       tokenStored: "Token sikeresen t\u00e1rolva",
       tokenRevoked: "Token visszavonva",
-      verifyAll: "Mindent Ellen\u0151riz",
-      launchTask: "Els\u0151 Feladat Ind\u00edt\u00e1sa",
+      verifyAll: "Mindent Ellenőriz",
+      launchTask: "Első Feladat Indítása",
+    },
+    admin: {
+      title: "ADMIN PANEL",
+      subtitle: "Felhasználókezelés és platform analitika",
+      usersTitle: "FELHASZNÁLÓKEZELÉS",
+      usersSubtitle: "Összes regisztrált felhasználó",
+      statsTitle: "PLATFORM STATISZTIKÁK",
+      statsSubtitle: "Analitika és onboarding metrikák",
+      totalUsers: "Összes Felhasználó",
+      byRole: "Szerepkör Szerint",
+      recentSignups: "Regisztrációk (7 nap)",
+      onboardingFunnel: "Onboarding Tölcsér",
+      userActivity: "Felhasználói Aktivitás",
+      noUsers: "Nincs felhasználó",
+      role: "Szerepkör",
+      username: "Felhasználónév",
+      status: "Státusz",
+      active: "Aktív",
+      inactive: "Inaktív",
+      joined: "Csatlakozott",
+      lastSeen: "Utoljára Látva",
     },
   },
 };

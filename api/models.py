@@ -241,6 +241,56 @@ class SkillsListResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Auth / Users / Admin
+# ---------------------------------------------------------------------------
+
+
+class MeResponse(BaseModel):
+    username: str
+    role: str
+    display_name: str = ""
+
+
+class UserListItem(BaseModel):
+    id: str
+    username: str
+    role: str
+    display_name: str = ""
+    is_active: bool = True
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class UserListResponse(BaseModel):
+    users: list[UserListItem]
+    total: int
+
+
+class OnboardingFunnel(BaseModel):
+    landing: int = 0
+    running: int = 0
+    done: int = 0
+
+
+class UserActivity(BaseModel):
+    username: str
+    role: str
+    last_action: str = ""
+    last_seen: str = ""
+    onboarding_state: str = ""
+
+
+class AdminStatsResponse(BaseModel):
+    users_total: int = 0
+    users_by_role: dict[str, int] = Field(default_factory=dict)
+    registrations_last_7_days: int = 0
+    onboarding_funnel: OnboardingFunnel = Field(default_factory=OnboardingFunnel)
+    user_activity: list[UserActivity] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
 # LLM Health
 # ---------------------------------------------------------------------------
 

@@ -13,6 +13,7 @@ import type { ReactNode } from "react";
 interface AuthState {
   token: string | null;
   user: string | null;
+  role: string | null;
   loading: boolean;
 }
 
@@ -20,12 +21,14 @@ interface AuthContextValue extends AuthState {
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const TOKEN_KEY = "occp_token";
 const USER_KEY = "occp_user";
+const ROLE_KEY = "occp_role";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -34,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     token: null,
     user: null,
+    role: null,
     loading: true,
   });
 
@@ -41,7 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY);
     const user = localStorage.getItem(USER_KEY);
-    setState({ token, user, loading: false });
+    const role = localStorage.getItem(ROLE_KEY);
+    setState({ token, user, role, loading: false });
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
@@ -57,15 +62,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data = await res.json();
+    const role = data.role || "viewer";
     localStorage.setItem(TOKEN_KEY, data.access_token);
     localStorage.setItem(USER_KEY, username);
-    setState({ token: data.access_token, user: username, loading: false });
+    localStorage.setItem(ROLE_KEY, role);
+    setState({ token: data.access_token, user: username, role, loading: false });
   }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
-    setState({ token: null, user: null, loading: false });
+    localStorage.removeItem(ROLE_KEY);
+    setState({ token: null, user: null, role: null, loading: false });
   }, []);
 
   const value = useMemo<AuthContextValue>(
@@ -74,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       isAuthenticated: !!state.token,
+      isAdmin: state.role === "system_admin" || state.role === "org_admin",
     }),
     [state, login, logout],
   );

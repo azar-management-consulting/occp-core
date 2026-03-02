@@ -11,9 +11,10 @@ from pydantic import BaseModel, Field
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from api.auth import create_access_token, decode_token
+from api.auth import create_access_token, decode_token, get_current_user_payload
 from api.rbac import PermissionChecker
 from api.deps import AppState, get_state
+from api.models import MeResponse
 
 router = APIRouter(tags=["auth"])
 
@@ -69,11 +70,44 @@ async def login(
         settings,
         extra={"role": user.role},
     )
+
+    # Audit: log successful login
+    if state.policy_engine and state.audit_store:
+        try:
+            await state.policy_engine.audit(
+                actor=user.username,
+                action="auth.login",
+                task_id="",
+                detail={"role": user.role},
+                audit_store=state.audit_store,
+            )
+        except Exception:
+            pass  # login must not fail due to audit
+
     return TokenResponse(
         access_token=token,
         expires_in=settings.jwt_expire_minutes * 60,
         role=user.role,
     )
+
+
+@router.get("/auth/me", response_model=MeResponse)
+async def get_me(
+    current_user: dict = Depends(get_current_user_payload),
+    state: AppState = Depends(get_state),
+) -> MeResponse:
+    """Return the authenticated user's profile (username, role, display_name)."""
+    username = current_user.get("sub", "")
+    role = current_user.get("role", "viewer")
+    display_name = username
+
+    if state.user_store:
+        user = await state.user_store.get_by_username(username)
+        if user:
+            display_name = user.display_name or username
+            role = user.role
+
+    return MeResponse(username=username, role=role, display_name=display_name)
 
 
 @router.post("/auth/refresh", response_model=TokenResponse)
@@ -99,20 +133,57 @@ async def refresh_token(
     )
 
 
-class RegisterRequest(BaseModel):
+class SelfRegisterRequest(BaseModel):
+    username: str = Field(..., min_length=1, max_length=100)
+    password: str = Field(..., min_length=8, max_length=200)
+    display_name: str = ""
+
+
+@router.post("/auth/register", response_model=TokenResponse, status_code=201)
+async def self_register(
+    body: SelfRegisterRequest,
+    state: AppState = Depends(get_state),
+) -> TokenResponse:
+    """Public self-registration — creates viewer-only accounts."""
+    if state.user_store is None:
+        raise HTTPException(status_code=503, detail="User store not available")
+
+    existing = await state.user_store.get_by_username(body.username)
+    if existing:
+        raise HTTPException(status_code=409, detail="Username already exists")
+
+    user = await state.user_store.create(
+        username=body.username,
+        password=body.password,
+        role="viewer",
+        display_name=body.display_name or body.username,
+    )
+    token = create_access_token(
+        user.username,
+        state.settings,
+        extra={"role": user.role},
+    )
+    return TokenResponse(
+        access_token=token,
+        expires_in=state.settings.jwt_expire_minutes * 60,
+        role=user.role,
+    )
+
+
+class AdminRegisterRequest(BaseModel):
     username: str = Field(..., min_length=1, max_length=100)
     password: str = Field(..., min_length=8, max_length=200)
     role: str = Field(default="viewer", pattern=r"^(viewer|operator|org_admin|system_admin)$")
     display_name: str = ""
 
 
-@router.post("/auth/register", response_model=TokenResponse, status_code=201,
+@router.post("/auth/register/admin", response_model=TokenResponse, status_code=201,
              dependencies=[Depends(PermissionChecker("users", "create"))])
-async def register_user(
-    body: RegisterRequest,
+async def admin_register_user(
+    body: AdminRegisterRequest,
     state: AppState = Depends(get_state),
 ) -> TokenResponse:
-    """Create a new user (requires users:create permission)."""
+    """Admin-only user creation — allows any role (requires users:create permission)."""
     if state.user_store is None:
         raise HTTPException(status_code=503, detail="User store not available")
 

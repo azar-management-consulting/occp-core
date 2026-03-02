@@ -50,6 +50,9 @@ p, operator, session, update
 p, viewer, tokens, read
 p, viewer, tokens, manage
 
+# ── Org Admin — Admin dashboard stats ─────────────────────────────
+p, org_admin, admin, read
+
 # ── Org Admin — Governance read (supply-chain audit logs) ────────
 p, org_admin, governance, read
 
@@ -59,3 +62,5 @@ p, system_admin, policy, update
 p, system_admin, system, manage
 p, system_admin, governance, manage
 p, system_admin, supply_chain, manage
+p, system_admin, tokens, rotate
+p, org_admin, tokens, org_manage
