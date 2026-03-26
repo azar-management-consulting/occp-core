@@ -40,9 +40,18 @@ class PIIGuard:
         ),
     }
 
+    # Fields that contain LLM-generated technical content — skip PII scan
+    # to avoid false positives on task IDs, token counts, IP addresses, etc.
+    SKIP_FIELDS: set[str] = {"plan", "metadata", "capabilities"}
+
     def check(self, payload: dict[str, Any]) -> GuardResult:
-        """Scan *payload* values for PII patterns."""
-        text = _flatten_to_text(payload)
+        """Scan *payload* user-facing values for PII patterns.
+
+        Skips LLM-generated fields (plan, metadata, capabilities) to
+        avoid false positives on technical content.
+        """
+        filtered = {k: v for k, v in payload.items() if k not in self.SKIP_FIELDS}
+        text = _flatten_to_text(filtered)
         matches: list[str] = []
 
         for label, pattern in self.PATTERNS.items():
