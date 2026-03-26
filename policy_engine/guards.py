@@ -34,7 +34,10 @@ class PIIGuard:
         "email": re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
         "phone": re.compile(r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b"),
         "ssn": re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),
-        "credit_card": re.compile(r"\b(?:\d[ -]*?){13,16}\b"),
+        "credit_card": re.compile(
+            r"\b(?:4\d{3}|5[1-5]\d{2}|3[47]\d{2}|6(?:011|5\d{2}))"
+            r"[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{1,4}\b"
+        ),
     }
 
     def check(self, payload: dict[str, Any]) -> GuardResult:
@@ -43,7 +46,11 @@ class PIIGuard:
         matches: list[str] = []
 
         for label, pattern in self.PATTERNS.items():
-            if pattern.search(text):
+            found = pattern.search(text)
+            if found:
+                # Credit card: Luhn check to reduce false positives
+                if label == "credit_card" and not _luhn_check(found.group()):
+                    continue
                 matches.append(label)
 
         if matches:
@@ -125,7 +132,10 @@ class OutputSanitizationGuard:
         "email": re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
         "phone": re.compile(r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b"),
         "ssn": re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),
-        "credit_card": re.compile(r"\b(?:\d[ -]*?){13,16}\b"),
+        "credit_card": re.compile(
+            r"\b(?:4\d{3}|5[1-5]\d{2}|3[47]\d{2}|6(?:011|5\d{2}))"
+            r"[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{1,4}\b"
+        ),
         "ip_address": re.compile(
             r"\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}"
             r"(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b"
@@ -147,7 +157,10 @@ class OutputSanitizationGuard:
         for label, pattern in self.PATTERNS.items():
             if label in self._allowed:
                 continue
-            if pattern.search(text):
+            found = pattern.search(text)
+            if found:
+                if label == "credit_card" and not _luhn_check(found.group()):
+                    continue
                 matches.append(label)
 
         if matches:
@@ -198,9 +211,105 @@ class ResourceLimitGuard:
         return GuardResult(passed=True, guard_name=self.NAME)
 
 
+class HumanOversightGuard:
+    """Enforces human-in-the-loop for sensitive operations.
+
+    Operations requiring human approval:
+    - Policy changes (runtime policy modifications)
+    - Agent activation (new agent types enabled)
+    - Skills outside sandbox (unverified/untrusted skills)
+
+    The flag is stored per-session and checked by the pipeline Gate stage.
+    """
+
+    NAME = "human_oversight_guard"
+
+    # Actions that always require human approval
+    OVERSIGHT_REQUIRED: set[str] = {
+        "policy.update",
+        "policy.delete",
+        "agent.activate",
+        "agent.register",
+        "skill.enable_untrusted",
+        "skill.enable_unsandboxed",
+        "governance.override",
+        "token.rotate_all",
+    }
+
+    def __init__(self, *, enabled: bool = True) -> None:
+        self._enabled = enabled
+        self._approved_actions: set[str] = set()
+
+    @property
+    def enabled(self) -> bool:
+        return self._enabled
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        self._enabled = value
+
+    def requires_approval(self, action: str) -> bool:
+        """Check if an action requires human approval."""
+        if not self._enabled:
+            return False
+        return action in self.OVERSIGHT_REQUIRED and action not in self._approved_actions
+
+    def approve(self, action: str) -> None:
+        """Record human approval for an action (single-use)."""
+        self._approved_actions.add(action)
+
+    def revoke_approval(self, action: str) -> None:
+        """Revoke previous approval."""
+        self._approved_actions.discard(action)
+
+    def clear_approvals(self) -> None:
+        """Clear all recorded approvals (session reset)."""
+        self._approved_actions.clear()
+
+    def check(self, payload: dict[str, Any]) -> GuardResult:
+        """Check if the action in payload requires and has human approval."""
+        if not self._enabled:
+            return GuardResult(passed=True, guard_name=self.NAME)
+
+        action = payload.get("action", "")
+        if not action:
+            return GuardResult(passed=True, guard_name=self.NAME)
+
+        if self.requires_approval(action):
+            return GuardResult(
+                passed=False,
+                guard_name=self.NAME,
+                detail=f"Action '{action}' requires human approval before execution",
+            )
+        return GuardResult(passed=True, guard_name=self.NAME)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize state for audit/persistence."""
+        return {
+            "enabled": self._enabled,
+            "oversight_actions": sorted(self.OVERSIGHT_REQUIRED),
+            "approved_actions": sorted(self._approved_actions),
+        }
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def _luhn_check(raw: str) -> bool:
+    """Validate a number string with the Luhn algorithm (ISO/IEC 7812)."""
+    digits = [int(c) for c in raw if c.isdigit()]
+    if len(digits) < 13 or len(digits) > 19:
+        return False
+    checksum = 0
+    for i, d in enumerate(reversed(digits)):
+        if i % 2 == 1:
+            d *= 2
+            if d > 9:
+                d -= 9
+        checksum += d
+    return checksum % 10 == 0
+
 
 def _flatten_to_text(data: Any, _depth: int = 0) -> str:
     """Recursively flatten a dict/list to a single text blob for scanning."""
