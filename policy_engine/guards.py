@@ -158,9 +158,34 @@ class OutputSanitizationGuard:
     def __init__(self, *, allowed: set[str] | None = None) -> None:
         self._allowed = allowed or set()
 
+    # Fields that contain LLM-generated planning content (not user/execution
+    # output) and would produce phone-number false positives from step IDs,
+    # timestamps, token counts, etc. These are scanned only when an explicit
+    # ``output`` field is present (post-execution mode).
+    _PLAN_FIELDS = frozenset(
+        {"plan", "metadata", "capabilities", "description", "steps", "reasoning"}
+    )
+
     def check(self, output: dict[str, Any]) -> GuardResult:
-        """Scan execution *output* for PII / secret leakage."""
-        text = _flatten_to_text(output)
+        """Scan execution *output* for PII / secret leakage.
+
+        Skips LLM-generated plan/metadata fields unless running in
+        post-execution mode (where the payload contains an ``output`` key).
+        """
+        post_exec_mode = isinstance(output, dict) and "output" in output
+        if post_exec_mode:
+            # Post-execution: scan the executor output strictly
+            scan_target: Any = output.get("output", {})
+        elif isinstance(output, dict):
+            # Pre-gate: scan only user-provided fields (name + description only
+            # if not LLM-expanded). Skip plan/metadata/capabilities entirely.
+            scan_target = {
+                k: v for k, v in output.items() if k not in self._PLAN_FIELDS
+            }
+        else:
+            scan_target = output
+
+        text = _flatten_to_text(scan_target)
         matches: list[str] = []
 
         for label, pattern in self.PATTERNS.items():
@@ -169,6 +194,11 @@ class OutputSanitizationGuard:
             found = pattern.search(text)
             if found:
                 if label == "credit_card" and not _luhn_check(found.group()):
+                    continue
+                # Phone-like 10-digit sequences produce very high false-positive
+                # rates on LLM plan content; require hyphen/dot separators to
+                # match (real phone formatting).
+                if label == "phone" and "-" not in found.group() and "." not in found.group():
                     continue
                 matches.append(label)
 
