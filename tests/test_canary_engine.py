@@ -157,6 +157,48 @@ class TestVerdictSerialization:
         assert "decided_at" in d
 
 
+class TestHistory:
+
+    def test_verdicts_recorded(self, engine):
+        baseline = MetricsCollector()
+        candidate = MetricsCollector()
+        _populate_metrics(baseline, success=20)
+        _populate_metrics(candidate, success=20)
+        engine.clear_history()
+        engine.compare(baseline.snapshot(), candidate.snapshot())
+        engine.compare(baseline.snapshot(), candidate.snapshot())
+        recent = engine.recent_verdicts
+        assert len(recent) == 2
+
+    def test_stats_aggregate(self, engine):
+        engine.clear_history()
+        baseline = MetricsCollector()
+        candidate_ok = MetricsCollector()
+        candidate_bad = MetricsCollector()
+        _populate_metrics(baseline, success=20)
+        _populate_metrics(candidate_ok, success=20)
+        _populate_metrics(candidate_bad, success=5, failed=15)
+
+        engine.compare(baseline.snapshot(), candidate_ok.snapshot())
+        engine.compare(baseline.snapshot(), candidate_bad.snapshot())
+        stats = engine.stats
+        assert stats["total_verdicts"] == 2
+        assert stats["by_decision"].get("promote", 0) >= 1
+        assert stats["by_decision"].get("rollback", 0) >= 1
+
+    def test_history_ring_buffer_cap(self, engine):
+        engine.clear_history()
+        # Force the ring-buffer to hold max 200; we insert 210 noops
+        engine._HISTORY_MAX = 5  # test override
+        baseline = MetricsCollector()
+        candidate = MetricsCollector()
+        _populate_metrics(baseline, success=20)
+        _populate_metrics(candidate, success=20)
+        for _ in range(10):
+            engine.compare(baseline.snapshot(), candidate.snapshot())
+        assert len(engine.recent_verdicts) == 5
+
+
 class TestSingleton:
 
     def test_singleton(self):

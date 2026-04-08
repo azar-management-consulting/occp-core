@@ -36,6 +36,16 @@ try:
 except Exception:  # noqa: BLE001
     _get_metrics_collector = None  # type: ignore[assignment]
 
+# L6 kill switch — process-global hard-stop (import-safe)
+try:
+    from evaluation.kill_switch import (
+        KillSwitchActive as _KillSwitchActive,
+        require_kill_switch_inactive as _require_ks_inactive,
+    )
+except Exception:  # noqa: BLE001
+    _KillSwitchActive = None  # type: ignore[assignment]
+    _require_ks_inactive = None  # type: ignore[assignment]
+
 if TYPE_CHECKING:
     from adapters.confirmation_gate import ConfirmationGate
     from orchestrator.adapter_registry import AdapterRegistry
@@ -225,6 +235,37 @@ class Pipeline:
 
         if emitter:
             emitter.emit_status(task.id, correlation_id, "started")
+
+        # L6 kill-switch guard — fail-fast if hard stop is active.
+        # This is cheap (O(1) state check) and runs before any other work.
+        # Uses FAILED transition (PENDING → REJECTED is not allowed per
+        # the strict VAP state machine, but PENDING → FAILED is).
+        if _require_ks_inactive is not None:
+            try:
+                _require_ks_inactive()
+            except Exception as ks_exc:
+                try:
+                    task.transition(TaskStatus.FAILED)
+                except Exception:  # noqa: BLE001
+                    pass  # task already in terminal state — proceed
+                task.error = f"kill_switch_active: {ks_exc}"
+                evidence["_kill_switch"] = {
+                    "blocked": True,
+                    "reason": str(ks_exc),
+                }
+                self._emit_metrics(task, agent_type, "kill_switch", timings)
+                logger.critical(
+                    "Pipeline refused task=%s: kill switch active", task.id
+                )
+                return PipelineResult(
+                    task_id=task.id,
+                    success=False,
+                    status=TaskStatus.FAILED,
+                    started_at=started,
+                    finished_at=datetime.now(timezone.utc),
+                    evidence=evidence,
+                    error=f"kill_switch_active: {ks_exc}",
+                )
 
         # Record routing info when registry is available
         if self._registry:

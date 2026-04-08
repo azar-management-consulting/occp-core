@@ -22,13 +22,22 @@ Examples:
 
 from __future__ import annotations
 
+import json
 import logging
+import os
+import pathlib
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+# JSON persistence path — in-container data dir, survives container restart
+# via the docker volume mount. Override with env var for tests.
+_DEFAULT_STORE_PATH = pathlib.Path(
+    os.environ.get("OCCP_FEATURE_FLAG_STORE", "data/feature_flags.json")
+)
 
 
 @dataclass
@@ -63,10 +72,17 @@ class FeatureFlagStore:
     swapped in transparently.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        store_path: pathlib.Path | None = None,
+        load: bool = True,
+    ) -> None:
         self._lock = threading.Lock()
         self._flags: dict[str, FeatureFlag] = {}
+        self._store_path = store_path or _DEFAULT_STORE_PATH
         self._seed_defaults()
+        if load:
+            self._load_from_disk()
 
     def _seed_defaults(self) -> None:
         """Seed the default L6 feature flags. All default OFF for safety."""
@@ -135,6 +151,7 @@ class FeatureFlagStore:
                 flag.enabled,
                 flag.rollout_percent,
             )
+            self._persist_unlocked()
             return flag
 
     def delete(self, key: str) -> bool:
@@ -142,6 +159,7 @@ class FeatureFlagStore:
         with self._lock:
             if key in self._flags:
                 del self._flags[key]
+                self._persist_unlocked()
                 return True
             return False
 
@@ -155,6 +173,88 @@ class FeatureFlagStore:
         with self._lock:
             self._flags.clear()
             self._seed_defaults()
+            # Tests expect a clean slate — do not persist during reset.
+
+    # ── Persistence (JSON file) ───────────────────────────
+    def _load_from_disk(self) -> None:
+        """Load flags from the JSON store, merging with defaults.
+
+        Disk state WINS over defaults. Unknown fields are ignored for
+        forward-compat. Parse errors fall back to defaults and log a
+        warning — never crash the API.
+        """
+        if not self._store_path.exists():
+            return
+        try:
+            data = json.loads(self._store_path.read_text() or "{}")
+            if not isinstance(data, dict):
+                return
+            loaded = 0
+            for key, payload in data.items():
+                if not isinstance(payload, dict):
+                    continue
+                with self._lock:
+                    existing = self._flags.get(key)
+                    if existing:
+                        existing.enabled = bool(payload.get("enabled", existing.enabled))
+                        existing.rollout_percent = int(
+                            payload.get("rollout_percent", existing.rollout_percent)
+                        )
+                        if "description" in payload:
+                            existing.description = str(payload["description"])
+                    else:
+                        self._flags[key] = FeatureFlag(
+                            key=key,
+                            enabled=bool(payload.get("enabled", False)),
+                            rollout_percent=int(payload.get("rollout_percent", 0)),
+                            description=str(payload.get("description", "")),
+                        )
+                    loaded += 1
+            logger.info(
+                "feature_flag_store: loaded %d flags from %s",
+                loaded,
+                self._store_path,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "feature_flag_store: load failed at %s: %s",
+                self._store_path,
+                exc,
+            )
+
+    def persist(self) -> bool:
+        """Explicitly persist current flags to disk."""
+        with self._lock:
+            return self._persist_unlocked()
+
+    def _persist_unlocked(self) -> bool:
+        """Write flags to disk. MUST be called under self._lock.
+
+        Best-effort: returns True on success, False on any write failure.
+        Never raises — persistence failure must not crash the store.
+        """
+        try:
+            self._store_path.parent.mkdir(parents=True, exist_ok=True)
+            payload = {
+                key: {
+                    "enabled": flag.enabled,
+                    "rollout_percent": flag.rollout_percent,
+                    "description": flag.description,
+                    "updated_at": flag.updated_at.isoformat(),
+                }
+                for key, flag in self._flags.items()
+            }
+            tmp = self._store_path.with_suffix(self._store_path.suffix + ".tmp")
+            tmp.write_text(json.dumps(payload, indent=2, sort_keys=True))
+            tmp.replace(self._store_path)
+            return True
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "feature_flag_store: persist failed at %s: %s",
+                self._store_path,
+                exc,
+            )
+            return False
 
 
 # ── Singleton accessor ────────────────────────────────────────

@@ -74,8 +74,15 @@ class CanaryVerdict:
 class CanaryEngine:
     """Compare two metric snapshots and produce a rollout decision."""
 
+    # Ring buffer size for verdict history
+    _HISTORY_MAX = 200
+
     def __init__(self, criteria: CanaryCriteria | None = None) -> None:
         self._criteria = criteria or CanaryCriteria()
+        self._history: list[CanaryVerdict] = []
+        self._lock = logging.getLogger(__name__)  # placeholder, real lock below
+        import threading
+        self._history_lock = threading.Lock()
 
     @staticmethod
     def _extract_success_rate(snap: dict[str, Any]) -> tuple[float, int]:
@@ -219,7 +226,39 @@ class CanaryEngine:
             b_avg_ms,
             c_avg_ms,
         )
+        # Persist in ring buffer for operator inspection.
+        with self._history_lock:
+            self._history.append(verdict)
+            if len(self._history) > self._HISTORY_MAX:
+                self._history = self._history[-self._HISTORY_MAX :]
         return verdict
+
+    # ── Introspection ─────────────────────────────────────
+    @property
+    def recent_verdicts(self) -> list[CanaryVerdict]:
+        """Return the last 50 verdicts (newest last)."""
+        with self._history_lock:
+            return list(self._history[-50:])
+
+    @property
+    def stats(self) -> dict[str, Any]:
+        """Aggregate statistics across all verdicts in memory."""
+        with self._history_lock:
+            total = len(self._history)
+            by_decision: dict[str, int] = {}
+            for v in self._history:
+                by_decision[v.decision] = by_decision.get(v.decision, 0) + 1
+            return {
+                "total_verdicts": total,
+                "by_decision": by_decision,
+                "rollback_rate": (
+                    by_decision.get("rollback", 0) / total if total else 0.0
+                ),
+            }
+
+    def clear_history(self) -> None:
+        with self._history_lock:
+            self._history.clear()
 
 
 # ── Singleton accessor ────────────────────────────────────────

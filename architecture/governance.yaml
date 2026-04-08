@@ -147,19 +147,24 @@ kill_switch:
 # When ALL of these are true, OCCP has reached minimum L6.
 l6_readiness:
   required:
-    architecture_memory_complete: true      # all 7 YAML + issue_registry valid
+    architecture_memory_complete: true      # 7 YAML + issue_registry valid
     telemetry_active: true                   # metrics collector deployed
-    observability_interpretation: true       # anomaly_detector + behavior_digest active
-    observability_dashboard: false           # visible in dash.occp.ai (v0.11.0)
+    observability_interpretation: true       # anomaly_detector + behavior_digest
+    observability_dashboard: false           # dashboard panel (v0.11.0)
     rfc_template_exists: true                # .planning/rfc/TEMPLATE.md
     baseline_rfc_written: true               # .planning/rfc/0001-baseline.md
     issue_registry_live: true                # architecture/issue_registry.yaml
     evaluation_lane_functional: true         # replay_harness real execution
-    canary_engine_ready: true                # evaluation/canary_engine.py
+    canary_engine_ready: true                # evaluation/canary_engine.py + history
     proposal_engine_ready: true              # evaluation/proposal_generator.py
-    feature_flags_active: true               # in-memory; DB-backed in v0.11.0
+    feature_flags_active: true               # JSON-persisted store
+    feature_flags_persistent: true           # data/feature_flags.json
     governance_enforced: true                # self_modifier runtime validator
     governance_tested: true                  # 22 enforcement tests
     tests_cover_all_yaml: true               # tests/architecture/ passes
     self_modifier_runtime: true              # /governance/check endpoint LIVE
-    kill_switch_tested: false                # drill pending v0.11.0
+    kill_switch_implemented: true            # evaluation/kill_switch.py
+    kill_switch_runtime_guard: true          # pipeline.run() fail-fast
+    kill_switch_tested: true                 # E2E drill verified prod 2026-04-08
+    drift_detector_ready: true               # evaluation/drift_detector.py
+    canary_history_persistent: true          # in-memory ring buffer

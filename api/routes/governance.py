@@ -25,7 +25,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from api.auth import get_current_user_payload
+from api.rbac import PermissionChecker
 from evaluation import (
+    KillSwitchTrigger,
+    get_canary_engine,
+    get_drift_detector,
+    get_flag_store,
+    get_kill_switch,
     get_proposal_generator,
     get_self_modifier,
 )
@@ -45,6 +51,27 @@ class GovernanceCheckRequest(BaseModel):
 
 class GovernanceCheckManyRequest(BaseModel):
     paths: list[str] = Field(..., min_length=1, max_length=100)
+
+
+class KillSwitchActivateRequest(BaseModel):
+    trigger: str = Field(..., min_length=1, max_length=32)
+    reason: str = Field(..., min_length=1, max_length=500)
+    evidence: dict[str, Any] = Field(default_factory=dict)
+
+
+class KillSwitchDrillRequest(BaseModel):
+    reason: str = Field(..., min_length=1, max_length=500)
+
+
+class KillSwitchDeactivateRequest(BaseModel):
+    reason: str = Field(..., min_length=1, max_length=500)
+
+
+class FeatureFlagUpdateRequest(BaseModel):
+    key: str = Field(..., min_length=1, max_length=128)
+    enabled: bool
+    description: str | None = Field(default=None, max_length=500)
+    rollout_percent: int | None = Field(default=None, ge=0, le=100)
 
 
 # ── Routes ────────────────────────────────────────────────────
@@ -164,3 +191,147 @@ async def get_issues(
         "by_severity": by_severity,
         "issues": issues,
     }
+
+
+# ── Kill switch (maximum-state hard-stop) ────────────────────
+
+@router.get("/governance/kill_switch/status")
+async def kill_switch_status(
+    current_user: dict = Depends(get_current_user_payload),
+) -> dict[str, Any]:
+    """Return current kill switch state and recent history."""
+    return get_kill_switch().status()
+
+
+@router.get("/governance/kill_switch/stats")
+async def kill_switch_stats(
+    current_user: dict = Depends(get_current_user_payload),
+) -> dict[str, Any]:
+    return get_kill_switch().stats()
+
+
+@router.post(
+    "/governance/kill_switch/activate",
+    dependencies=[Depends(PermissionChecker("governance", "manage"))],
+)
+async def kill_switch_activate(
+    body: KillSwitchActivateRequest,
+    current_user: dict = Depends(get_current_user_payload),
+) -> dict[str, Any]:
+    """Hard-stop: refuse all autonomous actions until deactivated.
+
+    Admin-only. Requires explicit trigger and reason for audit.
+    """
+    try:
+        trigger = KillSwitchTrigger(body.trigger)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"invalid trigger: {body.trigger}. "
+                f"Allowed: {[t.value for t in KillSwitchTrigger]}"
+            ),
+        )
+
+    actor = current_user.get("sub", "admin")
+    record = get_kill_switch().activate(
+        trigger=trigger,
+        actor=actor,
+        reason=body.reason,
+        evidence=body.evidence,
+    )
+    return {
+        "status": "activated",
+        "record": record.to_dict(),
+    }
+
+
+@router.post(
+    "/governance/kill_switch/drill",
+    dependencies=[Depends(PermissionChecker("governance", "manage"))],
+)
+async def kill_switch_drill(
+    body: KillSwitchDrillRequest,
+    current_user: dict = Depends(get_current_user_payload),
+) -> dict[str, Any]:
+    """Simulate kill switch activation. Logs but does not block operations."""
+    actor = current_user.get("sub", "admin")
+    record = get_kill_switch().drill(actor=actor, reason=body.reason)
+    return {
+        "status": "drill",
+        "record": record.to_dict(),
+    }
+
+
+@router.post(
+    "/governance/kill_switch/deactivate",
+    dependencies=[Depends(PermissionChecker("governance", "manage"))],
+)
+async def kill_switch_deactivate(
+    body: KillSwitchDeactivateRequest,
+    current_user: dict = Depends(get_current_user_payload),
+) -> dict[str, Any]:
+    """Clear the kill switch. Requires explicit reason for audit."""
+    actor = current_user.get("sub", "admin")
+    record = get_kill_switch().deactivate(actor=actor, reason=body.reason)
+    return {
+        "status": "deactivated",
+        "previous": record.to_dict() if record else None,
+    }
+
+
+# ── Canary verdict history ───────────────────────────────────
+
+@router.get("/governance/canary/recent")
+async def canary_recent(
+    current_user: dict = Depends(get_current_user_payload),
+) -> dict[str, Any]:
+    """Return recent canary verdicts."""
+    engine = get_canary_engine()
+    return {
+        "stats": engine.stats,
+        "recent": [v.to_dict() for v in engine.recent_verdicts],
+    }
+
+
+# ── Drift detector ───────────────────────────────────────────
+
+@router.get("/governance/drift")
+async def governance_drift(
+    current_user: dict = Depends(get_current_user_payload),
+) -> dict[str, Any]:
+    """Return architecture-vs-code drift report."""
+    return get_drift_detector().detect().to_dict()
+
+
+# ── Feature flags ────────────────────────────────────────────
+
+@router.get("/governance/flags")
+async def list_flags(
+    current_user: dict = Depends(get_current_user_payload),
+) -> dict[str, Any]:
+    """List all feature flags."""
+    flags = get_flag_store().list_all()
+    return {
+        "total": len(flags),
+        "flags": [f.to_dict() for f in flags],
+    }
+
+
+@router.put(
+    "/governance/flags",
+    dependencies=[Depends(PermissionChecker("governance", "manage"))],
+)
+async def update_flag(
+    body: FeatureFlagUpdateRequest,
+    current_user: dict = Depends(get_current_user_payload),
+) -> dict[str, Any]:
+    """Set or update a feature flag. Persists to disk."""
+    store = get_flag_store()
+    flag = store.set(
+        key=body.key,
+        enabled=body.enabled,
+        description=body.description,
+        rollout_percent=body.rollout_percent,
+    )
+    return {"status": "updated", "flag": flag.to_dict()}
