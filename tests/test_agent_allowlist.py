@@ -202,8 +202,8 @@ class TestStats:
         assert s["total_checks"] == 0
         assert s["total_denied"] == 0
         assert s["deny_rate"] == 0.0
-        # 8 specialists + 'brain' orchestrator = 9
-        assert s["agents_configured"] == 9
+        # 8 specialists + 'brain' orchestrator + 12 seeded defaults = 21
+        assert s["agents_configured"] == 21
 
     def test_stats_after_mixed(self, guard: AgentToolGuard):
         guard.check_access("eng-core", "bash")       # allowed
@@ -221,10 +221,14 @@ class TestStats:
 
 class TestStructure:
     def test_all_8_agents_defined(self):
-        # 8 specialist agents + 'brain' orchestrator (L4 MCP runtime bridge)
-        expected = {"eng-core", "wp-web", "infra-ops", "design-lab",
-                    "content-forge", "social-growth", "intel-research", "biz-strategy",
-                    "brain"}
+        # 8 specialist agents + 'brain' orchestrator + 12 seeded pipeline agents
+        specialists = {"eng-core", "wp-web", "infra-ops", "design-lab",
+                       "content-forge", "social-growth", "intel-research", "biz-strategy"}
+        orchestrator = {"brain"}
+        seeded = {"general", "demo", "code-reviewer", "onboarding-wizard",
+                  "mcp-installer", "llm-setup", "skills-manager", "session-policy",
+                  "ux-copy", "openclaw", "remote-agent", "main"}
+        expected = specialists | orchestrator | seeded
         assert set(AGENT_TOOL_ALLOWLISTS.keys()) == expected
 
     def test_dangerous_tools_set_not_empty(self):

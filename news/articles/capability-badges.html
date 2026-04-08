@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capability Badges: Visualizing Agent Permissions — OCCP News</title>
+  <meta name="description" content="Making agent capabilities visible and understandable through visual indicators in the OCCP dashboard.">
+  <meta name="keywords" content="OCCP, capability badges, agent permissions, dashboard UI, AI governance visualization, permission matrix">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/capability-badges.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/capability-badges.html">
+  <meta property="og:title" content="Capability Badges: Visualizing Agent Permissions">
+  <meta property="og:description" content="Making agent capabilities visible and understandable through visual indicators in the OCCP dashboard.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-01-25">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Capability Badges: Visualizing Agent Permissions">
+  <meta name="twitter:description" content="Making agent capabilities visible and understandable through visual indicators in the OCCP dashboard.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Capability Badges: Visualizing Agent Permissions",
+    "datePublished": "2026-01-25",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Making agent capabilities visible and understandable through visual indicators in the OCCP dashboard.",
+    "url": "https://news.occp.ai/articles/capability-badges.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-01-25</span>
+          <span class="card-tag tag-governance">Governance</span>
+          <span class="card-version">v0.5.0</span>
+        </div>
+        <h1>Capability Badges: Visualizing Agent Permissions</h1>
+        <p class="lead">A permission model is only useful if operators can understand it at a glance. Capability badges transform the abstract data in the agent registry into immediate visual indicators &mdash; colored, categorized, and interactive &mdash; that let platform operators assess agent risk profiles in seconds rather than minutes.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Visibility Problem</h2>
+
+        <p>The agent registry introduced in OCCP v0.5.0 captures detailed capability declarations for every registered agent. An agent might declare access to three tools, two data sources, network connectivity, and filesystem write permissions. This information is precise and machine-readable, but when an operator is managing twenty agents across multiple teams, reading JSON capability blocks is not practical.</p>
+
+        <p>In incident response scenarios, the gap is even more critical. When an agent behaves unexpectedly, the first question is always: "What can this agent do?" If answering that question requires navigating to the agent detail page, expanding the capabilities section, and parsing a structured data block, the response time is measured in minutes. Those minutes matter.</p>
+
+        <blockquote>Security information that requires navigation to find is security information that gets ignored. Capability badges put permission context directly in the operator's line of sight, where it belongs.</blockquote>
+
+        <h2>Badge Taxonomy</h2>
+
+        <p>OCCP defines five primary badge categories, each representing a fundamental capability dimension. These categories were derived from the STRIDE threat model adapted for AI agent systems, where each capability dimension maps to a potential attack surface.</p>
+
+        <h3>READ</h3>
+
+        <p>The read badge indicates that an agent has access to data sources. The badge displays the number of declared data sources. A read-only agent with access to three datasets shows <code>READ:3</code>. Read badges use a blue color scheme (matching the <code>--blue</code> design token) to indicate passive, non-destructive access. Read access is the lowest risk tier, but the number of data sources affects the risk profile &mdash; an agent with access to one public dataset is different from one with access to fifteen internal databases.</p>
+
+        <h3>WRITE</h3>
+
+        <p>Write badges indicate that an agent can modify persistent state &mdash; writing to databases, updating configuration, or generating files. Write badges use an amber color scheme to signal elevated risk. The badge includes the specific write targets: <code>WRITE:db,config</code> tells the operator exactly what the agent can modify.</p>
+
+        <h3>EXECUTE</h3>
+
+        <p>Execute badges indicate that an agent can invoke tools or run code. This is the highest-risk individual capability because tool execution can have side effects that are difficult to predict or reverse. Execute badges use a red color scheme. The badge lists declared tools: <code>EXEC:sql_query,chart_gen</code>.</p>
+
+        <h3>NETWORK</h3>
+
+        <p>Network badges indicate that an agent can make outbound network requests. This capability is significant because it represents a potential data exfiltration vector. An agent with network access and read access to sensitive data can, in theory, transmit that data externally. Network badges use a purple color scheme and display either <code>NET:ON</code> or are absent if network access is not declared.</p>
+
+        <h3>FILESYSTEM</h3>
+
+        <p>Filesystem badges indicate read or write access to the host filesystem. This is separated from the general read/write categories because filesystem access has distinct security implications &mdash; path traversal vulnerabilities, symlink attacks, and access to configuration files. Filesystem badges use a distinct orange variant and display <code>FS:R</code> for read-only or <code>FS:RW</code> for read-write.</p>
+
+        <h2>Color Coding and Risk Tiers</h2>
+
+        <p>The badge color system is not arbitrary. It implements a three-tier risk classification that maps directly to the capability's potential impact.</p>
+
+        <pre><code>// Badge color mapping in the dashboard
+const BADGE_COLORS = {
+  read:       { bg: 'rgba(96,165,250,0.15)',  text: '#60a5fa', border: 'rgba(96,165,250,0.3)'  },
+  write:      { bg: 'rgba(255,176,0,0.15)',   text: '#ffb000', border: 'rgba(255,176,0,0.3)'   },
+  execute:    { bg: 'rgba(248,113,113,0.15)', text: '#f87171', border: 'rgba(248,113,113,0.3)' },
+  network:    { bg: 'rgba(167,139,250,0.15)', text: '#a78bfa', border: 'rgba(167,139,250,0.3)' },
+  filesystem: { bg: 'rgba(251,146,60,0.15)',  text: '#fb923c', border: 'rgba(251,146,60,0.3)'  },
+};
+
+// Risk tier classification
+const RISK_TIERS = {
+  low:    ['read'],                          // Blue badges only
+  medium: ['read', 'write'],                 // Blue + amber
+  high:   ['read', 'write', 'execute'],      // Blue + amber + red
+  critical: ['execute', 'network', 'filesystem']  // Red + purple + orange
+};</code></pre>
+
+        <p>When an agent's badge combination falls into the "critical" tier &mdash; meaning it has execute, network, and filesystem capabilities simultaneously &mdash; the agent card in the dashboard receives a subtle pulsing border animation. This draws the operator's eye to the highest-risk agents without cluttering the interface with alert banners.</p>
+
+        <h2>Dashboard Implementation</h2>
+
+        <p>Badges are rendered as React components in the Next.js dashboard. Each badge is a self-contained unit that receives the agent's capability data as props and renders the appropriate visual representation.</p>
+
+        <pre><code>// CapabilityBadge component
+function CapabilityBadge({ type, details }: BadgeProps) {
+  const colors = BADGE_COLORS[type];
+  const label = formatBadgeLabel(type, details);
+
+  return (
+    &lt;span
+      className="capability-badge"
+      style={{
+        background: colors.bg,
+        color: colors.text,
+        border: `1px solid ${colors.border}`,
+        padding: '2px 8px',
+        fontSize: '0.7rem',
+        fontFamily: 'var(--font)',
+        letterSpacing: '0.05em',
+        textTransform: 'uppercase',
+      }}
+      title={generateTooltip(type, details)}
+    &gt;
+      {label}
+    &lt;/span&gt;
+  );
+}</code></pre>
+
+        <p>The <code>generateTooltip</code> function produces a detailed text description that appears on hover. For a <code>WRITE:db,config</code> badge, the tooltip might read: "This agent can write to: database (financial_reports), configuration (agent-settings). Last modified: 2026-01-20." This layered information design means the badge conveys quick context at a glance, while the tooltip provides full detail on demand.</p>
+
+        <h2>Permission Matrix View</h2>
+
+        <p>Beyond individual agent badges, the dashboard provides a permission matrix view that displays all agents and their capabilities in a grid format. The rows are agents, the columns are capability categories, and each cell is a colored indicator showing whether the agent has that capability.</p>
+
+        <pre><code>Agent                | READ | WRITE | EXEC | NET | FS
+---------------------|------|-------|------|-----|----
+data-analyst-01      |  3   |   -   |  2   |  -  |  -
+code-executor-02     |  1   |   2   |  4   | ON  | RW
+report-generator-03  |  5   |   1   |  1   |  -  | R
+admin-agent-04       |  8   |   4   |  6   | ON  | RW</code></pre>
+
+        <p>The matrix makes cross-agent comparison immediate. If you need to identify every agent with network access, you scan the NET column. If you want to find agents with the highest tool count, you sort by the EXEC column. This tabular view is particularly valuable during security reviews, where auditors need to assess the overall permission landscape.</p>
+
+        <h2>Badge-Driven Alerting</h2>
+
+        <p>Badges are not just visual indicators &mdash; they feed into the alerting system. When a new agent registers with a critical-tier capability combination, or when an existing agent's capabilities are updated to include a new high-risk dimension, the platform generates an alert. These alerts appear in the dashboard notification feed and can be routed to external systems through webhooks.</p>
+
+        <p>The alerting logic is intentionally simple. It does not attempt to evaluate whether a specific capability combination is "dangerous" in context &mdash; that judgment belongs to the human operator. Instead, it ensures that capability changes are never silent. Every badge change is a visible event.</p>
+
+        <h3>Operator Workflow Integration</h3>
+
+        <p>In practice, the typical operator workflow for agent review follows a consistent pattern. The operator opens the agent list, scans the badge rows for unexpected combinations, and clicks into agents that warrant closer inspection. The badge system reduces this review from a per-agent investigation to a visual scan that covers the entire fleet in seconds.</p>
+
+        <p>During incident investigations, badges serve a different purpose. When a task fails or produces unexpected output, the operator checks the executing agent's badges to quickly establish what the agent could have done. If the agent has no network badge but the error suggests an attempted outbound connection, that discrepancy immediately narrows the investigation.</p>
+
+        <blockquote>Badges answer the most frequent operational question in AI governance: "What is this agent allowed to do?" If the answer requires more than a glance, the visualization has failed.</blockquote>
+
+        <h2>Design Decisions</h2>
+
+        <p>Several design decisions shaped the badge system. First, badges show declared capabilities, not observed behavior. An agent with an EXEC badge has declared tool execution capability; whether it has actually executed tools recently is a separate metric. This distinction is important because capability is about potential, not history.</p>
+
+        <p>Second, badges are non-interactive in the agent list view. You cannot revoke a capability by clicking a badge. This is deliberate &mdash; capability revocation is a consequential action that should require explicit navigation to the agent management interface, not an accidental click in a crowded list view.</p>
+
+        <p>Third, the badge vocabulary is intentionally small. Five categories cover the full capability space without requiring operators to learn a complex taxonomy. Each category maps to a single question: Can the agent read data? Write data? Execute tools? Access the network? Access the filesystem? Five questions, five badges, complete coverage.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Five badge categories (READ, WRITE, EXECUTE, NETWORK, FILESYSTEM) cover the complete agent capability space</li>
+          <li>Color coding maps to a three-tier risk classification: low (blue), medium (amber), high/critical (red/purple/orange)</li>
+          <li>Tooltips provide detailed capability breakdowns on hover without cluttering the primary view</li>
+          <li>Permission matrix view enables cross-agent comparison for security reviews and audits</li>
+          <li>Badge changes trigger alerts to ensure capability modifications are never silent</li>
+          <li>Badges show declared capabilities, not observed behavior &mdash; potential, not history</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="agent-registry-architecture.html">&larr; Agent Registry Architecture</a>
+        <a href="occp-v060-security-gdpr.html">OCCP v0.6.0: Security Hardening &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

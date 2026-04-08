@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDK Design Philosophy: Python and TypeScript Clients for Agent Systems — OCCP News</title>
+  <meta name="description" content="Building multi-language SDKs with zero external dependencies: stdlib-only HTTP clients for Python and native fetch for TypeScript.">
+  <meta name="keywords" content="SDK design, Python SDK, TypeScript SDK, zero dependencies, agent systems, API client, OCCP">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/sdk-design-philosophy.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/sdk-design-philosophy.html">
+  <meta property="og:title" content="SDK Design Philosophy: Python and TypeScript Clients for Agent Systems">
+  <meta property="og:description" content="Building multi-language SDKs with zero external dependencies for the OCCP platform.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2025-12-18">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SDK Design Philosophy: Python and TypeScript Clients for Agent Systems">
+  <meta name="twitter:description" content="Building multi-language SDKs with zero external dependencies for the OCCP platform.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "SDK Design Philosophy: Python and TypeScript Clients for Agent Systems",
+    "description": "Building multi-language SDKs with zero external dependencies for the OCCP platform.",
+    "datePublished": "2025-12-18",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "url": "https://news.occp.ai/articles/sdk-design-philosophy.html",
+    "mainEntityOfPage": "https://news.occp.ai/articles/sdk-design-philosophy.html",
+    "proficiencyLevel": "Advanced",
+    "dependencies": "Python 3.11+, TypeScript 5.0+"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo">OCCP <span>// news</span></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="https://news.occp.ai/" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+
+    <!-- Article Header -->
+    <header class="article-header">
+      <div class="card-meta">
+        <span class="card-date">2025-12-18</span>
+        <span class="card-tag tag-agent">Agents</span>
+        <span class="card-version">v0.2.0</span>
+      </div>
+      <h1>SDK Design Philosophy: Python and TypeScript Clients for Agent Systems</h1>
+      <p class="lead">OCCP ships dual SDKs: a Python client built on stdlib urllib and a TypeScript client using native fetch. Both have zero external dependencies. This article explains why that constraint exists and how it influences every design decision.</p>
+    </header>
+
+    <!-- Article Body -->
+    <div class="article-body">
+
+      <h2>Why Dual SDKs?</h2>
+
+      <p>An AI orchestration platform lives at the intersection of two ecosystems. Data scientists, ML engineers, and backend developers work in Python. Frontend developers, full-stack engineers, and DevOps teams increasingly work in TypeScript. If OCCP only shipped a Python SDK, every TypeScript integration would require building a custom HTTP client. If we only shipped TypeScript, the Python ecosystem -- where most AI development happens -- would be underserved.</p>
+
+      <p>The decision to support both languages from v0.2.0 was deliberate. SDKs are not afterthoughts; they are the primary way developers interact with the platform. The quality and ergonomics of the SDK determine adoption velocity more than the quality of the underlying API.</p>
+
+      <h2>The Zero-Dependency Constraint</h2>
+
+      <p>Both SDKs have exactly zero external dependencies. The Python SDK uses only <code>urllib.request</code> from the standard library. The TypeScript SDK uses the native <code>fetch</code> API available in Node.js 18+ and all modern browsers. This is not a limitation -- it is a deliberate architectural choice with specific benefits:</p>
+
+      <ul>
+        <li><strong>No dependency conflicts.</strong> Enterprise environments often have strict dependency policies. A SDK that pulls in requests, httpx, or axios becomes a negotiation point with security teams. Zero dependencies means zero conflicts.</li>
+        <li><strong>No supply chain risk.</strong> Every dependency is an attack surface. The npm and PyPI ecosystems have both experienced malicious package incidents. Our SDKs cannot be compromised through a transitive dependency because there are none.</li>
+        <li><strong>Predictable behavior.</strong> Standard library HTTP clients have stable, well-documented behavior across runtime versions. Third-party libraries change APIs between major versions, requiring SDK updates unrelated to OCCP functionality.</li>
+        <li><strong>Minimal install footprint.</strong> <code>pip install occp-sdk</code> downloads exactly one package. No dependency resolution, no version conflicts, no build steps.</li>
+      </ul>
+
+      <blockquote>The best dependency is the one you do not have. Every line of code you do not own is a liability. For an SDK that enterprise security teams must approve, zero dependencies is a feature, not a constraint.</blockquote>
+
+      <h2>Python SDK: stdlib urllib</h2>
+
+      <p>The Python SDK wraps <code>urllib.request</code> with a typed, ergonomic interface. The raw urllib API is verbose and awkward -- our SDK abstracts it into method calls that mirror the REST API structure:</p>
+
+      <pre><code>from occp_sdk import OCCPClient
+
+client = OCCPClient(
+    base_url="https://api.occp.ai",
+    api_key="your-api-key"
+)
+
+# Create a task
+task = client.tasks.create(
+    description="Run security audit",
+    priority="high"
+)
+
+# Check task status
+status = client.tasks.get(task.id)
+print(f"Stage: {status.pipeline_stage}")
+
+# List agents
+agents = client.agents.list(status="active")</code></pre>
+
+      <h3>Async Support Without asyncio Libraries</h3>
+
+      <p>The Python SDK provides async methods using <code>asyncio</code> and <code>urllib.request</code> wrapped in <code>asyncio.to_thread</code>. This approach avoids adding aiohttp or httpx as dependencies while still supporting async/await patterns:</p>
+
+      <pre><code>import asyncio
+from occp_sdk import AsyncOCCPClient
+
+async def main():
+    client = AsyncOCCPClient(
+        base_url="https://api.occp.ai",
+        api_key="your-api-key"
+    )
+    task = await client.tasks.create(
+        description="Run security audit"
+    )
+    # Polling with async
+    while task.status == "running":
+        await asyncio.sleep(2)
+        task = await client.tasks.get(task.id)
+
+asyncio.run(main())</code></pre>
+
+      <p>The <code>to_thread</code> approach has a performance trade-off: each HTTP call runs in a thread pool rather than using non-blocking I/O. For the typical OCCP use case -- submitting tasks and polling status -- this overhead is negligible. If a user needs true non-blocking HTTP at high concurrency, they can use the REST API directly with their preferred async HTTP library.</p>
+
+      <h2>TypeScript SDK: Native Fetch</h2>
+
+      <p>The TypeScript SDK targets the <code>fetch</code> API, which became stable in Node.js 18 and has been available in browsers for years. The SDK provides full type definitions, making every response field autocomplete-friendly in VS Code and other TypeScript-aware editors:</p>
+
+      <pre><code>import { OCCPClient } from "@occp/sdk";
+
+const client = new OCCPClient({
+  baseUrl: "https://api.occp.ai",
+  apiKey: "your-api-key",
+});
+
+// Create a task - fully typed
+const task = await client.tasks.create({
+  description: "Analyze code quality",
+  priority: "normal",
+});
+
+// task.id, task.status, task.pipelineStage are all typed
+console.log(`Task ${task.id}: ${task.status}`);</code></pre>
+
+      <h3>Type Safety from API Schema</h3>
+
+      <p>The TypeScript types are generated from the FastAPI OpenAPI schema. This means the SDK types always match the server's actual response format. If a field is added to the API response, the TypeScript types are regenerated and consumers get compile-time awareness of the new field:</p>
+
+      <pre><code>// Generated from OpenAPI schema
+interface TaskResponse {
+  id: string;
+  status: "pending" | "running" | "completed" | "failed" | "cancelled";
+  createdAt: string;
+  pipelineStage: string | null;
+  auditHash: string;
+}
+
+// Discriminated union for type-safe status handling
+type TaskResult =
+  | { status: "completed"; result: unknown }
+  | { status: "failed"; error: string }
+  | { status: "running"; pipelineStage: string };</code></pre>
+
+      <p>The field naming follows language conventions: <code>pipeline_stage</code> in Python becomes <code>pipelineStage</code> in TypeScript. The SDK handles this transformation transparently during serialization and deserialization.</p>
+
+      <h2>Shared Design Principles</h2>
+
+      <h3>Error Handling</h3>
+
+      <p>Both SDKs throw typed exceptions that map to HTTP status codes. The exception hierarchy is identical across languages:</p>
+
+      <pre><code># Python
+from occp_sdk.exceptions import (
+    OCCPError,           # Base class
+    AuthenticationError, # 401
+    ForbiddenError,      # 403
+    NotFoundError,       # 404
+    ValidationError,     # 422
+    RateLimitError,      # 429
+    ServerError,         # 500+
+)
+
+try:
+    task = client.tasks.get("nonexistent-id")
+except NotFoundError as e:
+    print(f"Task not found: {e.request_id}")</code></pre>
+
+      <pre><code>// TypeScript
+import {
+  OCCPError,
+  AuthenticationError,
+  NotFoundError,
+  RateLimitError,
+} from "@occp/sdk";
+
+try {
+  const task = await client.tasks.get("nonexistent-id");
+} catch (e) {
+  if (e instanceof NotFoundError) {
+    console.error(`Task not found: ${e.requestId}`);
+  }
+}</code></pre>
+
+      <p>Every exception includes the <code>request_id</code> from the server response, enabling correlation between client errors and server logs. This is essential for debugging in distributed systems where the client and server are operated by different teams.</p>
+
+      <h3>Automatic Retry</h3>
+
+      <p>Both SDKs implement exponential backoff retry for transient errors (429 Too Many Requests, 502 Bad Gateway, 503 Service Unavailable). The retry behavior is configurable:</p>
+
+      <pre><code>client = OCCPClient(
+    base_url="https://api.occp.ai",
+    api_key="your-api-key",
+    max_retries=3,
+    retry_delay=1.0,  # seconds, doubles each retry
+)</code></pre>
+
+      <p>The retry logic respects the <code>Retry-After</code> header when present. For 429 responses, the server tells the client exactly when to retry. The SDK uses that value instead of its default backoff, preventing unnecessary wait times.</p>
+
+      <h2>SDK Method Mapping</h2>
+
+      <p>Every SDK method maps 1:1 to a REST API endpoint. The mapping is documented in both the SDK README and the OpenAPI schema:</p>
+
+      <pre><code>| SDK Method                    | HTTP Endpoint                      |
+|-------------------------------|-------------------------------------|
+| client.tasks.create()         | POST   /api/v1/tasks               |
+| client.tasks.get(id)          | GET    /api/v1/tasks/{id}           |
+| client.tasks.list()           | GET    /api/v1/tasks                |
+| client.tasks.update(id, ...)  | PATCH  /api/v1/tasks/{id}           |
+| client.agents.register()      | POST   /api/v1/agents              |
+| client.agents.heartbeat(id)   | POST   /api/v1/agents/{id}/heartbeat|
+| client.pipeline.execute(id)   | POST   /api/v1/tasks/{id}/pipeline  |
+| client.pipeline.status(id)    | GET    /api/v1/tasks/{id}/pipeline  |</code></pre>
+
+      <p>This 1:1 mapping means developers familiar with the REST API can predict SDK method names, and SDK users can read the API documentation interchangeably. There are no "convenience" methods that combine multiple API calls -- composition is left to the user.</p>
+
+      <h2>How SDK Design Influences Adoption</h2>
+
+      <p>The SDK is the first code a developer writes when evaluating OCCP. If the "hello world" example requires installing 15 transitive dependencies, configuring a build step, or reading 200 lines of documentation, evaluation stops. Our zero-dependency, type-safe, copy-paste-friendly SDK design means the time from <code>pip install</code> to first API call is under 60 seconds. That speed compounds: every developer who completes the first API call is more likely to complete the second one.</p>
+
+    </div>
+
+    <!-- Summary Box -->
+    <div class="summary-box">
+      <h3>// Key Takeaways</h3>
+      <ul>
+        <li>Dual SDKs serve both Python (ML/backend) and TypeScript (frontend/fullstack) ecosystems</li>
+        <li>Zero external dependencies eliminates supply chain risk and enterprise approval friction</li>
+        <li>Python SDK uses stdlib urllib with asyncio.to_thread for async support</li>
+        <li>TypeScript SDK uses native fetch with full type definitions generated from OpenAPI</li>
+        <li>Typed exception hierarchies with request_id enable cross-boundary debugging</li>
+        <li>1:1 method-to-endpoint mapping keeps the SDK predictable and documentation interchangeable</li>
+      </ul>
+    </div>
+
+    <!-- Article Navigation -->
+    <nav class="article-nav">
+      <a href="docker-compose-production.html">&larr; #013 Docker Compose in Production</a>
+      <a href="occp-v030-llm-integration.html">#015 OCCP v0.3.0: LLM Integration &rarr;</a>
+    </nav>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP — OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

@@ -126,6 +126,7 @@ async def start_onboarding(
     since the user is already authenticated.
     """
     user_id = payload["sub"]
+    org_id = payload.get("org_id", "")
     run_id = uuid.uuid4().hex[:16]
 
     # Auto-complete steps 0 and 1 (CTA + auth already happened)
@@ -139,6 +140,7 @@ async def start_onboarding(
             current_step=initial_step,
             completed_steps=auto_completed,
             run_id=run_id,
+            org_id=org_id,
         )
 
     # Audit: onboarding started
@@ -195,12 +197,20 @@ async def complete_step(
 
         next_step = step_idx + 1
         new_state = "done" if next_step >= len(WIZARD_STEPS) else "running"
+        is_complete = new_state == "done"
+
+        # Generate audit linkage ID for completed wizards
+        audit_link = ""
+        if is_complete:
+            audit_link = uuid.uuid4().hex[:16]
 
         await state.onboarding_store.upsert(
             user_id,
             state=new_state,
             current_step=next_step,
             completed_steps=completed,
+            completed_flag=is_complete,
+            audit_linkage=audit_link,
         )
 
         # Audit: step completed
@@ -213,6 +223,7 @@ async def complete_step(
                     "step_index": step_idx,
                     "wizard_state": new_state,
                     "run_id": row.run_id,
+                    "audit_linkage": audit_link,
                 },
                 audit_store=state.audit_store,
             )
@@ -326,7 +337,11 @@ async def launch_first_task(
     # Run through pipeline if available
     result_data: dict[str, Any] = {"task_id": task.id, "status": "created"}
 
-    if state.pipeline:
+    if state.pipeline is None:
+        task.status = "failed"
+        task.error = "Pipeline not initialized — onboarding cannot complete without a verified pipeline"
+        result_data = {"task_id": task.id, "success": False, "status": "failed", "error": task.error}
+    else:
         try:
             result = await state.pipeline.run(task)
             task.status = "completed" if result.success else "failed"
@@ -340,9 +355,6 @@ async def launch_first_task(
             task.status = "failed"
             task.error = str(e)
             result_data = {"task_id": task.id, "success": False, "status": "failed", "error": str(e)}
-    else:
-        task.status = "completed"
-        result_data = {"task_id": task.id, "success": True, "status": "completed", "note": "Pipeline not available — mock success"}
 
     await state.update_task(task)
 
@@ -386,12 +398,76 @@ async def _validate_step_prereqs(
         if count == 0:
             raise HTTPException(status_code=400, detail="No agent configs registered")
 
+        # Boundary enforcement: verify no agent has admin-level capabilities
+        # during onboarding (prevents privilege escalation via agent_init)
+        from security.governance import AgentBoundaryGuard, ADMIN_ONLY_CAPABILITIES
+
+        agents = await state.list_agents()
+        escalation_violations: list[str] = []
+        for agent in agents:
+            admin_caps = set(agent.capabilities) & ADMIN_ONLY_CAPABILITIES
+            if admin_caps:
+                escalation_violations.append(
+                    f"{agent.agent_type}: {', '.join(sorted(admin_caps))}"
+                )
+        if escalation_violations:
+            raise HTTPException(
+                status_code=403,
+                detail=(
+                    "Agent boundary violation — admin-level capabilities detected "
+                    f"during onboarding: {'; '.join(escalation_violations)}. "
+                    "Remove these capabilities or register via system_admin outside onboarding."
+                ),
+            )
+
+    elif step_name == "skills_config":
+        # At least one skill must be enabled in the baseline allowlist
+        from api.routes.skills import _BASELINE_SKILLS
+
+        enabled_count = sum(1 for s in _BASELINE_SKILLS if s.get("enabled", False))
+        if enabled_count == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="At least one skill must be enabled. Enable a skill via POST /api/v1/skills/{id}/enable first.",
+            )
+
+    elif step_name == "gsd_init":
+        # Pipeline must be initialized for GSD runtime
+        if state.pipeline is None:
+            raise HTTPException(
+                status_code=400,
+                detail="GSD runtime requires an initialized pipeline. Pipeline is not ready.",
+            )
+
+    elif step_name == "mcp_config":
+        # MCP catalog must be loadable (config file or built-in defaults)
+        from api.routes.mcp import _load_catalog
+
+        catalog = _load_catalog()
+        if not catalog:
+            raise HTTPException(
+                status_code=400,
+                detail="MCP catalog is empty — no connectors available to configure.",
+            )
+
+    elif step_name == "policy_config":
+        # PolicyEngine must have guards loaded
+        guard_count = state.policy_engine.guard_count
+        if guard_count == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Policy engine has no guards loaded. At least one guard is required.",
+            )
+
     elif step_name == "verification":
         # Previous steps must be completed
         if state.onboarding_store:
             row = await state.onboarding_store.get(user_id)
             if row:
-                required = {"llm_token", "agent_init", "skills_config"}
+                required = {
+                    "llm_token", "agent_init", "skills_config",
+                    "gsd_init", "mcp_config", "policy_config",
+                }
                 completed = set(row.completed_steps or [])
                 missing = required - completed
                 if missing:

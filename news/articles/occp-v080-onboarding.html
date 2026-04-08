@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OCCP v0.8.0: The Onboarding Revolution — OCCP News</title>
+  <meta name="description" content="MCP connectors, skills system, settings pages, and a 10-step onboarding wizard — making enterprise AI orchestration accessible.">
+  <meta name="keywords" content="OCCP, v0.8.0, release, MCP integration, skills system, onboarding wizard, AI platform">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/occp-v080-onboarding.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/occp-v080-onboarding.html">
+  <meta property="og:title" content="OCCP v0.8.0: The Onboarding Revolution">
+  <meta property="og:description" content="MCP connectors, skills system, settings pages, and a 10-step onboarding wizard — making enterprise AI orchestration accessible.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-18">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="OCCP v0.8.0: The Onboarding Revolution">
+  <meta name="twitter:description" content="MCP connectors, skills system, settings pages, and a 10-step onboarding wizard — making enterprise AI orchestration accessible.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "OCCP v0.8.0: The Onboarding Revolution",
+    "datePublished": "2026-02-18",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "MCP connectors, skills system, settings pages, and a 10-step onboarding wizard — making enterprise AI orchestration accessible.",
+    "url": "https://news.occp.ai/articles/occp-v080-onboarding.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-18</span>
+          <span class="card-tag tag-milestone">Milestone</span>
+          <span class="card-version">v0.8.0</span>
+        </div>
+        <h1>OCCP v0.8.0: The Onboarding Revolution</h1>
+        <p class="lead">For seven versions, we built capabilities: pipeline stages, policy rules, authentication, RBAC, sandboxing, ORM. v0.8.0 changes direction. Instead of adding new capabilities, it makes existing capabilities accessible. The MCP connector framework, skills system, settings pages, and 10-step onboarding wizard transform OCCP from a platform that developers build on to a platform that developers can start using in minutes.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Accessibility Problem</h2>
+
+        <p>By v0.7.0, OCCP had a comprehensive feature set: JWT authentication, a four-role RBAC hierarchy, a policy engine with 24 detection patterns, sandboxed code execution, an async ORM with migration infrastructure, a React 19 dashboard, and dual SDKs. The problem was not missing features &mdash; it was that using those features required reading source code, understanding internal APIs, and manually configuring each component.</p>
+
+        <p>A developer evaluating OCCP faced a steep onboarding cliff. They could clone the repository and run the tests, but going from "tests pass" to "my first agent is running a governed task" required intimate knowledge of the system's internals. This is the classic infrastructure software trap: the platform is powerful but inaccessible, and inaccessible power is indistinguishable from missing features.</p>
+
+        <blockquote>The gap between "this platform can do X" and "I can make this platform do X" is the only gap that matters to the person evaluating your software.</blockquote>
+
+        <h2>MCP Connector Framework</h2>
+
+        <p>The Model Context Protocol (MCP) connector framework is the first major addition in v0.8.0. MCP is an open standard for connecting AI models to external tools &mdash; filesystems, databases, APIs, cloud services. OCCP's MCP integration enables agents to discover and invoke tools from any MCP-compatible server, with every tool call routed through the policy gate for security evaluation.</p>
+
+        <p>The connector framework supports 22+ MCP server integrations out of the box:</p>
+
+        <ul>
+          <li><strong>Infrastructure</strong> &mdash; filesystem, GitHub, Docker, Kubernetes</li>
+          <li><strong>Databases</strong> &mdash; SQLite, PostgreSQL, MySQL</li>
+          <li><strong>Cloud providers</strong> &mdash; Hetzner, Cloudflare, Hostinger</li>
+          <li><strong>Monitoring</strong> &mdash; Grafana, n8n workflow automation</li>
+          <li><strong>Security</strong> &mdash; Semgrep SAST, Snyk SCA, GitGuardian secret detection</li>
+          <li><strong>Research</strong> &mdash; web search, web scraping, documentation lookup</li>
+        </ul>
+
+        <p>Each connector is configured through the new settings pages in the dashboard, not through environment variables or configuration files. A developer can enable the GitHub MCP server, provide an API token, and immediately give their agents the ability to create pull requests, read issues, and manage repositories &mdash; all through the governed pipeline.</p>
+
+        <h2>Skills System</h2>
+
+        <p>Skills are the second major addition. A skill is a named, reusable capability that bundles together the tools, permissions, prompts, and validation rules needed for a specific domain task. Instead of configuring an agent with raw tool access and hoping it figures out the right workflow, a skill provides a structured template that guides the agent through a well-defined process.</p>
+
+        <pre><code># Example skill definition
+{
+  "name": "code-review",
+  "description": "Review a pull request for code quality and security issues",
+  "required_tools": ["github.get_pr", "github.get_diff", "github.create_review"],
+  "permissions": ["read:repository", "write:review"],
+  "validation_rules": [
+    "output_must_contain_severity_rating",
+    "output_must_not_contain_credentials"
+  ],
+  "prompt_template": "Review the following pull request diff for: ..."
+}</code></pre>
+
+        <p>Skills are acquired by agents through a request-and-validation flow. An agent requests a skill, the platform validates that the agent has the required tool access and permissions, and if validation passes, the skill is attached to the agent's capability profile. This creates a composable model: agents are assembled from skills, skills are assembled from tools, and the platform enforces boundaries at every level.</p>
+
+        <h3>Skills vs. Raw Tool Access</h3>
+
+        <p>The distinction between skills and raw tool access is governance. Raw tool access means the agent can call any function on any connected MCP server, subject only to broad policy rules. Skills narrow the scope: a code-review skill can only call GitHub read and review endpoints, not repository deletion or settings modification. The skill definition becomes a contract between the platform operator and the agent, making it clear what the agent can and cannot do for a given task type.</p>
+
+        <h2>Settings Pages</h2>
+
+        <p>The settings system replaces the previous configuration approach (environment variables and YAML files) with a dashboard-based interface. The settings pages are organized into four tabs:</p>
+
+        <ol>
+          <li><strong>LLM Configuration</strong> &mdash; Select provider (Claude, GPT-4, Gemini, local models), enter API key (encrypted at rest), configure model parameters (temperature, max tokens, timeout).</li>
+          <li><strong>Tool Configuration</strong> &mdash; Enable/disable MCP servers, configure connection parameters, test connectivity.</li>
+          <li><strong>Security Settings</strong> &mdash; Configure policy engine rules, set rate limits, manage injection detection sensitivity.</li>
+          <li><strong>General Settings</strong> &mdash; Organization name, default agent settings, audit retention period.</li>
+        </ol>
+
+        <p>Settings follow a hierarchical override model: system defaults serve as the base, organization-level overrides customize for the deployment, and user-level preferences personalize the experience. This three-tier hierarchy allows a platform administrator to set security baselines that individual users cannot weaken while still permitting customization of non-security settings.</p>
+
+        <h2>10-Step Onboarding Wizard</h2>
+
+        <p>The onboarding wizard is the centerpiece of v0.8.0. It guides a new user from initial landing to their first governed autonomous task in exactly ten steps. Each step has prerequisite validation &mdash; you cannot proceed to step 5 until steps 1 through 4 are complete. But the wizard does not hand-hold: each step presents the configuration interface directly, with contextual documentation for users who need it and a clean form for users who do not.</p>
+
+        <p>The ten steps are:</p>
+
+        <ol>
+          <li><strong>Landing</strong> &mdash; Platform overview, capability summary, "Get Started" action.</li>
+          <li><strong>Account Creation</strong> &mdash; Username, email, password with strength validation.</li>
+          <li><strong>LLM Provider</strong> &mdash; Select from supported providers (Anthropic, OpenAI, Google, local).</li>
+          <li><strong>API Key</strong> &mdash; Enter provider API key, validate connectivity, encrypt and store.</li>
+          <li><strong>First Agent</strong> &mdash; Register an agent with a name and description.</li>
+          <li><strong>Agent Capabilities</strong> &mdash; Assign skills and tool access to the agent.</li>
+          <li><strong>First Task</strong> &mdash; Create a task with title, description, and assigned agent.</li>
+          <li><strong>Pipeline Execution</strong> &mdash; Execute the task through Plan, Gate, Execute, Validate, Ship.</li>
+          <li><strong>Audit Review</strong> &mdash; View the complete audit trail for the executed task.</li>
+          <li><strong>Production Path</strong> &mdash; Configuration for production deployment: Docker Compose, environment variables, SSL.</li>
+        </ol>
+
+        <p>The wizard stores progress in local storage and the user's server-side profile, so a user who leaves mid-wizard can resume from where they stopped. Each step renders in the same dashboard container, maintaining visual consistency with the rest of the application.</p>
+
+        <blockquote>The wizard is not a tutorial. Tutorials teach concepts. The wizard produces a working system. When a user completes step 10, they have a registered agent, a configured LLM provider, and a verified audit trail. They have not learned about OCCP &mdash; they have used OCCP.</blockquote>
+
+        <h2>The Shift from Building to Enabling</h2>
+
+        <p>v0.8.0 represents a philosophical shift in the project. For seven versions, the question was "what should the platform do?" Starting with v0.8.0, the question becomes "how do people use what the platform does?" This is a harder problem. Building a policy engine is an engineering challenge with clear success criteria: does it detect injections? Does it scan for PII? Does it enforce rate limits? Making a policy engine usable is a design challenge with subjective success criteria: can a new user configure it? Can they understand why a request was blocked? Can they adjust the sensitivity without reading the source code?</p>
+
+        <p>The MCP connector framework, skills system, settings pages, and onboarding wizard are not new capabilities. They are access layers for existing capabilities. The policy engine is the same engine from v0.6.0. The RBAC system is the same Casbin implementation from v0.7.0. The pipeline is the same five-stage loop from v0.1.0. What changed is that a developer can now configure and use all of these through a guided interface instead of through source code archaeology.</p>
+
+        <h2>Upgrade Path from v0.7.0</h2>
+
+        <p>Upgrading from v0.7.0 to v0.8.0 requires running <code>alembic upgrade head</code> to apply the new migrations for skills, MCP connections, and settings tables. Existing agents, users, and audit data are preserved. The new settings pages will initialize with system defaults, and existing environment variable configurations continue to work as the base layer that dashboard settings override. No breaking changes to the REST API &mdash; v0.8.0 adds new endpoints but does not modify existing ones.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>v0.8.0 shifts focus from building capabilities to making capabilities accessible</li>
+          <li>MCP connector framework enables 22+ tool integrations with policy-gated security</li>
+          <li>Skills system provides reusable, governed capability templates for agents</li>
+          <li>Settings pages replace environment variables with a hierarchical dashboard configuration</li>
+          <li>10-step onboarding wizard takes a new user from landing page to first autonomous task</li>
+          <li>Non-breaking upgrade from v0.7.0: run migrations, existing data preserved</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="seven-versions-four-months.html">&larr; Seven Versions in Four Months</a>
+        <a href="10-step-wizard.html">10-Step Wizard &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

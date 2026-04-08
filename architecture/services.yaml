@@ -1,0 +1,177 @@
+version: 1
+generated: 2026-04-08
+maintainer: Claude Code (autonomous principal architect)
+schema: occp.architecture.services.v1
+
+# OCCP Services — Runtime topology
+# Every service that runs as part of OCCP has an entry here.
+# Health checks and redesign proposals consume this file.
+
+services:
+
+  # ─── Backend API ────────────────────────────────────────────
+  - id: occp-api
+    type: fastapi-backend
+    language: python
+    version: "0.9.0"
+    entrypoint: api.app:app
+    host: hetzner-occp-brain
+    host_ip: 195.201.238.144
+    container: occp-api-1
+    port: 8000
+    reverse_proxy:
+      type: apache
+      public_url: https://api.occp.ai
+      public_url_alt: https://occp.ai/api/
+    health_endpoint: /api/v1/health
+    status_endpoint: /api/v1/status
+    dependencies:
+      - occp-db
+      - openclaw-bridge
+      - telegram-bot
+      - anthropic-api
+      - openai-api
+    routes_module: api.routes
+    routes_count: 20
+    critical_path: true
+
+  # ─── Frontend Dashboard ─────────────────────────────────────
+  - id: occp-dash
+    type: nextjs-frontend
+    language: typescript
+    framework: next.js-15
+    host: hetzner-occp-brain
+    container: occp-dash-1
+    port: 3000
+    reverse_proxy:
+      type: apache
+      public_url: https://dash.occp.ai
+    health_endpoint: /
+    dependencies:
+      - occp-api
+    critical_path: false
+
+  # ─── Landing site ───────────────────────────────────────────
+  - id: occp-landing
+    type: static-html
+    host: hetzner-occp-brain
+    path: /var/www/occp.ai/web/
+    reverse_proxy:
+      type: apache
+      public_url: https://occp.ai
+    critical_path: false
+
+  # ─── Database ───────────────────────────────────────────────
+  - id: occp-db
+    type: sqlite
+    version: "3.x"
+    host: hetzner-occp-brain
+    path: /opt/occp/data/occp.db
+    tables_count: 9
+    tables:
+      - tasks
+      - audit_entries
+      - pending_approvals
+      - workflow_executions
+      - brain_conversations
+      - users
+      - agent_configs
+      - onboarding_progress
+      - encrypted_tokens
+    migration_tool: alembic
+    migration_dir: migrations/versions
+    backup_strategy: docker-volume occp-data
+    critical_path: true
+
+  # ─── OpenClaw execution plane ───────────────────────────────
+  - id: openclaw-gateway
+    type: nodejs-websocket
+    host: hetzner-openclaw
+    host_ip: 95.216.212.174
+    reverse_proxy:
+      type: caddy
+      public_url: wss://claw.occp.ai
+      auth: basic + hmac
+    features_count: 95
+    critical_path: true
+    external_to_occp_core: true
+
+  # ─── Telegram bot ───────────────────────────────────────────
+  - id: telegram-bot
+    type: http-long-polling
+    host: hetzner-occp-brain
+    container: occp-api-1  # runs inside API process
+    owner_user: occpbrainbot
+    bot_id: 8682226541
+    owner_chat_id: 8400869598
+    adapter: adapters.telegram_voice_bot.TelegramVoiceBot
+    started_by: api.app lifespan
+    poll_interval_seconds: 30
+    critical_path: true
+
+  # ─── MCP runtime bridge ─────────────────────────────────────
+  - id: mcp-bridge
+    type: async-tool-dispatcher
+    host: hetzner-occp-brain
+    container: occp-api-1  # in-process
+    adapter: adapters.mcp_bridge.MCPBridge
+    tools_registered: 7
+    tools:
+      - brain.status
+      - brain.health
+      - filesystem.read
+      - filesystem.write
+      - filesystem.list
+      - http.get
+      - http.post
+    enforcement: agent_allowlist
+    critical_path: true
+    introduced_in: v0.9.0-l4
+
+  # ─── Observability (L6 NEW) ─────────────────────────────────
+  - id: observability-collector
+    type: in-process-metrics
+    host: hetzner-occp-brain
+    container: occp-api-1  # in-process
+    module: observability.metrics_collector
+    persistence: memory + prometheus-exposition
+    critical_path: false
+    introduced_in: v0.10.0-l6
+
+# ─── Hosts (physical/virtual nodes) ───────────────────────────
+hosts:
+  - id: hetzner-occp-brain
+    provider: hetzner
+    server_id: 64902193
+    ip: 195.201.238.144
+    os: ubuntu-24.04
+    services: [occp-api, occp-dash, occp-landing, occp-db, telegram-bot, mcp-bridge, observability-collector]
+    also_runs: [mailcow]
+
+  - id: hetzner-openclaw
+    provider: hetzner
+    ip: 95.216.212.174
+    os: debian-12
+    services: [openclaw-gateway]
+    public_url: https://claw.occp.ai
+
+  - id: mba-henry
+    provider: physical
+    type: macbook-air-m
+    ip_tailscale: 100.114.146.86
+    role: claude-code-host + primary-control
+    os: macos-26.4
+
+  - id: imac-henry
+    provider: physical
+    type: imac
+    ip_tailscale: 100.88.122.102
+    role: storage + secondary-control
+    os: macos-14.8.5
+
+  - id: mbp-henry
+    provider: physical
+    type: macbook-pro
+    ip_tailscale: 100.65.58.71
+    role: secondary-dev
+    os: macos

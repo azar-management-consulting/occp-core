@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OCCP v0.2.0: From CLI to Production-Ready Platform — OCCP News</title>
+  <meta name="description" content="FastAPI REST API, JWT authentication, Docker deployment, and the transition from prototype to production platform.">
+  <meta name="keywords" content="OCCP, v0.2.0, FastAPI, JWT, Docker, TypeScript SDK, production">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/occp-v020-production-ready.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/occp-v020-production-ready.html">
+  <meta property="og:title" content="OCCP v0.2.0: From CLI to Production-Ready Platform">
+  <meta property="og:description" content="FastAPI REST API, JWT authentication, Docker deployment, and the transition from prototype to production platform.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2025-12-05">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="OCCP v0.2.0: From CLI to Production-Ready Platform">
+  <meta name="twitter:description" content="FastAPI REST API, JWT authentication, Docker deployment, and the transition from prototype to production platform.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "OCCP v0.2.0: From CLI to Production-Ready Platform",
+    "datePublished": "2025-12-05",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "FastAPI REST API, JWT authentication, Docker deployment, and the transition from prototype to production platform.",
+    "url": "https://news.occp.ai/articles/occp-v020-production-ready.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2025-12-05</span>
+          <span class="card-tag tag-milestone">Milestone</span>
+          <span class="card-version">v0.2.0</span>
+        </div>
+        <h1>OCCP v0.2.0: From CLI to Production-Ready Platform</h1>
+        <p class="lead">The v0.2.0 release transforms OCCP from a single-user CLI tool into a multi-user production platform. Major additions include a FastAPI REST API with full OpenAPI documentation, JWT authentication with bcrypt password hashing, Docker Compose deployment with healthchecks, and a TypeScript SDK for frontend integration.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Production Gap</h2>
+
+        <p>OCCP v0.1.0 proved that the Verified Autonomy Pipeline worked end-to-end. But it was a single-user system: one developer, one machine, one CLI. Production environments require multi-user access, network-based APIs, authentication, and reproducible deployment. The v0.2.0 release closes this gap with four major additions that collectively move OCCP from prototype to production-ready.</p>
+
+        <h2>FastAPI REST API</h2>
+
+        <p>The REST API layer was built with FastAPI, chosen for three reasons: native async support (matching the orchestrator's async architecture), automatic OpenAPI schema generation (providing self-documenting endpoints), and Pydantic integration (enabling request/response validation with Python type hints).</p>
+
+        <h3>Endpoint Design</h3>
+
+        <p>The API endpoints map directly from the CLI commands established in v0.1.0. This is the payoff of CLI-first design: the API surface was already validated through months of CLI usage.</p>
+
+        <pre><code># Task lifecycle endpoints
+POST   /api/v1/tasks              # Submit a new task (replaces: occp run)
+GET    /api/v1/tasks/{task_id}     # Get task status (replaces: occp status)
+GET    /api/v1/tasks               # List tasks with filtering
+
+# Audit endpoints
+GET    /api/v1/audit/{task_id}     # Audit trail for a task (replaces: occp audit)
+GET    /api/v1/audit               # Query audit entries with filters
+
+# Health and metadata
+GET    /api/v1/health              # Healthcheck endpoint
+GET    /api/v1/info                # Platform version and configuration</code></pre>
+
+        <h3>Request Validation</h3>
+
+        <p>Every request is validated through Pydantic models before reaching the orchestrator. This is a separate validation layer from the policy engine &mdash; Pydantic validates the request structure (are required fields present, are types correct), while the policy engine validates the request content (does it contain PII, does it request excessive resources).</p>
+
+        <pre><code>from pydantic import BaseModel, Field
+
+class TaskCreate(BaseModel):
+    description: str = Field(
+        ...,
+        min_length=1,
+        max_length=10000,
+        description="Task description to be processed by the pipeline"
+    )
+    agent: str = Field(
+        default="default",
+        description="Agent identifier for task execution"
+    )
+    token_budget: int = Field(
+        default=4096,
+        ge=1,
+        le=32768,
+        description="Maximum token budget for LLM calls"
+    )
+    timeout: int = Field(
+        default=60,
+        ge=1,
+        le=300,
+        description="Execution timeout in seconds"
+    )
+    priority: str = Field(
+        default="normal",
+        pattern="^(critical|high|normal|low)$",
+        description="Task priority level"
+    )</code></pre>
+
+        <h3>OpenAPI Documentation</h3>
+
+        <p>FastAPI generates OpenAPI 3.0 specifications automatically from the endpoint definitions and Pydantic models. The generated documentation is available at <code>/docs</code> (Swagger UI) and <code>/redoc</code> (ReDoc). This means the API documentation is always synchronized with the implementation &mdash; a discrepancy between documentation and behavior is structurally impossible because both are generated from the same source code.</p>
+
+        <h2>JWT Authentication</h2>
+
+        <p>Production deployment requires authentication: knowing who is making each API call. OCCP v0.2.0 implements JSON Web Token (JWT) authentication, chosen over session-based authentication for three reasons specific to AI platforms.</p>
+
+        <h3>Why JWT for AI Platforms</h3>
+
+        <ul>
+          <li><strong>Stateless verification</strong> &mdash; The API server can verify a JWT without querying a session store. This is important for AI workloads where the server may be handling long-running pipeline executions and should not block on database queries for every request.</li>
+          <li><strong>SDK compatibility</strong> &mdash; Python and TypeScript SDKs can include the JWT as a bearer token in HTTP headers. Session cookies are browser-specific and do not work cleanly with programmatic SDK clients.</li>
+          <li><strong>Role embedding</strong> &mdash; JWT payloads can include user role claims, enabling the API to make authorization decisions from the token alone without additional database lookups. This is the foundation for the RBAC system added in later versions.</li>
+        </ul>
+
+        <h3>Password Hashing</h3>
+
+        <p>User passwords are hashed using bcrypt with 12 rounds. bcrypt was chosen over faster alternatives (SHA-256, PBKDF2) because its deliberate slowness makes brute-force attacks computationally expensive. The 12-round configuration provides a balance between security (approximately 250ms per hash on modern hardware) and usability (login is not perceptibly slow).</p>
+
+        <pre><code># Authentication flow
+from datetime import datetime, timedelta, timezone
+import bcrypt
+import jwt
+
+class AuthService:
+    def __init__(self, secret_key: str, algorithm: str = "HS256"):
+        self.secret_key = secret_key
+        self.algorithm = algorithm
+        self.token_expiry = timedelta(hours=24)
+
+    def hash_password(self, password: str) -> str:
+        return bcrypt.hashpw(
+            password.encode("utf-8"),
+            bcrypt.gensalt(rounds=12)
+        ).decode("utf-8")
+
+    def verify_password(self, password: str, hashed: str) -> bool:
+        return bcrypt.checkpw(
+            password.encode("utf-8"),
+            hashed.encode("utf-8")
+        )
+
+    def create_token(self, user_id: str, role: str) -> str:
+        now = datetime.now(timezone.utc)
+        payload = {
+            "sub": user_id,
+            "role": role,
+            "iat": now,
+            "exp": now + self.token_expiry,
+        }
+        return jwt.encode(payload, self.secret_key, algorithm=self.algorithm)</code></pre>
+
+        <h3>Auth Middleware</h3>
+
+        <p>Every API endpoint (except <code>/api/v1/health</code> and the authentication endpoint itself) requires a valid JWT in the <code>Authorization: Bearer</code> header. The middleware validates the token signature, checks expiration, and extracts the user identity and role before the request reaches the endpoint handler. Invalid or expired tokens produce a 401 response with a clear error message.</p>
+
+        <h2>Docker Compose Deployment</h2>
+
+        <p>The v0.2.0 release includes a Docker Compose configuration for reproducible deployment. The composition includes the OCCP API server, a reverse proxy for TLS termination, and volume mounts for persistent data (audit trail, configuration).</p>
+
+        <pre><code># docker-compose.yml (simplified)
+services:
+  occp-api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - OCCP_ENV=production
+      - OCCP_LOG_LEVEL=info
+    volumes:
+      - occp-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  occp-data:</code></pre>
+
+        <h3>Healthcheck Design</h3>
+
+        <p>The healthcheck endpoint verifies three things: the API server is responding to HTTP requests, the policy engine is loaded and functional, and the audit trail storage is writable. If any check fails, the healthcheck returns a 503 status, triggering Docker's restart policy. This three-point check ensures that a "healthy" container is genuinely operational, not just running a process that has lost connectivity to its dependencies.</p>
+
+        <h2>TypeScript SDK</h2>
+
+        <p>The TypeScript SDK enables frontend applications to interact with OCCP's API. Like the Python SDK, it uses zero external dependencies &mdash; the native <code>fetch</code> API handles all HTTP communication.</p>
+
+        <pre><code>// TypeScript SDK usage
+import { OCCPClient } from "@occp/sdk";
+
+const client = new OCCPClient({
+  baseUrl: "https://api.occp.ai",
+  token: "eyJhbGciOiJIUzI1NiIs...",
+});
+
+// Submit a task
+const result = await client.createTask({
+  description: "Analyze customer feedback for sentiment",
+  agent: "classifier",
+  tokenBudget: 2048,
+  timeout: 30,
+});
+
+console.log(`Status: ${result.status}`);
+console.log(`Output: ${result.output}`);
+console.log(`Audit ID: ${result.auditId}`);</code></pre>
+
+        <p>The TypeScript SDK mirrors the Python SDK's surface area: task creation, status queries, and audit trail retrieval. Both SDKs target the same API endpoints with the same parameters, ensuring behavioral consistency across languages. The TypeScript SDK is essential for the dashboard integration planned for v0.3.0 &mdash; the dashboard will be a Next.js application that uses the TypeScript SDK to communicate with the API.</p>
+
+        <h2>Testing and CI/CD</h2>
+
+        <p>The v0.2.0 release includes 37 tests covering the core pipeline, policy engine, API endpoints, and authentication flow. Tests are organized by component: <code>test_orchestrator.py</code>, <code>test_policy_engine.py</code>, <code>test_api.py</code>, <code>test_auth.py</code>. The CI pipeline runs tests against Python 3.11, 3.12, and 3.13 to ensure compatibility across supported versions.</p>
+
+        <p>GitHub Actions runs the full test suite on every push and pull request. The CI configuration also includes a secret scanning step using GitGuardian to prevent accidental credential commits. Protected branch rules require all CI checks to pass before merging to main.</p>
+
+        <h2>What Changed: v0.1.0 vs. v0.2.0</h2>
+
+        <p>The transition from v0.1.0 to v0.2.0 is a shift in deployment model, not in core architecture. The Verified Autonomy Pipeline is unchanged. The policy engine is unchanged. The audit chain is unchanged. What changed is the access layer: CLI-only became CLI + REST API + SDK. What was added is operational infrastructure: authentication, containerized deployment, and automated testing. The core governance pipeline that was validated in v0.1.0 is now accessible to multiple users, deployable to production servers, and secured with authentication. This is the transition from "it works on my machine" to "it works in production."</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>FastAPI REST API with automatic OpenAPI docs &mdash; endpoints mapped directly from CLI commands</li>
+          <li>JWT authentication with bcrypt (12 rounds) password hashing and 24-hour token expiry</li>
+          <li>Docker Compose deployment with three-point healthchecks (API, policy engine, audit storage)</li>
+          <li>TypeScript SDK with zero dependencies using native fetch &mdash; enabling frontend integration</li>
+          <li>37 tests across Python 3.11/3.12/3.13 with GitHub Actions CI and secret scanning</li>
+          <li>Core pipeline unchanged from v0.1.0 &mdash; the access layer and operational infrastructure were added around it</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="cli-first-design.html">&larr; CLI-First Design</a>
+        <a href="jwt-auth-architecture.html">JWT Authentication Architecture &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

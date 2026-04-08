@@ -38,6 +38,19 @@ AGENT_TOOL_ALLOWLISTS: dict[str, set[str]] = {
         "http.get", "http.post",
         "read", "write", "grep", "glob",
     },
+    # Default seeded agents (api/app.py _DEFAULT_AGENTS) — pipeline execute path
+    "general": {"read", "write", "execute", "browser", "web_search"},
+    "demo": {"execute", "read"},
+    "code-reviewer": {"read", "grep", "glob", "execute"},
+    "onboarding-wizard": {"read", "write", "execute"},
+    "mcp-installer": {"read", "write", "execute", "browser"},
+    "llm-setup": {"read", "write", "execute"},
+    "skills-manager": {"read", "write", "execute"},
+    "session-policy": {"read", "execute"},
+    "ux-copy": {"read", "write", "translate"},
+    "openclaw": {"read", "write", "execute", "browser", "api_call"},
+    "remote-agent": {"read", "write", "execute", "browser", "api_call"},
+    "main": {"read", "write", "execute"},  # Brain pipeline session agent
 }
 
 # Dangerous tools that require explicit allowlist

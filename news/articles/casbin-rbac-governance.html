@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Casbin RBAC: Role-Based Access Control for AI Governance — OCCP News</title>
+  <meta name="description" content="Implementing a 4-role hierarchy with Casbin to enforce least-privilege access across the AI orchestration platform.">
+  <meta name="keywords" content="OCCP, Casbin, RBAC, role-based access control, AI governance, least privilege, authorization">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/casbin-rbac-governance.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/casbin-rbac-governance.html">
+  <meta property="og:title" content="Casbin RBAC: Role-Based Access Control for AI Governance">
+  <meta property="og:description" content="Implementing a 4-role hierarchy with Casbin to enforce least-privilege access across the AI orchestration platform.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-10">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Casbin RBAC: Role-Based Access Control for AI Governance">
+  <meta name="twitter:description" content="Implementing a 4-role hierarchy with Casbin to enforce least-privilege access across the AI orchestration platform.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Casbin RBAC: Role-Based Access Control for AI Governance",
+    "datePublished": "2026-02-10",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Implementing a 4-role hierarchy with Casbin to enforce least-privilege access across the AI orchestration platform.",
+    "url": "https://news.occp.ai/articles/casbin-rbac-governance.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-10</span>
+          <span class="card-tag tag-security">Security</span>
+          <span class="card-version">v0.7.0</span>
+        </div>
+        <h1>Casbin RBAC: Role-Based Access Control for AI Governance</h1>
+        <p class="lead">In AI orchestration, the principle of least privilege is not just a security best practice &mdash; it is an operational necessity. An operator who can run tasks but not modify agent configurations cannot accidentally break the agent fleet. A viewer who can see metrics but not trigger executions cannot accidentally consume LLM tokens. Casbin makes these boundaries enforceable.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>Why Casbin</h2>
+
+        <p>Building a custom RBAC implementation is tempting but inadvisable. Authorization logic is deceptively complex: role hierarchies, resource wildcards, conditional policies, and audit requirements create a combinatorial surface that grows with every endpoint. A custom implementation either starts simple and accrues technical debt, or starts comprehensive and takes months to stabilize.</p>
+
+        <p>Casbin is a purpose-built authorization library that separates the access control model from the enforcement logic. The model (who can do what to which resource) is defined in a configuration file. The enforcement logic is a single function call: <code>enforcer.enforce(subject, object, action)</code>. The model can be changed without modifying application code. The enforcement can be tested independently of the model. This separation makes the system auditable and maintainable.</p>
+
+        <p>OCCP chose Casbin specifically because it supports RBAC with role hierarchies out of the box, has a Python async adapter, integrates cleanly with FastAPI middleware, and stores policies in a format that non-developers can read and review.</p>
+
+        <h2>The 4-Role Hierarchy</h2>
+
+        <p>OCCP's role model was designed by analyzing the actual operations that different team members need to perform on an AI orchestration platform. Four distinct operation profiles emerged:</p>
+
+        <h3>Viewer</h3>
+
+        <p>The viewer role provides read-only access to the entire platform. Viewers can see task lists, agent registrations, audit logs, dashboard metrics, and pipeline status. They cannot create, modify, or delete any resource. This role is designed for stakeholders who need visibility into AI operations without the ability to affect them &mdash; compliance officers, project managers, or executives.</p>
+
+        <h3>Operator</h3>
+
+        <p>The operator role inherits all viewer permissions and adds the ability to create tasks and trigger pipeline executions. Operators are the primary users of the platform &mdash; they submit work to AI agents and monitor the results. They cannot modify agent configurations, change policies, or manage other users. This boundary ensures that operators cannot accidentally alter the governance framework they operate within.</p>
+
+        <h3>Admin</h3>
+
+        <p>The admin role inherits all operator permissions and adds agent management, policy modification, and user administration. Admins configure the platform: they register agents, define capability boundaries, set policy rules, and manage team access. They cannot modify core platform settings or perform destructive operations like data purging.</p>
+
+        <h3>System Admin</h3>
+
+        <p>The system_admin role has unrestricted access to every endpoint and every operation. This role exists for platform maintenance: updating configuration, managing RBAC policies themselves, accessing diagnostic endpoints, and performing operations that could be destructive if misused. In most deployments, only one or two individuals hold this role.</p>
+
+        <h2>Policy Model Configuration</h2>
+
+        <p>Casbin's policy model is defined in a configuration file that specifies the request format, the policy format, the role hierarchy, and the matching logic.</p>
+
+        <pre><code># model.conf — RBAC with role hierarchy
+[request_definition]
+r = sub, obj, act
+
+[policy_definition]
+p = sub, obj, act
+
+[role_definition]
+g = _, _
+
+[policy_effect]
+e = some(where (p.eft == allow))
+
+[matchers]
+m = g(r.sub, p.sub) && keyMatch2(r.obj, p.obj) && r.act == p.act</code></pre>
+
+        <p>The <code>keyMatch2</code> function in the matcher enables path-based resource matching. A policy for <code>/api/v1/tasks/*</code> matches <code>/api/v1/tasks/abc-123</code> and <code>/api/v1/tasks/def-456</code> without needing a separate policy entry for each task ID. This keeps the policy file manageable even as the number of resources grows.</p>
+
+        <h3>Policy Definitions</h3>
+
+        <p>The actual permissions are defined in a policy file that maps roles to resources and actions:</p>
+
+        <pre><code># policy.csv — Role-to-permission mappings
+# Viewer permissions
+p, viewer, /api/v1/tasks,       GET
+p, viewer, /api/v1/tasks/*,     GET
+p, viewer, /api/v1/agents,      GET
+p, viewer, /api/v1/agents/*,    GET
+p, viewer, /api/v1/audit,       GET
+p, viewer, /api/v1/audit/*,     GET
+p, viewer, /api/v1/metrics,     GET
+
+# Operator permissions (additional)
+p, operator, /api/v1/tasks,     POST
+p, operator, /api/v1/tasks/*/execute, POST
+p, operator, /api/v1/tasks/*,   GET
+
+# Admin permissions (additional)
+p, admin, /api/v1/agents,       POST
+p, admin, /api/v1/agents/*,     PUT
+p, admin, /api/v1/agents/*,     DELETE
+p, admin, /api/v1/policies,     POST
+p, admin, /api/v1/policies/*,   PUT
+p, admin, /api/v1/users,        POST
+p, admin, /api/v1/users/*,      PUT
+
+# System admin — full access
+p, system_admin, /api/v1/*,     GET
+p, system_admin, /api/v1/*,     POST
+p, system_admin, /api/v1/*,     PUT
+p, system_admin, /api/v1/*,     DELETE
+
+# Role hierarchy
+g, operator, viewer
+g, admin, operator
+g, system_admin, admin</code></pre>
+
+        <p>The last three lines define the role hierarchy using Casbin's grouping syntax. <code>g, operator, viewer</code> means "operator inherits all permissions that viewer has." This chain means that system_admin inherits from admin, which inherits from operator, which inherits from viewer. Each role only needs to define its additional permissions &mdash; inherited permissions are automatic.</p>
+
+        <h2>JWT Integration</h2>
+
+        <p>The user's role is embedded in their JWT token as a claim. When the user authenticates, the authentication endpoint reads their role from the database and includes it in the token payload:</p>
+
+        <pre><code>{
+  "sub": "user-id-abc-123",
+  "email": "operator@example.com",
+  "role": "operator",
+  "iat": 1738000000,
+  "exp": 1738086400
+}</code></pre>
+
+        <p>The RBAC middleware extracts the role claim from the validated JWT token and passes it to the Casbin enforcer as the subject. This means role changes take effect when the user's current token expires and they obtain a new one. For immediate role changes (such as revoking admin access during an incident), the token revocation endpoint invalidates the user's current token, forcing re-authentication with the updated role.</p>
+
+        <h2>Middleware Integration</h2>
+
+        <p>The RBAC check is implemented as FastAPI middleware that runs after JWT validation and before the endpoint handler. The middleware maps the incoming request to a Casbin enforcement check:</p>
+
+        <pre><code>from fastapi import Request, HTTPException
+import casbin
+
+class RBACMiddleware:
+    def __init__(self, enforcer: casbin.Enforcer):
+        self.enforcer = enforcer
+
+    async def __call__(self, request: Request, call_next):
+        # Skip public endpoints
+        if request.url.path in PUBLIC_PATHS:
+            return await call_next(request)
+
+        # Extract role from JWT (already validated by auth middleware)
+        role = request.state.user_role
+
+        # Map request to Casbin check
+        resource = request.url.path
+        action = request.method
+
+        if not self.enforcer.enforce(role, resource, action):
+            raise HTTPException(
+                status_code=403,
+                detail=f"Role '{role}' does not have {action} access to {resource}"
+            )
+
+        return await call_next(request)</code></pre>
+
+        <p>The middleware's position in the stack is critical. It runs after JWT validation (so the role is already extracted and trusted) and after rate limiting (so rejected requests are not rate-counted). If the RBAC check fails, the 403 response includes the role and resource in the error detail, making debugging straightforward without exposing the full policy configuration.</p>
+
+        <blockquote>Authorization errors should be informative enough for operators to diagnose the problem and specific enough that they know which role would grant access. "Forbidden" is not helpful. "Role 'viewer' does not have POST access to /api/v1/tasks" is actionable.</blockquote>
+
+        <h2>Least Privilege in AI Orchestration</h2>
+
+        <p>The principle of least privilege takes on specific meaning in AI orchestration. Consider these scenarios that RBAC prevents:</p>
+
+        <ul>
+          <li>A dashboard viewer cannot accidentally trigger a pipeline execution that consumes LLM tokens and produces unreviewed output.</li>
+          <li>An operator cannot modify agent capability declarations, ensuring that the agent fleet's permission boundaries are managed only by administrators who understand the implications.</li>
+          <li>An admin cannot modify the RBAC policies themselves, preventing privilege escalation where an admin grants themselves system_admin access.</li>
+          <li>No role except system_admin can access the data purge endpoint, ensuring that audit trail deletion requires the highest privilege level.</li>
+        </ul>
+
+        <p>Each of these boundaries exists because the corresponding action has consequences that extend beyond the immediate request. Running a task costs money (LLM tokens). Modifying agent capabilities changes security boundaries. Altering RBAC policies affects every user. Purging data destroys compliance evidence. The RBAC model ensures that each of these actions is gated by the appropriate level of authority.</p>
+
+        <h2>Testing RBAC</h2>
+
+        <p>The RBAC test suite contains 42 tests that systematically verify every role-endpoint-method combination. The tests follow a matrix pattern: for each endpoint, verify that authorized roles receive 200/201 responses and unauthorized roles receive 403 responses.</p>
+
+        <pre><code># Example RBAC test pattern
+@pytest.mark.parametrize("role,expected_status", [
+    ("viewer",       403),
+    ("operator",     201),
+    ("admin",        201),
+    ("system_admin", 201),
+])
+async def test_create_task_rbac(role, expected_status, client):
+    token = create_test_token(role=role)
+    response = await client.post(
+        "/api/v1/tasks",
+        json={"title": "Test", "description": "Test task"},
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == expected_status</code></pre>
+
+        <p>This parametrized approach ensures comprehensive coverage. If a new endpoint is added without a corresponding RBAC test, the code review process catches it. The test suite serves as a living documentation of the permission matrix &mdash; reading the test parameters tells you exactly which roles can access which endpoints.</p>
+
+        <h2>Policy Evolution</h2>
+
+        <p>As OCCP grows, the RBAC model will evolve. The current 4-role hierarchy may expand with team-scoped roles (team_admin who can only manage agents within their team) or resource-scoped permissions (operator who can run tasks only with specific agents). Casbin's model is flexible enough to accommodate these extensions without changing the middleware or the enforcement logic &mdash; only the model.conf and policy.csv files need updating.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>4-role hierarchy: viewer (read), operator (+execute), admin (+manage), system_admin (full access)</li>
+          <li>Casbin separates the access model from enforcement logic, enabling policy changes without code changes</li>
+          <li>Role inheritance means each role only defines its additional permissions; viewer permissions cascade up</li>
+          <li>JWT claims carry the user's role; middleware checks Casbin policy before every endpoint handler</li>
+          <li>42 parametrized tests verify every role-endpoint-method combination in the permission matrix</li>
+          <li>Least privilege prevents accidental token spend, capability changes, privilege escalation, and data destruction</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="sqlalchemy-async-migration.html">&larr; SQLAlchemy 2.0 Migration</a>
+        <a href="sandbox-isolation.html">Sandbox Isolation &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OCCP v0.5.0: Agent Management Comes to the Dashboard — OCCP News</title>
+  <meta name="description" content="Full agent lifecycle management in the browser: register, configure, monitor, and retire AI agents from a single interface.">
+  <meta name="keywords" content="OCCP v0.5.0, agent management, agent registry, capability badges, agent lifecycle, dashboard, OCCP">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/occp-v050-agent-management.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/occp-v050-agent-management.html">
+  <meta property="og:title" content="OCCP v0.5.0: Agent Management Comes to the Dashboard">
+  <meta property="og:description" content="Full agent lifecycle management in the browser -- register, configure, monitor, and retire AI agents.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-01-18">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="OCCP v0.5.0: Agent Management Comes to the Dashboard">
+  <meta name="twitter:description" content="Full agent lifecycle management in the browser for OCCP.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "OCCP v0.5.0: Agent Management Comes to the Dashboard",
+    "description": "Full agent lifecycle management in the browser for the OCCP platform.",
+    "datePublished": "2026-01-18",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "url": "https://news.occp.ai/articles/occp-v050-agent-management.html",
+    "mainEntityOfPage": "https://news.occp.ai/articles/occp-v050-agent-management.html",
+    "proficiencyLevel": "Advanced",
+    "dependencies": "FastAPI, Next.js 15, React 19"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo">OCCP <span>// news</span></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="https://news.occp.ai/" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+
+    <!-- Article Header -->
+    <header class="article-header">
+      <div class="card-meta">
+        <span class="card-date">2026-01-18</span>
+        <span class="card-tag tag-milestone">Milestone</span>
+        <span class="card-version">v0.5.0</span>
+      </div>
+      <h1>OCCP v0.5.0: Agent Management Comes to the Dashboard</h1>
+      <p class="lead">Before v0.5.0, managing agents required API calls or CLI commands. Version 0.5.0 brought the full agent lifecycle into the browser: registration, configuration, real-time monitoring, and retirement. The release also introduced the agent registry -- a capability-based access control system that enforces what each agent is allowed to do.</p>
+    </header>
+
+    <!-- Article Body -->
+    <div class="article-body">
+
+      <h2>What Changed in v0.5.0</h2>
+
+      <p>Prior releases treated agents as opaque identifiers. The orchestrator knew that "agent-sec-01" existed and could process security-related tasks, but there was no structured way to inspect its capabilities, modify its configuration, or track its operational history through the dashboard. Agent management was an API-only operation.</p>
+
+      <p>Version 0.5.0 introduced four major capabilities:</p>
+
+      <ul>
+        <li><strong>Agent registration UI</strong> -- a form-based interface for registering new agents with capability declarations</li>
+        <li><strong>Configuration management</strong> -- parameter editing for registered agents (max concurrent tasks, timeout settings, capability list)</li>
+        <li><strong>Real-time monitoring</strong> -- live status, heartbeat tracking, and task history per agent</li>
+        <li><strong>Agent retirement workflow</strong> -- graceful decommissioning with task reassignment</li>
+      </ul>
+
+      <h2>Agent Registration with Capability Declarations</h2>
+
+      <p>When a new agent is registered in OCCP, it must declare its capabilities. Capabilities are not just labels -- they are the basis for task routing and access control. An agent registered with <code>["code_analysis", "vulnerability_scan"]</code> will only receive tasks that match those capabilities. It cannot claim tasks requiring <code>"data_processing"</code> or <code>"content_generation"</code>.</p>
+
+      <pre><code>// Agent registration request
+POST /api/v1/agents
+{
+  "name": "security-scanner-01",
+  "description": "Static analysis and vulnerability detection agent",
+  "capabilities": [
+    "code_analysis",
+    "vulnerability_scan",
+    "dependency_audit"
+  ],
+  "config": {
+    "max_concurrent_tasks": 3,
+    "task_timeout_seconds": 300,
+    "heartbeat_interval_seconds": 30
+  }
+}
+
+// Response
+{
+  "id": "agent-a1b2c3d4",
+  "name": "security-scanner-01",
+  "status": "registered",
+  "capabilities": ["code_analysis", "vulnerability_scan", "dependency_audit"],
+  "created_at": "2026-01-18T10:00:00Z",
+  "api_key": "agent-key-..." // Only returned once, at registration
+}</code></pre>
+
+      <p>The agent API key is returned only during registration. It is never stored in plain text on the server and cannot be retrieved later. If the key is lost, the agent must be re-registered. This follows the principle of least exposure: credentials exist in recoverable form for the minimum possible duration.</p>
+
+      <h3>The Registration Form</h3>
+
+      <p>The dashboard registration form maps directly to this API. Each field includes validation feedback and capability suggestions based on existing agents in the registry:</p>
+
+      <pre><code>"use client";
+
+import { useState } from "react";
+import { CapabilitySelector } from "./CapabilitySelector";
+
+export function AgentRegistrationForm() {
+  const [name, setName] = useState("");
+  const [capabilities, setCapabilities] = useState&lt;string[]&gt;([]);
+  const [maxConcurrent, setMaxConcurrent] = useState(3);
+  const [apiKey, setApiKey] = useState&lt;string | null&gt;(null);
+
+  const handleSubmit = async (e: React.FormEvent) =&gt; {
+    e.preventDefault();
+    const response = await authenticatedFetch("/api/v1/agents", {
+      method: "POST",
+      body: JSON.stringify({
+        name,
+        capabilities,
+        config: { max_concurrent_tasks: maxConcurrent },
+      }),
+    });
+    const data = await response.json();
+    setApiKey(data.api_key);
+    // Show the API key exactly once
+  };
+
+  if (apiKey) {
+    return (
+      &lt;div className="api-key-display"&gt;
+        &lt;h3&gt;Agent Registered Successfully&lt;/h3&gt;
+        &lt;p&gt;Save this API key now. It will not be shown again.&lt;/p&gt;
+        &lt;code className="api-key"&gt;{apiKey}&lt;/code&gt;
+      &lt;/div&gt;
+    );
+  }
+
+  return (
+    &lt;form onSubmit={handleSubmit}&gt;
+      &lt;input value={name} onChange={(e) =&gt; setName(e.target.value)}
+             placeholder="Agent name" required /&gt;
+      &lt;CapabilitySelector
+        selected={capabilities}
+        onChange={setCapabilities} /&gt;
+      &lt;input type="number" value={maxConcurrent} min={1} max={10}
+             onChange={(e) =&gt; setMaxConcurrent(Number(e.target.value))} /&gt;
+      &lt;button type="submit"&gt;Register Agent&lt;/button&gt;
+    &lt;/form&gt;
+  );
+}</code></pre>
+
+      <blockquote>The CapabilitySelector component shows the union of all capabilities across registered agents, suggesting standardized names while allowing custom entries. This encourages consistency without enforcing a rigid taxonomy. If five agents use "code_analysis" and one agent uses "code-analysis", the selector highlights the inconsistency.</blockquote>
+
+      <h2>Configuration UI for Agent Parameters</h2>
+
+      <p>After registration, agent parameters can be modified through the dashboard. The configuration panel shows current values alongside the defaults, making it clear which settings have been customized:</p>
+
+      <pre><code>// Agent configuration update
+PATCH /api/v1/agents/agent-a1b2c3d4
+{
+  "config": {
+    "max_concurrent_tasks": 5,
+    "task_timeout_seconds": 600
+  }
+}</code></pre>
+
+      <p>Configuration changes take effect immediately. The orchestrator reads agent configuration at task assignment time, so increasing <code>max_concurrent_tasks</code> from 3 to 5 allows the agent to claim additional tasks on its next heartbeat. There is no restart required -- the configuration is dynamic.</p>
+
+      <h3>Capability Modification</h3>
+
+      <p>Capabilities can be added or removed after registration, but with constraints. Removing a capability while the agent has active tasks using that capability is blocked. The agent must complete or reassign those tasks first. This prevents a situation where an agent loses a capability mid-task, causing the pipeline to fail during execution.</p>
+
+      <pre><code>// Attempt to remove a capability with active tasks
+PATCH /api/v1/agents/agent-a1b2c3d4
+{ "capabilities": ["code_analysis"] }  // removing vulnerability_scan
+
+// Response: 409 Conflict
+{
+  "error": "capability_in_use",
+  "message": "Cannot remove 'vulnerability_scan': 2 active tasks require it",
+  "active_tasks": ["task-x1y2z3", "task-a4b5c6"]
+}</code></pre>
+
+      <h2>Real-Time Agent Monitoring</h2>
+
+      <p>The agent monitoring panel displays each agent as a card with live-updating status. The card shows the agent's name, capabilities (as colored badges), current task count, and last heartbeat timestamp. The status dot uses the same color system as the rest of the dashboard:</p>
+
+      <ul>
+        <li><strong>Green (online)</strong> -- heartbeat received within the expected interval</li>
+        <li><strong>Amber (busy)</strong> -- agent is at maximum concurrent tasks</li>
+        <li><strong>Gray (offline)</strong> -- no heartbeat received for 3x the expected interval</li>
+        <li><strong>Red (error)</strong> -- agent reported an error state in its last heartbeat</li>
+      </ul>
+
+      <p>The heartbeat mechanism is the foundation of agent monitoring. Each agent sends periodic heartbeat requests to the API, reporting its status, current task count, and resource usage:</p>
+
+      <pre><code>// Agent heartbeat (sent by the agent process)
+POST /api/v1/agents/agent-a1b2c3d4/heartbeat
+{
+  "status": "active",
+  "current_tasks": 2,
+  "resource_usage": {
+    "cpu_percent": 45,
+    "memory_mb": 512,
+    "disk_mb": 1024
+  }
+}</code></pre>
+
+      <p>The dashboard receives heartbeat updates through the WebSocket connection. When a heartbeat arrives, the corresponding agent card updates its status dot, task count, and resource indicators without a page refresh. If a heartbeat is missed (3x the interval passes without a heartbeat), the status transitions from green to gray, alerting the operator to a potential agent failure.</p>
+
+      <h2>Agent Retirement Workflow</h2>
+
+      <p>Agents cannot simply be deleted. An agent may have active tasks, pending task claims, and historical records in the audit trail. The retirement workflow handles these concerns in order:</p>
+
+      <ol>
+        <li><strong>Stop task assignment.</strong> The agent is marked as "retiring" and the orchestrator stops assigning new tasks to it.</li>
+        <li><strong>Complete or reassign active tasks.</strong> Active tasks either run to completion (if the agent is still responsive) or are reassigned to other agents with matching capabilities.</li>
+        <li><strong>Archive agent record.</strong> The agent's registration, configuration history, and task history are archived. The agent ID is preserved in the audit trail for compliance.</li>
+        <li><strong>Revoke credentials.</strong> The agent's API key is invalidated. Any subsequent requests using that key receive 401 Unauthorized.</li>
+      </ol>
+
+      <pre><code>// Initiate retirement
+POST /api/v1/agents/agent-a1b2c3d4/retire
+{
+  "reason": "Replaced by security-scanner-02",
+  "reassign_tasks": true
+}
+
+// Response
+{
+  "status": "retiring",
+  "active_tasks_reassigned": 2,
+  "estimated_completion": "2026-01-18T10:05:00Z"
+}</code></pre>
+
+      <p>The retirement is asynchronous. The dashboard shows a "Retiring..." status with a progress indicator as active tasks complete or reassign. Once all tasks are handled and the agent's credentials are revoked, the status changes to "Retired" and the agent moves to the archived section of the dashboard.</p>
+
+      <h2>The Agent Registry as Access Control</h2>
+
+      <p>The agent registry is more than a database of agent records. It functions as a capability-based access control system. The orchestrator consults the registry before every task assignment:</p>
+
+      <ol>
+        <li>A task is submitted with a required capability (e.g., <code>vulnerability_scan</code>)</li>
+        <li>The orchestrator queries the registry for active agents with that capability</li>
+        <li>Matching agents are filtered by availability (not at max concurrent tasks, heartbeat recent)</li>
+        <li>The highest-priority available agent claims the task</li>
+      </ol>
+
+      <p>This capability-based routing means an agent can never execute a task type it was not registered for. Even if an attacker compromises an agent's API key, the compromised agent can only claim tasks matching its declared capabilities. An agent registered for <code>code_analysis</code> cannot claim <code>data_export</code> tasks, limiting the blast radius of a credential compromise.</p>
+
+      <blockquote>The agent registry transforms capability declarations from documentation into enforcement. What an agent says it can do becomes what it is allowed to do. The declaration is the policy.</blockquote>
+
+      <h2>Metrics from the Release</h2>
+
+      <p>Version 0.5.0 added 31 new tests covering agent registration, capability validation, retirement workflow, and the dashboard components. The total test count reached 138. The API added 6 new endpoints (register, update, heartbeat, retire, list, get-by-id) and the dashboard added 4 new pages (agent list, agent detail, registration form, retirement confirmation).</p>
+
+      <p>The agent management dashboard introduced the first use of optimistic updates in the OCCP frontend. When an operator changes an agent's configuration, the UI updates immediately and rolls back if the API call fails. This pattern reduced perceived latency for configuration changes from 200ms (round-trip to API) to effectively zero.</p>
+
+    </div>
+
+    <!-- Summary Box -->
+    <div class="summary-box">
+      <h3>// Key Takeaways</h3>
+      <ul>
+        <li>v0.5.0 moved full agent lifecycle management from API-only to the browser dashboard</li>
+        <li>Capability declarations are not labels -- they enforce task routing and access control</li>
+        <li>Agent API keys are shown once at registration, never stored in recoverable form</li>
+        <li>Capability removal is blocked while active tasks depend on that capability</li>
+        <li>Retirement workflow: stop assignment, reassign tasks, archive record, revoke credentials</li>
+        <li>The agent registry functions as a capability-based access control enforcement layer</li>
+      </ul>
+    </div>
+
+    <!-- Article Navigation -->
+    <nav class="article-nav">
+      <a href="react-19-server-components.html">&larr; #021 React 19 Server Components</a>
+      <a href="agent-registry-architecture.html">#023 Agent Registry Architecture &rarr;</a>
+    </nav>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP — OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

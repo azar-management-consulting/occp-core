@@ -1,0 +1,12 @@
+{
+    "_comment": "Copy the 'hooks' section into your .claude/settings.json to enable Brian integration",
+    "_install": "The hook triggers when a user prompt starts with 'Brian:' and forwards it to the OCCP Brain API",
+    "hooks": {
+        "UserPromptSubmit": [
+            {
+                "matcher": "Brian:",
+                "command": "bash /Users/air/Desktop/PROJECTEK/OCCP/occp-core/scripts/cloudcode-hook.sh"
+            }
+        ]
+    }
+}

@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from orchestrator.models import AgentConfig
 
+from api.auth import get_current_user_payload
 from api.rbac import PermissionChecker
 from api.deps import AppState, get_state
 from api.models import (
@@ -13,6 +16,9 @@ from api.models import (
     AgentRegistrationRequest,
     AgentResponse,
 )
+from security.governance import AgentBoundaryGuard
+
+_boundary_guard = AgentBoundaryGuard()
 
 router = APIRouter(tags=["agents"])
 
@@ -56,9 +62,26 @@ async def get_agent(
 async def register_agent(
     body: AgentRegistrationRequest,
     user: dict = Depends(PermissionChecker("agents", "create")),
+    payload: dict[str, Any] = Depends(get_current_user_payload),
     state: AppState = Depends(get_state),
 ) -> AgentResponse:
-    """Register or update an agent type (persisted to DB)."""
+    """Register or update an agent type (persisted to DB).
+
+    Enforces agent boundary checks:
+    - Non-admin callers cannot register admin-level capabilities
+    - Maximum capabilities per agent is capped
+    """
+    caller_role = payload.get("role", "viewer")
+    is_admin = caller_role == "system_admin"
+
+    boundary = _boundary_guard.validate_registration(
+        capabilities=body.capabilities,
+        agent_type=body.agent_type,
+        caller_is_admin=is_admin,
+    )
+    if not boundary.allowed:
+        raise HTTPException(status_code=403, detail=boundary.reason)
+
     config = AgentConfig(
         agent_type=body.agent_type,
         display_name=body.display_name,

@@ -74,8 +74,17 @@ class TokenStore:
         )
         return row
 
-    async def get_decrypted(self, user_id: str, provider: str) -> str | None:
-        """Retrieve and decrypt a token. Returns None if not found."""
+    async def get_decrypted(
+        self, user_id: str, provider: str, *, org_id: str = ""
+    ) -> str | None:
+        """Retrieve and decrypt a token with org-default + user-override resolution.
+
+        Resolution order:
+        1. User-level token (user_id + provider) — highest priority
+        2. Org-level token (org_id + provider, user_id="__org__") — fallback
+        3. None — no token available
+        """
+        # 1. User-level token
         result = await self._session.execute(
             select(EncryptedTokenRow).where(
                 EncryptedTokenRow.user_id == user_id,
@@ -84,6 +93,19 @@ class TokenStore:
             )
         )
         row = result.scalar_one_or_none()
+
+        # 2. Org-level fallback
+        if row is None and org_id:
+            result = await self._session.execute(
+                select(EncryptedTokenRow).where(
+                    EncryptedTokenRow.user_id == "__org__",
+                    EncryptedTokenRow.org_id == org_id,
+                    EncryptedTokenRow.provider == provider,
+                    EncryptedTokenRow.is_active == True,  # noqa: E712
+                )
+            )
+            row = result.scalar_one_or_none()
+
         if row is None:
             return None
 
@@ -96,6 +118,45 @@ class TokenStore:
                 user_id,
             )
             return None
+
+    async def store_org_token(
+        self,
+        org_id: str,
+        provider: str,
+        token: str,
+        *,
+        label: str = "",
+    ) -> EncryptedTokenRow:
+        """Store an org-level default token. Only admins should call this."""
+        await self._session.execute(
+            delete(EncryptedTokenRow).where(
+                EncryptedTokenRow.user_id == "__org__",
+                EncryptedTokenRow.org_id == org_id,
+                EncryptedTokenRow.provider == provider,
+            )
+        )
+        await self._session.flush()
+
+        now = datetime.now(timezone.utc).isoformat()
+        encrypted = self._enc.encrypt(token)
+        masked = mask_token(token)
+
+        row = EncryptedTokenRow(
+            id=uuid.uuid4().hex[:32],
+            user_id="__org__",
+            org_id=org_id,
+            provider=provider,
+            encrypted_value=encrypted,
+            masked_value=masked,
+            label=label or f"org-default {provider} key",
+            is_active=True,
+            created_at=now,
+            updated_at=now,
+        )
+        self._session.add(row)
+        await self._session.flush()
+        logger.info("Stored org-default %s token for org=%s", provider, org_id)
+        return row
 
     async def list_tokens(self, user_id: str) -> list[dict[str, Any]]:
         """List all tokens for a user (masked, never plaintext)."""

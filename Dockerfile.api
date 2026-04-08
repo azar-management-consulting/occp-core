@@ -1,6 +1,14 @@
-FROM python:3.12-slim AS base
+FROM python:3.13-slim AS base
 
 WORKDIR /app
+
+# Install system dependencies for sandboxing
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends bubblewrap curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install uv for faster dependency resolution
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 COPY pyproject.toml .
 COPY orchestrator/ orchestrator/
@@ -11,12 +19,13 @@ COPY config/ config/
 COPY store/ store/
 COPY cli/ cli/
 COPY sdk/ sdk/
+COPY security/ security/
+# L6 foundation (v0.10.0)
+COPY observability/ observability/
+COPY evaluation/ evaluation/
+COPY architecture/ architecture/
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends bubblewrap && \
-    rm -rf /var/lib/apt/lists/*
-
-RUN pip install --no-cache-dir -e '.[llm]'
+RUN /root/.local/bin/uv pip install --system --no-cache -e '.[llm]'
 
 RUN groupadd --system --gid 1001 occp && \
     useradd --system --uid 1001 --gid occp occp && \
@@ -26,6 +35,6 @@ USER occp
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/status')"
 
 CMD ["uvicorn", "api.app:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OCCP v0.7.0: ORM Migration, RBAC, and Sandbox Isolation — OCCP News</title>
+  <meta name="description" content="The maturity release — proper ORM, role-based access control, and sandboxed code execution mark OCCP's transition to enterprise readiness.">
+  <meta name="keywords" content="OCCP, v0.7.0, SQLAlchemy, Casbin, RBAC, nsjail, bubblewrap, sandbox, enterprise AI">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/occp-v070-orm-rbac-sandbox.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/occp-v070-orm-rbac-sandbox.html">
+  <meta property="og:title" content="OCCP v0.7.0: ORM Migration, RBAC, and Sandbox Isolation">
+  <meta property="og:description" content="The maturity release — proper ORM, role-based access control, and sandboxed code execution mark OCCP's transition to enterprise readiness.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-07">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="OCCP v0.7.0: ORM Migration, RBAC, and Sandbox Isolation">
+  <meta name="twitter:description" content="The maturity release — proper ORM, role-based access control, and sandboxed code execution mark OCCP's transition to enterprise readiness.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "OCCP v0.7.0: ORM Migration, RBAC, and Sandbox Isolation",
+    "datePublished": "2026-02-07",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "The maturity release — proper ORM, role-based access control, and sandboxed code execution mark OCCP's transition to enterprise readiness.",
+    "url": "https://news.occp.ai/articles/occp-v070-orm-rbac-sandbox.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-07</span>
+          <span class="card-tag tag-milestone">Milestone</span>
+          <span class="card-version">v0.7.0</span>
+        </div>
+        <h1>OCCP v0.7.0: ORM Migration, RBAC, and Sandbox Isolation</h1>
+        <p class="lead">Version 0.7.0 is the release where OCCP stops being a prototype and starts being enterprise infrastructure. Three foundational changes &mdash; a proper ORM, role-based access control, and sandboxed code execution &mdash; establish the patterns that every subsequent feature will build upon.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Enterprise Readiness Threshold</h2>
+
+        <p>There is a moment in every platform's evolution where the gap between "it works" and "it is production-ready" becomes the primary engineering constraint. For OCCP, that moment arrived at v0.6.0. The platform had a working pipeline, solid security guards, and a functional dashboard. But the data layer was raw SQL strings, access control was binary (authenticated or not), and code execution ran in the same process as the platform itself.</p>
+
+        <p>Enterprise deployments require three properties that the pre-v0.7.0 architecture could not provide. First, <strong>schema governance</strong> &mdash; the ability to evolve the database schema safely across versions without manual migration scripts. Second, <strong>granular authorization</strong> &mdash; different users need different access levels, and "admin or not" is insufficient for organizations with multiple teams. Third, <strong>execution isolation</strong> &mdash; AI-generated code must run in an environment where it cannot affect the host system, regardless of what the code attempts.</p>
+
+        <p>Version 0.7.0 addresses all three with SQLAlchemy 2.0, Casbin RBAC, and a three-tier sandbox architecture.</p>
+
+        <h2>Pillar 1: SQLAlchemy 2.0 Async ORM</h2>
+
+        <p>The migration from raw SQL to SQLAlchemy 2.0 mapped models was the largest single refactoring in OCCP's history. Every database interaction in the codebase &mdash; task CRUD, audit logging, user management, agent registration &mdash; was rewritten to use ORM models and async sessions.</p>
+
+        <pre><code># Before (v0.6.0): Raw SQL
+async def get_task(db, task_id: str):
+    row = await db.execute(
+        "SELECT * FROM tasks WHERE id = ?", (task_id,)
+    )
+    return dict(row) if row else None
+
+# After (v0.7.0): SQLAlchemy 2.0 mapped model
+async def get_task(session: AsyncSession, task_id: str) -> Task | None:
+    result = await session.execute(
+        select(Task).where(Task.id == task_id)
+    )
+    return result.scalar_one_or_none()</code></pre>
+
+        <p>The ORM migration provides three capabilities that raw SQL could not. First, <strong>type safety</strong>: every database column maps to a typed Python attribute, and the IDE catches type mismatches at development time rather than at runtime. Second, <strong>relationship management</strong>: eager and lazy loading patterns replace manual JOIN queries, reducing boilerplate and preventing N+1 query problems. Third, <strong>backend portability</strong>: the same ORM models work with SQLite (development) and PostgreSQL (production), with the ORM handling dialect differences automatically.</p>
+
+        <p>The migration also introduced Alembic for schema migrations. Every schema change is now a versioned migration file that can be applied forward or rolled back. This eliminates the "apply this SQL script manually" deployment step that was error-prone and irreversible.</p>
+
+        <h2>Pillar 2: Casbin RBAC</h2>
+
+        <p>Before v0.7.0, OCCP's access control was binary: a valid JWT token granted full access to every endpoint. This was acceptable during early development but inadequate for any deployment with more than one person. A junior operator should not have the same access as a system administrator. A read-only dashboard viewer should not be able to modify agent configurations.</p>
+
+        <p>OCCP v0.7.0 implements role-based access control using Casbin, a policy engine that evaluates access decisions based on (subject, object, action) triples. Four roles form a hierarchical permission model:</p>
+
+        <ul>
+          <li><strong>viewer</strong> &mdash; Read-only access. Can view tasks, agents, audit logs, and dashboard metrics. Cannot create, modify, or delete any resource.</li>
+          <li><strong>operator</strong> &mdash; Inherits viewer permissions. Can create and run tasks, trigger pipeline executions, and view execution results. Cannot modify agent configurations or platform settings.</li>
+          <li><strong>admin</strong> &mdash; Inherits operator permissions. Can register and configure agents, modify policies, manage user accounts, and access advanced settings.</li>
+          <li><strong>system_admin</strong> &mdash; Full access. Can modify platform configuration, manage RBAC policies, access security-sensitive endpoints, and perform destructive operations like data purging.</li>
+        </ul>
+
+        <pre><code># Casbin policy model (model.conf)
+[request_definition]
+r = sub, obj, act
+
+[policy_definition]
+p = sub, obj, act
+
+[role_definition]
+g = _, _
+
+[policy_effect]
+e = some(where (p.eft == allow))
+
+[matchers]
+m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act</code></pre>
+
+        <p>The Casbin integration sits in the middleware stack, evaluating permissions before every API endpoint handler executes. The user's role is extracted from their JWT token claims, and the requested endpoint is mapped to an (object, action) pair. If the Casbin policy does not grant the user's role access to that (object, action), the request is rejected with a 403 Forbidden response.</p>
+
+        <h2>Pillar 3: Sandbox Isolation</h2>
+
+        <p>When an AI agent generates code and requests execution, that code runs on the platform's host system. Without isolation, the generated code has the same access as the OCCP process itself: filesystem, network, environment variables, other running processes. A malicious or buggy code generation could read secrets, modify files, or consume unbounded resources.</p>
+
+        <p>OCCP v0.7.0 introduces a three-tier sandbox architecture that provides the strongest available isolation on the host system:</p>
+
+        <ul>
+          <li><strong>Tier 1: nsjail</strong> &mdash; Linux namespace isolation with seccomp-bpf system call filtering. The strongest option, providing kernel-level isolation of the execution environment. Available on Linux systems with nsjail installed.</li>
+          <li><strong>Tier 2: bubblewrap</strong> &mdash; User-namespace-based sandboxing with filesystem and network restrictions. A lighter-weight alternative when nsjail is not available. Common on Linux desktop distributions.</li>
+          <li><strong>Tier 3: subprocess with restrictions</strong> &mdash; A standard subprocess with resource limits (CPU time, memory) applied via <code>resource.setrlimit</code>. The weakest option, used as a fallback when neither nsjail nor bubblewrap is available.</li>
+        </ul>
+
+        <p>The sandbox manager probes the host system at startup to determine which tier is available. It configures the highest-tier sandbox that the system supports and logs the result. Operators can verify the isolation level through the <code>/api/v1/system/sandbox</code> endpoint and the dashboard's system status panel.</p>
+
+        <blockquote>The sandbox does not trust the code it executes. It assumes every code execution attempt is potentially hostile. Resource limits, network blocking, and filesystem restrictions are not optional safeguards &mdash; they are the execution environment's default state.</blockquote>
+
+        <h2>Test Suite Expansion: 313 Tests</h2>
+
+        <p>The three pillars of v0.7.0 required extensive test coverage. The ORM migration needed tests for every model, every relationship, and every query. The RBAC implementation needed tests for every role-endpoint combination. The sandbox needed tests for each isolation tier and the fallback logic between them.</p>
+
+        <p>The v0.7.0 test suite contains 313 tests across multiple categories:</p>
+
+        <pre><code># Test distribution (v0.7.0)
+tests/
+  test_models/          # 48 tests — ORM model CRUD, relationships
+  test_api/             # 67 tests — API endpoint behavior
+  test_rbac/            # 42 tests — Role-based access control
+  test_sandbox/         # 28 tests — Sandbox isolation and fallback
+  test_pipeline/        # 35 tests — VAP stage execution
+  test_policy/          # 31 tests — Policy engine evaluation
+  test_security/        # 24 tests — Injection, sanitization, auth
+  test_audit/           # 18 tests — Hash chain, retention
+  test_migrations/      # 12 tests — Alembic migration integrity
+  test_integration/     #  8 tests — Full pipeline integration</code></pre>
+
+        <p>CI runs the full suite against Python 3.11, 3.12, and 3.13. The test matrix ensures compatibility across all supported Python versions. Tests run in parallel where possible, with the full suite completing in under 90 seconds.</p>
+
+        <h2>Security Middleware Stack</h2>
+
+        <p>The v0.7.0 middleware stack processes every HTTP request through a defined sequence of security checks:</p>
+
+        <ol>
+          <li><strong>HSTS enforcement</strong> &mdash; Strict-Transport-Security headers ensure HTTPS-only access.</li>
+          <li><strong>Rate limiting</strong> &mdash; Per-IP and per-user rate limits prevent abuse.</li>
+          <li><strong>JWT validation</strong> &mdash; Token signature and expiry verification.</li>
+          <li><strong>RBAC evaluation</strong> &mdash; Casbin policy check against the user's role and the requested endpoint.</li>
+          <li><strong>Request logging</strong> &mdash; Structured log entry for the request, excluding sensitive headers.</li>
+        </ol>
+
+        <p>Each middleware layer can reject the request independently. A rate-limited request never reaches JWT validation. An unauthenticated request never reaches RBAC evaluation. This layered approach ensures that the most common rejection reasons are handled at the lowest cost.</p>
+
+        <h2>Migration Path</h2>
+
+        <p>Upgrading from v0.6.0 to v0.7.0 requires running Alembic migrations to update the database schema. The migration adds columns for RBAC role assignments, creates the Casbin policy tables, and restructures the task table to match the new ORM model. Existing data is preserved and transformed in place. A pre-migration backup is strongly recommended but the migrations are designed to be non-destructive.</p>
+
+        <p>All existing users are assigned the <code>admin</code> role during migration, preserving their current access level. Operators should review role assignments after migration and downgrade users who do not require full administrative access.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>SQLAlchemy 2.0 async ORM replaces all raw SQL with typed models, relationships, and Alembic migrations</li>
+          <li>Casbin RBAC implements a 4-role hierarchy (viewer, operator, admin, system_admin) with per-endpoint authorization</li>
+          <li>Three-tier sandbox (nsjail, bubblewrap, subprocess) provides the strongest available isolation with automatic fallback</li>
+          <li>313 tests across 10 categories ensure comprehensive coverage of all new systems</li>
+          <li>Security middleware stack processes HSTS, rate limiting, JWT, RBAC, and logging in sequence for every request</li>
+          <li>Migration from v0.6.0 is non-destructive with automatic role assignment for existing users</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="pipeline-resilience.html">&larr; Pipeline Resilience</a>
+        <a href="sqlalchemy-async-migration.html">SQLAlchemy 2.0 Migration &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OCCP v0.1.0: The First Verified Orchestration Cycle — OCCP News</title>
+  <meta name="description" content="The initial release — orchestrator, policy engine, CLI, and SDK. The first complete Plan-Gate-Execute-Validate-Ship cycle.">
+  <meta name="keywords" content="OCCP, v0.1.0, release, AI orchestrator, policy engine, Python SDK, CLI">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/occp-v010-first-cycle.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/occp-v010-first-cycle.html">
+  <meta property="og:title" content="OCCP v0.1.0: The First Verified Orchestration Cycle">
+  <meta property="og:description" content="The initial release — orchestrator, policy engine, CLI, and SDK. The first complete Plan-Gate-Execute-Validate-Ship cycle.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2025-11-05">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="OCCP v0.1.0: The First Verified Orchestration Cycle">
+  <meta name="twitter:description" content="The initial release — orchestrator, policy engine, CLI, and SDK. The first complete Plan-Gate-Execute-Validate-Ship cycle.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "OCCP v0.1.0: The First Verified Orchestration Cycle",
+    "datePublished": "2025-11-05",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "The initial release — orchestrator, policy engine, CLI, and SDK. The first complete Plan-Gate-Execute-Validate-Ship cycle.",
+    "url": "https://news.occp.ai/articles/occp-v010-first-cycle.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2025-11-05</span>
+          <span class="card-tag tag-milestone">Milestone</span>
+          <span class="card-version">v0.1.0</span>
+        </div>
+        <h1>OCCP v0.1.0: The First Verified Orchestration Cycle</h1>
+        <p class="lead">The initial release of OCCP delivers the core platform: an orchestrator engine implementing the Verified Autonomy Pipeline, a policy engine with five initial guards, a command-line interface, and a Python SDK. For the first time, an AI task can be planned, policy-checked, executed, validated, and audited in a single end-to-end cycle.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>What Shipped in v0.1.0</h2>
+
+        <p>The v0.1.0 release represents the minimum viable control plane: the smallest set of components that implement the complete Verified Autonomy Pipeline from task submission to audited result delivery. The release contains four major components, each solving a distinct problem in the governance stack.</p>
+
+        <h3>Orchestrator Engine</h3>
+
+        <p>The orchestrator is the central coordination component. It receives a task, routes it through the five VAP stages, and returns the audited result. The v0.1.0 orchestrator supports sequential execution of single-agent tasks &mdash; one task at a time, one agent at a time. Multi-agent and parallel execution are deferred to future releases.</p>
+
+        <pre><code># Orchestrator core loop
+class Orchestrator:
+    def __init__(self, policy_engine, executor, validator, auditor):
+        self.policy_engine = policy_engine
+        self.executor = executor
+        self.validator = validator
+        self.auditor = auditor
+
+    async def run(self, task: Task) -> TaskResult:
+        # Stage 1: Plan
+        plan = self.plan(task)
+
+        # Stage 2: Gate
+        gate_result = self.policy_engine.evaluate(plan)
+        if not gate_result.allowed:
+            return TaskResult(status="denied", reason=gate_result.reason)
+
+        # Stage 3: Execute
+        execution = await self.executor.execute(plan)
+
+        # Stage 4: Validate
+        validation = self.validator.validate(execution)
+        if not validation.passed:
+            return TaskResult(status="validation_failed", issues=validation.issues)
+
+        # Stage 5: Ship
+        audit_entry = self.auditor.log(task, plan, gate_result, execution, validation)
+        return TaskResult(status="completed", output=execution.output, audit_id=audit_entry.id)</code></pre>
+
+        <p>The orchestrator's architecture enforces the pipeline invariant: there is no code path that reaches <code>executor.execute()</code> without first passing through <code>policy_engine.evaluate()</code>. The pipeline ordering is a structural property of the code, not a runtime configuration.</p>
+
+        <h3>Policy Engine</h3>
+
+        <p>The policy engine evaluates task plans against a set of active policies. The v0.1.0 release ships with five initial policy guards:</p>
+
+        <ol>
+          <li><strong>PII Detection</strong> &mdash; Regex-based scanning for email addresses, phone numbers, social security numbers, and credit card patterns in input text</li>
+          <li><strong>Prompt Injection Detection</strong> &mdash; Pattern matching for five initial injection vectors: role override, delimiter injection, instruction leak requests, encoding-based evasion, and context boundary manipulation</li>
+          <li><strong>Token Budget Enforcement</strong> &mdash; Verifies that the planned token usage does not exceed the configured maximum per-task limit</li>
+          <li><strong>Timeout Enforcement</strong> &mdash; Ensures that planned execution time falls within the configured timeout boundary</li>
+          <li><strong>Content Category Filter</strong> &mdash; Checks task descriptions against a configurable deny-list of content categories</li>
+        </ol>
+
+        <p>Policies are evaluated in order, and the first denial stops evaluation. All results &mdash; both passes and denials &mdash; are recorded in the audit trail for compliance purposes.</p>
+
+        <h3>CLI Tool</h3>
+
+        <p>The <code>occp</code> command-line interface provides three primary commands for interacting with the platform:</p>
+
+        <pre><code># Submit a task and run through the full VAP pipeline
+$ occp run --task "Summarize the quarterly report" --agent default
+
+# Check the status of a running or completed task
+$ occp status --task-id tsk_a1b2c3
+
+# View the audit trail for a specific task or time range
+$ occp audit --task-id tsk_a1b2c3
+$ occp audit --since 2025-11-01 --until 2025-11-05</code></pre>
+
+        <p>The CLI was deliberately built as the first interface, before any REST API or dashboard. This CLI-first approach forced clean separation between the interface layer and the core engine. The CLI communicates with the orchestrator through the same internal API that future REST endpoints and SDK clients will use, ensuring consistency across all access paths.</p>
+
+        <h3>Python SDK</h3>
+
+        <p>The Python SDK provides programmatic access to OCCP from Python applications. The v0.1.0 SDK uses only Python standard library modules &mdash; no external dependencies &mdash; to minimize installation friction and dependency conflicts.</p>
+
+        <pre><code>from occp import OCCPClient
+
+client = OCCPClient(base_url="http://localhost:8000")
+
+# Submit a task
+result = client.run_task(
+    description="Analyze customer feedback for sentiment",
+    agent="default",
+    token_budget=2048,
+    timeout=30
+)
+
+# Check task result
+print(f"Status: {result.status}")
+print(f"Output: {result.output}")
+print(f"Audit ID: {result.audit_id}")
+
+# Retrieve audit trail
+audit = client.get_audit(task_id=result.task_id)
+for entry in audit.entries:
+    print(f"  [{entry.stage}] {entry.action}: {entry.result}")</code></pre>
+
+        <p>The SDK mirrors the CLI's capabilities: task submission, status checking, and audit trail retrieval. The client handles connection management, error handling, and response parsing. All HTTP communication uses the standard library <code>urllib</code> module, avoiding any dependency on <code>requests</code> or <code>httpx</code>.</p>
+
+        <h2>The First End-to-End Cycle</h2>
+
+        <p>The most significant milestone in v0.1.0 is not any individual component but the fact that they work together as a complete pipeline. A task enters through the CLI or SDK, passes through all five VAP stages, and produces an audited result with a SHA-256 hash chain entry. This end-to-end cycle is the proof of concept for the entire OCCP architecture.</p>
+
+        <p>Here is what a complete cycle looks like in the audit trail:</p>
+
+        <pre><code>AUDIT TRAIL: tsk_a1b2c3
+───────────────────────────────────
+[PLAN]     Task decomposed: 1 subtask, risk=low, budget=2048 tokens
+[GATE]     PII scan: PASS (0 findings)
+[GATE]     Injection scan: PASS (0 patterns matched)
+[GATE]     Token budget: PASS (2048 <= 4096 limit)
+[GATE]     Timeout: PASS (30s <= 60s limit)
+[GATE]     Content filter: PASS
+[EXECUTE]  LLM call completed: 847 tokens used, 2.3s elapsed
+[VALIDATE] Output PII scan: PASS
+[VALIDATE] Schema check: PASS
+[SHIP]     Audit entry committed: hash=sha256:7f3a...e2d1
+[SHIP]     Result delivered: status=completed
+───────────────────────────────────
+Chain integrity: VERIFIED</code></pre>
+
+        <h2>Architecture Decisions and Trade-offs</h2>
+
+        <h3>Synchronous Pipeline</h3>
+
+        <p>The v0.1.0 pipeline is synchronous within the async Python runtime: each stage completes before the next begins. This simplifies reasoning about the pipeline's behavior but limits throughput to one stage at a time. Future versions will introduce stage-level parallelism where appropriate (for example, running multiple independent policy checks concurrently within the Gate stage).</p>
+
+        <h3>File-Based Audit Storage</h3>
+
+        <p>The v0.1.0 audit trail is stored in append-only JSON files on the local filesystem. This is sufficient for single-node development but will not scale to multi-node production deployments. The storage backend is abstracted behind an interface, allowing future migration to SQLite, PostgreSQL, or a dedicated audit database without changing the pipeline code.</p>
+
+        <h3>Single-Agent Focus</h3>
+
+        <p>The v0.1.0 release supports only single-agent execution. There is no agent registry, no multi-agent coordination, and no concurrent task execution. This constraint allowed us to focus the initial release on getting the pipeline stages correct before adding the complexity of multi-agent orchestration. The orchestrator's internal design, however, was built with multi-agent support in mind: the agent interface is abstract, and the executor accepts agent identifiers that will map to registered agents in future versions.</p>
+
+        <h2>What v0.1.0 Does Not Include</h2>
+
+        <p>To set expectations clearly: v0.1.0 does not include a REST API (tasks are submitted via CLI or SDK only), does not include authentication or authorization (single-user, single-machine), does not include a web dashboard, does not include Docker deployment support, and does not include real LLM integration (the executor uses a mock provider for initial testing). Each of these capabilities is planned for subsequent releases.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>v0.1.0 delivers the minimum viable control plane: orchestrator, policy engine, CLI, and Python SDK</li>
+          <li>The first complete Plan-Gate-Execute-Validate-Ship cycle works end-to-end with SHA-256 audit trail</li>
+          <li>Five initial policy guards: PII detection, injection detection, token budget, timeout, and content filtering</li>
+          <li>Python SDK uses zero external dependencies &mdash; stdlib-only HTTP client</li>
+          <li>CLI-first design ensures clean API separation before REST or dashboard layers are added</li>
+          <li>Trade-offs: synchronous pipeline, file-based audit, single-agent only &mdash; each with a clear upgrade path</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="beyond-prompt-engineering.html">&larr; Beyond Prompt Engineering</a>
+        <a href="policy-engine-governance.html">Inside the Policy Engine &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

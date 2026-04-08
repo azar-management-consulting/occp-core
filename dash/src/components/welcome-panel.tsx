@@ -31,6 +31,7 @@ export function WelcomePanel() {
   const [verifying, setVerifying] = useState(false);
   const [verifyResult, setVerifyResult] = useState<VerificationResult | null>(null);
   const [launchingTask, setLaunchingTask] = useState(false);
+  const [wizardError, setWizardError] = useState<string | null>(null);
   const t = useT();
 
   const loadStatus = useCallback(async () => {
@@ -65,8 +66,8 @@ export function WelcomePanel() {
           : null,
       );
       await loadStatus();
-    } catch {
-      // ignore
+    } catch (err) {
+      setWizardError(err instanceof Error ? err.message : "Failed to start wizard");
     } finally {
       setStarting(false);
     }
@@ -76,9 +77,10 @@ export function WelcomePanel() {
     setStepping(true);
     try {
       await api.onboardingStep(stepName);
+      setWizardError(null);
       await loadStatus();
-    } catch {
-      // ignore
+    } catch (err) {
+      setWizardError(err instanceof Error ? err.message : `Step "${stepName}" failed`);
     } finally {
       setStepping(false);
     }
@@ -91,10 +93,14 @@ export function WelcomePanel() {
       setVerifyResult(result);
       if (result.all_passed) {
         await api.onboardingStep("verification");
+        setWizardError(null);
         await loadStatus();
+      } else {
+        const failed = result.checks.filter((c) => !c.passed).map((c) => c.name);
+        setWizardError(`Verification failed: ${failed.join(", ")}`);
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      setWizardError(err instanceof Error ? err.message : "Verification failed");
     } finally {
       setVerifying(false);
     }
@@ -106,10 +112,13 @@ export function WelcomePanel() {
       const result = await api.onboardingFirstTask();
       if (result.success) {
         await api.onboardingStep("first_task");
+        setWizardError(null);
         await loadStatus();
+      } else {
+        setWizardError(result.error || "First task failed — pipeline may not be ready");
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      setWizardError(err instanceof Error ? err.message : "First task launch failed");
     } finally {
       setLaunchingTask(false);
     }
@@ -326,6 +335,20 @@ export function WelcomePanel() {
             );
           })}
         </div>
+
+        {/* Wizard Error Banner */}
+        {wizardError && (
+          <div className="p-3 rounded border border-occp-danger/30 bg-occp-danger/5 flex items-start gap-2">
+            <span className="font-pixel text-[10px] text-occp-danger shrink-0">⚠ ERROR</span>
+            <span className="text-[10px] text-occp-danger font-mono break-all">{wizardError}</span>
+            <button
+              onClick={() => setWizardError(null)}
+              className="ml-auto text-occp-danger/60 hover:text-occp-danger text-xs shrink-0"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Verification Results Inline */}
         {verifyResult && (

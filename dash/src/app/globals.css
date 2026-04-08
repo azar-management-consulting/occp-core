@@ -1,7 +1,57 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
+/* ── Tailwind 4.0 CSS-first config ───────────────────────────── */
+@theme {
+  --font-pixel: var(--font-pixel), monospace;
+  --font-mono: var(--font-mono), monospace;
+
+  /* C64 palette */
+  --color-c64-black: #0A0A1A;
+  --color-c64-blue: #40318D;
+  --color-c64-darkblue: #161640;
+  --color-c64-lightblue: #7878FF;
+  --color-c64-purple: #B75DE5;
+  --color-c64-cyan: #6CE5D8;
+  --color-c64-green: #75CE64;
+  --color-c64-lightgreen: #B7FF70;
+  --color-c64-red: #9F4E44;
+  --color-c64-lightred: #D27D6F;
+  --color-c64-yellow: #EDF171;
+  --color-c64-orange: #D89555;
+  --color-c64-brown: #6D5412;
+  --color-c64-white: #FCFCFC;
+  --color-c64-grey: #8A8A8A;
+  --color-c64-darkgrey: #636363;
+  --color-c64-lightgrey: #ADADAD;
+
+  /* OCCP brand */
+  --color-occp-primary: #7878FF;
+  --color-occp-secondary: #B75DE5;
+  --color-occp-accent: #6CE5D8;
+  --color-occp-dark: #08081e;
+  --color-occp-surface: #12123a;
+  --color-occp-muted: #2d2d6b;
+  --color-occp-success: #75CE64;
+  --color-occp-warning: #EDF171;
+  --color-occp-danger: #D27D6F;
+
+  /* Animations */
+  --animate-blink: blink 1s step-end infinite;
+  --animate-glow: glow 2s ease-in-out infinite alternate;
+  --animate-pulse-slow: pulse 3s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 5px rgba(120, 120, 255, 0.3); }
+  100% { box-shadow: 0 0 20px rgba(120, 120, 255, 0.6); }
+}
+
+/* ── CSS Variables ───────────────────────────────────────────── */
 :root {
   --bg: #08081e;
   --surface: #12123a;
@@ -72,7 +122,7 @@ body {
   text-shadow: 0 0 12px rgba(117, 206, 100, 0.5);
 }
 
-/* Section Description — uniform helper text under h2 headings */
+/* Section Description */
 .section-desc {
   @apply text-sm text-[var(--text-muted)] font-mono mt-1.5 leading-relaxed;
 }
@@ -166,7 +216,7 @@ body {
   box-shadow: 0 0 15px rgba(136, 136, 255, 0.15);
 }
 
-/* Field hint text below inputs */
+/* Field hint text */
 .field-hint {
   @apply text-xs font-mono mt-1;
   color: var(--text-muted);

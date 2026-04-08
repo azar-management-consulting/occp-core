@@ -206,8 +206,8 @@ def _auth(token: str) -> dict[str, str]:
 
 async def _register(client: AsyncClient, admin_token: str,
                     username: str, password: str, role: str) -> str:
-    """Register a user via the API and return their token."""
-    resp = await client.post("/api/v1/auth/register", json={
+    """Register a user via the admin API and return their token."""
+    resp = await client.post("/api/v1/auth/register/admin", json={
         "username": username, "password": password, "role": role,
     }, headers=_auth(admin_token))
     assert resp.status_code == 201, f"Register failed: {resp.text}"
@@ -313,7 +313,7 @@ class TestHTTPViewerForbidden:
     async def test_viewer_cannot_register_user(self, client: AsyncClient) -> None:
         admin_tk = await _login(client)
         viewer_tk = await _register(client, admin_tk, "v4", "viewpass4", "viewer")
-        resp = await client.post("/api/v1/auth/register", json={
+        resp = await client.post("/api/v1/auth/register/admin", json={
             "username": "evil", "password": "evilpass1", "role": "system_admin",
         }, headers=_auth(viewer_tk))
         assert resp.status_code == 403
@@ -383,7 +383,7 @@ class TestHTTPAdminRegister:
     @pytest.mark.asyncio
     async def test_admin_registers_viewer(self, client: AsyncClient) -> None:
         admin_tk = await _login(client)
-        resp = await client.post("/api/v1/auth/register", json={
+        resp = await client.post("/api/v1/auth/register/admin", json={
             "username": "newviewer", "password": "newpass12", "role": "viewer",
         }, headers=_auth(admin_tk))
         assert resp.status_code == 201
@@ -392,10 +392,10 @@ class TestHTTPAdminRegister:
     @pytest.mark.asyncio
     async def test_register_duplicate_username(self, client: AsyncClient) -> None:
         admin_tk = await _login(client)
-        await client.post("/api/v1/auth/register", json={
+        await client.post("/api/v1/auth/register/admin", json={
             "username": "dup", "password": "duppass12", "role": "viewer",
         }, headers=_auth(admin_tk))
-        resp2 = await client.post("/api/v1/auth/register", json={
+        resp2 = await client.post("/api/v1/auth/register/admin", json={
             "username": "dup", "password": "duppass12", "role": "viewer",
         }, headers=_auth(admin_tk))
         assert resp2.status_code == 409

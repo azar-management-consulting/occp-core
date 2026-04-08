@@ -1,0 +1,134 @@
+version: 1
+generated: 2026-04-08
+schema: occp.architecture.tools.v1
+
+# MCP Runtime Bridge tools — server-side dispatch surface.
+# Every tool has: namespace, name, owner_agent, workspace constraints, permissions.
+
+tools:
+
+  - id: brain.status
+    namespace: brain
+    name: status
+    purpose: Return platform/version/bridge metadata
+    inputs: {}
+    outputs:
+      type: object
+      properties: [platform, version, bridge, timestamp]
+    owner_agent: brain
+    read_only: true
+    safe: true
+
+  - id: brain.health
+    namespace: brain
+    name: health
+    purpose: Forward /api/v1/health payload
+    inputs: {}
+    outputs:
+      type: object
+    owner_agent: brain
+    read_only: true
+    safe: true
+
+  - id: filesystem.read
+    namespace: filesystem
+    name: read
+    purpose: Read a file inside /tmp/occp-workspace
+    inputs:
+      path: string
+    outputs:
+      type: object
+      properties: [path, content]
+    owner_agent: brain
+    workspace_root: /tmp/occp-workspace
+    path_escape_protection: true
+    max_bytes: 1048576
+    safe: true
+
+  - id: filesystem.write
+    namespace: filesystem
+    name: write
+    purpose: Write a file inside /tmp/occp-workspace
+    inputs:
+      path: string
+      content: string
+    outputs:
+      type: object
+      properties: [path, bytes_written]
+    owner_agent: brain
+    workspace_root: /tmp/occp-workspace
+    path_escape_protection: true
+    max_bytes: 1048576
+    safe: true
+
+  - id: filesystem.list
+    namespace: filesystem
+    name: list
+    purpose: List files in /tmp/occp-workspace
+    inputs:
+      path: string
+    outputs:
+      type: object
+      properties: [path, entries]
+    owner_agent: brain
+    workspace_root: /tmp/occp-workspace
+    path_escape_protection: true
+    safe: true
+
+  - id: http.get
+    namespace: http
+    name: get
+    purpose: Perform HTTP GET request
+    inputs:
+      url: string
+      headers: {type: object, optional: true}
+    outputs:
+      type: object
+      properties: [status, body, headers]
+    owner_agent: brain
+    timeout_seconds: 15
+    allowed_schemes: [https]
+    safe: true
+    notes: Does NOT expose internal IPs; URL sanitization recommended (future RFC)
+
+  - id: http.post
+    namespace: http
+    name: post
+    purpose: Perform HTTP POST request
+    inputs:
+      url: string
+      body: {type: any, optional: true}
+      headers: {type: object, optional: true}
+    outputs:
+      type: object
+      properties: [status, body, headers]
+    owner_agent: brain
+    timeout_seconds: 15
+    allowed_schemes: [https]
+    safe: true
+
+
+# Tool registration flow
+registration:
+  entry_module: adapters.mcp_bridge
+  registered_via: adapters.mcp_bridge.build_default_bridge
+  dispatch_route: POST /api/v1/mcp-bridge/dispatch
+  batch_route: POST /api/v1/mcp-bridge/batch
+  listing_route: GET /api/v1/mcp-bridge/tools
+
+
+# Enforcement
+enforcement:
+  policy: security.agent_allowlist.AgentToolGuard
+  mode: log + optional-enforce
+  enforce_env: OCCP_AGENT_TOOL_GUARD_ENFORCE
+  denied_agents_visible_in: /api/v1/mcp-bridge/tools (stats.denied)
+  max_concurrent_dispatches: 10
+
+
+# Immutable rules
+immutable:
+  - rule: A tool that writes outside workspace_root MUST be denied automatically
+  - rule: HTTP tools MUST use https only
+  - rule: Tool inputs > 1 MB rejected at request body level
+  - rule: New tools MUST be added via this file + have an allowlist entry before registration

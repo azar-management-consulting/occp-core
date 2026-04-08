@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REST API Design for Autonomous Workflow Engines — OCCP News</title>
+  <meta name="description" content="Designing RESTful endpoints for task lifecycle management, agent coordination, and real-time pipeline execution in the OCCP platform.">
+  <meta name="keywords" content="REST API design, FastAPI, autonomous workflow, task lifecycle, agent coordination, OpenAPI, OCCP">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/rest-api-design.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/rest-api-design.html">
+  <meta property="og:title" content="REST API Design for Autonomous Workflow Engines">
+  <meta property="og:description" content="Designing RESTful endpoints for task lifecycle management, agent coordination, and real-time pipeline execution.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2025-12-12">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="REST API Design for Autonomous Workflow Engines">
+  <meta name="twitter:description" content="Designing RESTful endpoints for task lifecycle management, agent coordination, and real-time pipeline execution.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "REST API Design for Autonomous Workflow Engines",
+    "description": "Designing RESTful endpoints for task lifecycle management, agent coordination, and real-time pipeline execution.",
+    "datePublished": "2025-12-12",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "url": "https://news.occp.ai/articles/rest-api-design.html",
+    "mainEntityOfPage": "https://news.occp.ai/articles/rest-api-design.html",
+    "proficiencyLevel": "Advanced",
+    "dependencies": "FastAPI, Python 3.11+, Pydantic v2"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo">OCCP <span>// news</span></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="https://news.occp.ai/" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+
+    <!-- Article Header -->
+    <header class="article-header">
+      <div class="card-meta">
+        <span class="card-date">2025-12-12</span>
+        <span class="card-tag tag-architecture">Architecture</span>
+        <span class="card-version">v0.2.0</span>
+      </div>
+      <h1>REST API Design for Autonomous Workflow Engines</h1>
+      <p class="lead">Designing RESTful endpoints for task lifecycle management, agent coordination, and real-time pipeline execution. How FastAPI's type system and automatic schema generation enabled OCCP to ship dual SDKs from a single source of truth.</p>
+    </header>
+
+    <!-- Article Body -->
+    <div class="article-body">
+
+      <h2>The Problem: Orchestrating Autonomous Agents via HTTP</h2>
+
+      <p>An AI orchestration platform is fundamentally a state machine exposed over HTTP. Tasks are created, queued, assigned to agents, executed through a multi-stage pipeline, and eventually completed or failed. Every state transition must be atomic, auditable, and accessible to both human operators and automated SDKs. The REST API is not a convenience layer -- it is the platform's primary interface.</p>
+
+      <p>When we started designing the OCCP API surface for v0.2.0, we had three constraints: the API must support the full Verified Autonomy Pipeline (Plan, Gate, Execute, Validate, Ship), it must generate accurate OpenAPI schemas for SDK generation, and it must remain backward-compatible as the platform evolves. These constraints shaped every endpoint design decision.</p>
+
+      <h2>Task Lifecycle Endpoints</h2>
+
+      <p>The core resource in OCCP is the <strong>task</strong>. A task represents a unit of work submitted to the orchestration engine. The task lifecycle maps directly to HTTP methods:</p>
+
+      <pre><code># Create a new task
+POST /api/v1/tasks
+Content-Type: application/json
+Authorization: Bearer &lt;jwt-token&gt;
+
+{
+  "description": "Analyze repository for security vulnerabilities",
+  "agent_id": "agent-sec-01",
+  "priority": "high",
+  "metadata": {
+    "repository": "occp-core",
+    "scan_type": "full"
+  }
+}
+
+# Response: 201 Created
+{
+  "id": "task-a1b2c3d4",
+  "status": "pending",
+  "created_at": "2025-12-12T10:30:00Z",
+  "pipeline_stage": null,
+  "audit_hash": "sha256:e3b0c44..."
+}</code></pre>
+
+      <p>The response includes the <code>audit_hash</code> from the first moment of creation. Every subsequent state change appends to the SHA-256 hash chain, creating a tamper-evident record from task birth to completion.</p>
+
+      <h3>Retrieving Task State</h3>
+
+      <p>Task retrieval supports both individual lookup and filtered listing. The individual endpoint returns the full task object including pipeline stage history:</p>
+
+      <pre><code># Get task by ID
+GET /api/v1/tasks/task-a1b2c3d4
+
+# List tasks with filters
+GET /api/v1/tasks?status=running&amp;agent_id=agent-sec-01&amp;limit=20&amp;offset=0</code></pre>
+
+      <p>We chose query parameters over request body filtering for GET requests. This keeps the API cacheable and allows browser-based debugging. The <code>limit</code> and <code>offset</code> parameters follow standard pagination patterns, with a maximum page size of 100 enforced server-side.</p>
+
+      <h3>Partial Updates with PATCH</h3>
+
+      <p>Task updates use PATCH rather than PUT. In an orchestration system, clients rarely need to replace the entire task object -- they need to update specific fields like priority, metadata, or cancel a running task:</p>
+
+      <pre><code># Update task priority
+PATCH /api/v1/tasks/task-a1b2c3d4
+{
+  "priority": "critical"
+}
+
+# Cancel a task
+PATCH /api/v1/tasks/task-a1b2c3d4
+{
+  "status": "cancelled",
+  "reason": "Superseded by task-e5f6g7h8"
+}</code></pre>
+
+      <blockquote>Not every state transition is allowed via PATCH. The policy engine validates transitions -- you cannot move a task from "completed" back to "running", and cancellation of tasks in the "ship" stage requires elevated permissions.</blockquote>
+
+      <h2>Pipeline Execution Endpoints</h2>
+
+      <p>The Verified Autonomy Pipeline is the core workflow engine. Each stage (Plan, Gate, Execute, Validate, Ship) is represented as a sub-resource of the task:</p>
+
+      <pre><code># Trigger pipeline execution for a task
+POST /api/v1/tasks/task-a1b2c3d4/pipeline/execute
+
+# Get current pipeline stage
+GET /api/v1/tasks/task-a1b2c3d4/pipeline
+
+# Response
+{
+  "task_id": "task-a1b2c3d4",
+  "current_stage": "gate",
+  "stages": {
+    "plan": {"status": "completed", "duration_ms": 342},
+    "gate": {"status": "running", "started_at": "..."},
+    "execute": {"status": "pending"},
+    "validate": {"status": "pending"},
+    "ship": {"status": "pending"}
+  }
+}</code></pre>
+
+      <p>Each pipeline stage records its own timing metrics. This granularity is essential for identifying bottlenecks. If the gate stage consistently takes longer than expected, it signals that policy evaluation rules may need optimization.</p>
+
+      <h2>Agent Coordination Endpoints</h2>
+
+      <p>Agents in OCCP are autonomous workers that claim and execute tasks. The agent coordination API handles registration, heartbeats, and task assignment:</p>
+
+      <pre><code># Register an agent
+POST /api/v1/agents
+{
+  "name": "security-scanner-01",
+  "capabilities": ["code_analysis", "vulnerability_scan"],
+  "max_concurrent_tasks": 3
+}
+
+# Agent heartbeat
+POST /api/v1/agents/agent-sec-01/heartbeat
+{
+  "status": "idle",
+  "current_tasks": 0,
+  "resource_usage": {"cpu_percent": 12, "memory_mb": 256}
+}
+
+# Claim next available task
+POST /api/v1/agents/agent-sec-01/claim
+{
+  "capabilities": ["code_analysis"]
+}</code></pre>
+
+      <p>The claim endpoint uses capability matching. An agent declares what it can do, and the orchestrator returns the highest-priority pending task that matches those capabilities. This is a pull model -- agents request work rather than having work pushed to them. The pull model simplifies scaling: add more agents and they automatically distribute the load.</p>
+
+      <h2>FastAPI and Automatic Schema Generation</h2>
+
+      <h3>Pydantic Models as the Single Source of Truth</h3>
+
+      <p>Every request and response in OCCP is defined as a Pydantic v2 model. FastAPI uses these models to generate the OpenAPI schema at <code>/docs</code> and <code>/openapi.json</code>. This schema becomes the contract that both SDKs implement against:</p>
+
+      <pre><code>from pydantic import BaseModel, Field
+from datetime import datetime
+from enum import Enum
+
+class TaskStatus(str, Enum):
+    pending = "pending"
+    running = "running"
+    completed = "completed"
+    failed = "failed"
+    cancelled = "cancelled"
+
+class TaskCreate(BaseModel):
+    description: str = Field(..., min_length=1, max_length=2000)
+    agent_id: str | None = None
+    priority: str = Field(default="normal")
+    metadata: dict = Field(default_factory=dict)
+
+class TaskResponse(BaseModel):
+    id: str
+    status: TaskStatus
+    created_at: datetime
+    pipeline_stage: str | None = None
+    audit_hash: str</code></pre>
+
+      <p>The Pydantic models enforce validation at the boundary. Invalid requests are rejected with structured error responses before reaching the business logic layer. This is particularly important for an orchestration platform where malformed input could cascade through the pipeline.</p>
+
+      <h3>From OpenAPI to SDK Methods</h3>
+
+      <p>The OpenAPI schema generated by FastAPI documents every endpoint, parameter, request body, and response type. Our SDK generation process maps these directly to typed methods:</p>
+
+      <pre><code># Python SDK (generated from OpenAPI)
+task = client.tasks.create(
+    description="Analyze repository",
+    agent_id="agent-sec-01",
+    priority="high"
+)
+# task.id, task.status, task.audit_hash are typed
+
+# TypeScript SDK (generated from OpenAPI)
+const task = await client.tasks.create({
+  description: "Analyze repository",
+  agentId: "agent-sec-01",
+  priority: "high",
+});
+// task.id, task.status, task.auditHash are typed</code></pre>
+
+      <blockquote>The OpenAPI schema is not documentation -- it is a machine-readable contract. Any change to the API surface is immediately visible as a schema diff, making breaking changes impossible to miss in code review.</blockquote>
+
+      <h2>Error Handling and Status Codes</h2>
+
+      <p>OCCP uses standard HTTP status codes with structured error bodies. Every error response includes a machine-readable error code, a human-readable message, and a request correlation ID for debugging:</p>
+
+      <pre><code># 422 Validation Error
+{
+  "error": "validation_error",
+  "message": "Field 'description' is required",
+  "request_id": "req-x9y8z7",
+  "details": [
+    {"field": "description", "type": "missing"}
+  ]
+}
+
+# 409 Conflict (invalid state transition)
+{
+  "error": "invalid_transition",
+  "message": "Cannot transition from 'completed' to 'running'",
+  "request_id": "req-a1b2c3",
+  "current_status": "completed",
+  "requested_status": "running"
+}</code></pre>
+
+      <p>We chose 409 Conflict for invalid state transitions rather than 400 Bad Request. The request itself is well-formed -- the conflict is with the current state of the resource. This distinction matters for SDK clients implementing retry logic: a 409 should not be retried with the same payload, while a 503 should.</p>
+
+      <h2>Versioning and Forward Compatibility</h2>
+
+      <p>The API is versioned with a <code>/api/v1/</code> prefix. New fields added to response objects are always additive -- SDKs must ignore unknown fields. Removing or renaming fields requires a major version bump. This contract allows OCCP to evolve the API without breaking existing integrations.</p>
+
+      <p>Endpoint deprecation follows a three-release cycle: the endpoint is marked deprecated in the OpenAPI schema, then returns a <code>Sunset</code> header with the removal date, and finally returns 410 Gone after the sunset date.</p>
+
+      <h2>Rate Limiting and Authentication</h2>
+
+      <p>All endpoints require JWT authentication via the <code>Authorization: Bearer</code> header. Rate limiting is enforced per-token with configurable limits. The rate limit headers follow the IETF draft standard:</p>
+
+      <pre><code>X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 87
+X-RateLimit-Reset: 1702396800</code></pre>
+
+      <p>Agent heartbeat endpoints have higher rate limits than task creation endpoints. This ensures that agent health monitoring is never throttled during load spikes.</p>
+
+    </div>
+
+    <!-- Summary Box -->
+    <div class="summary-box">
+      <h3>// Key Takeaways</h3>
+      <ul>
+        <li>Task lifecycle maps to HTTP methods: POST to create, GET to read, PATCH to update state</li>
+        <li>Pipeline stages are sub-resources of tasks, each with independent timing metrics</li>
+        <li>Agent coordination uses a pull model with capability-based task matching</li>
+        <li>Pydantic models serve as the single source of truth for API contracts and SDK generation</li>
+        <li>HTTP status codes are semantically precise: 409 for state conflicts, 422 for validation errors</li>
+        <li>API versioning uses path prefixes with additive-only changes within a major version</li>
+      </ul>
+    </div>
+
+    <!-- Article Navigation -->
+    <nav class="article-nav">
+      <a href="jwt-auth-architecture.html">&larr; #011 JWT Authentication Architecture</a>
+      <a href="docker-compose-production.html">#013 Docker Compose in Production &rarr;</a>
+    </nav>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP — OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

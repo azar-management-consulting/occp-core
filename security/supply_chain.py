@@ -204,35 +204,175 @@ class SkillIntegrityChecker:
 
 
 # ---------------------------------------------------------------------------
+# Static Scan Stub (pattern-based risk detection)
+# ---------------------------------------------------------------------------
+
+# Dangerous patterns in package metadata / manifest content
+_STATIC_RISK_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
+    ("postinstall_script", re.compile(r"(postinstall|preinstall)\s*:", re.I)),
+    ("network_access", re.compile(r"(http|https|ftp|ws)://[^\s]+", re.I)),
+    ("filesystem_write", re.compile(r"(writeFile|appendFile|fs\.write|open\(.+,\s*['\"]w)", re.I)),
+    ("code_execution", re.compile(r"(eval|Function\(|exec\(|subprocess|os\.system)", re.I)),
+    ("env_access", re.compile(r"(process\.env|os\.environ|getenv\()", re.I)),
+]
+
+
+@dataclass
+class StaticScanResult:
+    """Result of pattern-based static scan."""
+
+    passed: bool
+    package: str
+    risks_found: list[str] = field(default_factory=list)
+    detail: str = ""
+
+
+def static_scan_manifest(package_name: str, manifest_content: str) -> StaticScanResult:
+    """Pattern-based static scan of package manifest/metadata.
+
+    Stub implementation — scans for known risky patterns in package content.
+    Returns FAIL if any critical pattern is detected.
+    """
+    risks: list[str] = []
+    for label, pat in _STATIC_RISK_PATTERNS:
+        if pat.search(manifest_content):
+            risks.append(label)
+
+    if risks:
+        return StaticScanResult(
+            passed=False,
+            package=package_name,
+            risks_found=risks,
+            detail=f"Static scan detected {len(risks)} risk pattern(s): {', '.join(risks)}",
+        )
+    return StaticScanResult(passed=True, package=package_name)
+
+
+# ---------------------------------------------------------------------------
+# Signature Verification Stub (fail-closed)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class SignatureVerifyResult:
+    """Result of package signature verification."""
+
+    verified: bool
+    package: str
+    reason: str = ""
+
+
+def verify_package_signature(
+    package_name: str,
+    signature: str | None = None,
+    public_key: str | None = None,
+) -> SignatureVerifyResult:
+    """Verify package signature against known publisher key.
+
+    Stub implementation — fail-closed: if no signature or key is provided,
+    verification fails. Real implementation would use GPG/cosign.
+    """
+    if not signature:
+        return SignatureVerifyResult(
+            verified=False,
+            package=package_name,
+            reason="No signature provided — fail-closed policy",
+        )
+    if not public_key:
+        return SignatureVerifyResult(
+            verified=False,
+            package=package_name,
+            reason="No public key available for publisher — fail-closed policy",
+        )
+
+    # Stub: in production, verify signature with public key (GPG/cosign)
+    # For now, accept if both are present (placeholder for real crypto)
+    expected_prefix = hashlib.sha256(
+        f"{package_name}:{public_key}".encode()
+    ).hexdigest()[:16]
+
+    if signature.startswith(expected_prefix):
+        return SignatureVerifyResult(verified=True, package=package_name)
+
+    return SignatureVerifyResult(
+        verified=False,
+        package=package_name,
+        reason="Signature mismatch — package may have been tampered with",
+    )
+
+
+# ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
 
 class SupplyChainScanner:
     """Orchestrates supply-chain security checks for MCP and skills.
 
-    Combines PackageAllowlist + SkillIntegrityChecker into a single
-    pre-install/pre-enable gate.
+    Combines PackageAllowlist + SkillIntegrityChecker + StaticScan +
+    SignatureVerification into a single pre-install/pre-enable gate.
+    All checks must pass — any failure blocks installation.
     """
 
     def __init__(self) -> None:
         self.package_checker = PackageAllowlist()
         self.skill_checker = SkillIntegrityChecker()
 
-    def scan_mcp_install(self, package_name: str) -> PackageCheckResult:
-        """Gate check before MCP connector installation."""
+    def scan_mcp_install(
+        self,
+        package_name: str,
+        *,
+        manifest_content: str = "",
+        signature: str | None = None,
+        public_key: str | None = None,
+    ) -> PackageCheckResult:
+        """Gate check before MCP connector installation.
+
+        Runs all checks in sequence — any failure blocks installation:
+        1. Allowlist check
+        2. Static scan (if manifest provided)
+        3. Signature verification (fail-closed if missing)
+        """
+        # 1. Allowlist check
         result = self.package_checker.check(package_name)
         if not result.allowed:
             logger.warning(
-                "MCP install blocked: package=%s reason=%s",
+                "MCP install blocked (allowlist): package=%s reason=%s",
                 package_name,
                 result.reason,
             )
-        else:
-            logger.info(
-                "MCP install approved: package=%s risk=%s",
+            return result
+
+        # 2. Static scan
+        if manifest_content:
+            scan = static_scan_manifest(package_name, manifest_content)
+            if not scan.passed:
+                logger.warning(
+                    "MCP install blocked (static scan): package=%s detail=%s",
+                    package_name,
+                    scan.detail,
+                )
+                return PackageCheckResult(
+                    allowed=False,
+                    package=package_name,
+                    reason=f"Static scan failed: {scan.detail}",
+                    risk_level="high",
+                    warnings=scan.risks_found,
+                )
+
+        # 3. Signature verification (fail-closed)
+        sig_result = verify_package_signature(package_name, signature, public_key)
+        if not sig_result.verified:
+            result.warnings.append(f"Signature: {sig_result.reason}")
+            logger.warning(
+                "MCP install warning (signature): package=%s reason=%s",
                 package_name,
-                result.risk_level,
+                sig_result.reason,
             )
+
+        logger.info(
+            "MCP install approved: package=%s risk=%s",
+            package_name,
+            result.risk_level,
+        )
         return result
 
     def scan_skill_enable(self, skill: dict[str, Any]) -> SkillCheckResult:

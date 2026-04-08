@@ -1,0 +1,129 @@
+version: 1
+generated: 2026-04-08
+schema: occp.architecture.runtime_inventory.v1
+
+# All runtime dependencies, versions, and host placements.
+
+backend:
+  python: "3.13"
+  framework:
+    fastapi: "0.115.x"
+    sqlalchemy: "2.0.x"
+    pydantic: "2.x"
+    httpx: "0.27.x"
+    alembic: "1.13.x"
+  llm:
+    anthropic: "claude-sonnet-4-6"
+    openai: "gpt-4.1 (fallback)"
+  storage:
+    sqlite: "3.x (aiosqlite)"
+  audio:
+    whisper: "openai whisper-1 HTTPS API"
+
+
+frontend:
+  node: "20.x"
+  framework:
+    nextjs: "15.x"
+    react: "19.x"
+    tailwind: "4.x"
+    typescript: "5.x"
+  bundler: turbopack
+
+
+deployment:
+  containerization: docker-compose
+  reverse_proxy: apache2 (ubuntu-24.04)
+  ssl: letsencrypt (certbot)
+  networking:
+    public_endpoints:
+      - https://occp.ai (landing)
+      - https://api.occp.ai (backend)
+      - https://dash.occp.ai (frontend)
+      - https://www.occp.ai (redirect)
+    internal:
+      - wss://claw.occp.ai (openclaw gateway)
+
+
+control_plane_mesh:
+  overlay: tailscale
+  nodes:
+    - id: mba-henry
+      tailscale_ip: 100.114.146.86
+      role: claude-code-host
+    - id: imac-henry
+      tailscale_ip: 100.88.122.102
+      role: storage + secondary
+    - id: mbp-henry
+      tailscale_ip: 100.65.58.71
+      role: secondary-dev
+    - id: hetzner-occp-brain
+      tailscale_ip: null  # public only
+      role: brain-plane
+    - id: hetzner-openclaw
+      tailscale_ip: null  # public only
+      role: execution-plane
+
+
+external_apis:
+  - name: anthropic
+    purpose: Primary LLM for planning + chat
+    billing: pay-per-use
+    rate_limit: model tier
+    critical: true
+
+  - name: openai
+    purpose: Whisper transcription + GPT fallback
+    billing: pay-per-use
+    critical: true
+
+  - name: telegram-bot
+    purpose: User interaction channel
+    billing: free
+    critical: true
+
+  - name: hetzner-api
+    purpose: Server management
+    billing: monthly
+    critical: false  # only for scaling
+
+  - name: cloudflare-api
+    purpose: DNS + edge
+    billing: free tier
+    critical: false
+
+  - name: hostinger-api
+    purpose: Domain + shared hosting
+    billing: monthly
+    critical: false
+
+
+git:
+  remote: https://github.com/azar-management-consulting/occp-core
+  default_branch: main
+  active_branch: feat/v0.10.0-l6-foundation
+  stale_branches:
+    - chore/v070-consolidation
+    - feat/v0.8.2-enterprise-onboarding
+    - feat/v080-onboarding-wizard
+    - fix/landing-version-080
+    - fix/v080-refinement
+    - fix/version-bump-080
+    # Should be cleaned up after L6 merge.
+
+
+tests:
+  framework: pytest
+  total_collected: 2649
+  baseline_passing: 2618
+  skipped_integration: 31
+  coverage_tool: pytest-cov
+  target_coverage: ">85%"
+
+
+observability_current_state:
+  logging: structlog (json output)
+  metrics: NONE  # L6 gap — added in Phase 6B
+  tracing: NONE  # L6 gap — added in Phase 6B
+  alerting: NONE  # L6 gap
+  dashboards: NONE  # L6 gap

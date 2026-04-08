@@ -1,0 +1,152 @@
+version: 1
+generated: 2026-04-08
+schema: occp.architecture.boundaries.v1
+
+# Module boundaries — what Claude Code autonomous self-modifier may touch,
+# what requires human PR, and what is permanently immutable.
+
+# ─── LEVEL 1: Autonomous-safe zones ─────────────────────────
+# Claude Code may edit these without asking (reversible, non-destructive).
+autonomous_safe:
+  - path_glob: architecture/*.yaml
+    reason: Self-description updates are the core L6 loop
+    revert_strategy: git revert
+
+  - path_glob: .planning/rfc/*.md
+    reason: RFC proposals are explicitly meant to be generated
+    revert_strategy: delete file
+
+  - path_glob: observability/**/*.py
+    reason: Telemetry instrumentation can be refined continuously
+    revert_strategy: git revert + pytest
+
+  - path_glob: evaluation/**/*.py
+    reason: Evaluation harness iteration is core to L6
+    revert_strategy: git revert + pytest
+
+  - path_glob: docs/**/*.md
+    exclude: [docs/SECURITY.md, docs/SECRETS.md]
+    reason: Documentation updates
+    revert_strategy: git revert
+
+  - path_glob: tests/**/*.py
+    exclude: [tests/test_policy_engine.py, tests/test_agent_allowlist.py]
+    reason: Test improvements
+    revert_strategy: git revert
+
+  - path_glob: .planning/**/*.md
+    exclude: [.planning/protocol/MASTER_PROTOCOL_v1.md]
+    reason: Planning doc updates (except immutable protocol)
+    revert_strategy: git revert
+
+
+# ─── LEVEL 2: Human-review required ─────────────────────────
+# Claude Code may propose changes via RFC but may not auto-merge.
+human_review_required:
+  - path_glob: orchestrator/**/*.py
+    reason: Pipeline + brain_flow changes require review
+    required_reviewers: 1
+
+  - path_glob: adapters/**/*.py
+    exclude: [adapters/mcp_bridge.py, adapters/telegram_voice_bot.py]
+    reason: Runtime adapters are critical path
+    required_reviewers: 1
+
+  - path_glob: api/routes/**/*.py
+    reason: API surface changes affect all clients
+    required_reviewers: 1
+
+  - path_glob: dash/src/**/*.{tsx,ts}
+    reason: UI changes should be designer-reviewed
+    required_reviewers: 1
+
+  - path_glob: config/**/*.{yaml,csv,json}
+    reason: Policy config changes alter behavior
+    required_reviewers: 1
+
+
+# ─── LEVEL 3: Immutable (never self-modifiable) ─────────────
+# These paths are PERMANENTLY off-limits to the self-modifier.
+# Any proposal touching them MUST be escalated to Henry + 2FA.
+immutable:
+  - path_glob: security/agent_allowlist.py
+    reason: Allowlist bypass would break policy enforcement
+    escalation: henry + 2fa
+
+  - path_glob: policy_engine/guards.py
+    reason: Weakening guards defeats the safety boundary
+    escalation: henry + 2fa
+
+  - path_glob: policy_engine/engine.py
+    reason: Core gate logic
+    escalation: henry + 2fa
+
+  - path_glob: security/break_glass.py
+    reason: Emergency override must not be self-editable
+    escalation: henry + 2fa
+
+  - path_glob: security/vault.py
+    reason: Secrets handling
+    escalation: henry + 2fa
+
+  - path_glob: security/signing.py
+    reason: Code signing + SBOM integrity
+    escalation: henry + 2fa
+
+  - path_glob: security/provenance.py
+    reason: Supply chain provenance
+    escalation: henry + 2fa
+
+  - path_glob: api/auth.py
+    reason: JWT + credential verification
+    escalation: henry + 2fa
+
+  - path_glob: api/rbac.py
+    reason: Role-based access control
+    escalation: henry + 2fa
+
+  - path_glob: migrations/versions/*.py
+    reason: Schema migrations are irreversible — DBA only
+    escalation: henry + dba review
+
+  - path_glob: ".env*"
+    reason: Environment secrets
+    escalation: henry + secret rotation
+
+  - path_glob: config/settings.py
+    reason: Core runtime configuration
+    escalation: henry
+
+  - path_glob: .planning/protocol/MASTER_PROTOCOL_v1.md
+    reason: Source of truth for runtime rules
+    escalation: henry
+
+  - path_glob: architecture/governance.yaml
+    reason: These boundary rules themselves
+    escalation: henry + 2fa
+
+
+# ─── Enforcement ────────────────────────────────────────────
+enforcement:
+  module: evaluation.self_modifier  # to be created
+  check_function: validate_target_path
+  on_immutable_match: raise PermissionError + audit log + notify henry
+
+  on_human_review_match: |
+    create .planning/rfc/{id}-{slug}.md with:
+      - proposal diff
+      - justification
+      - evidence refs
+      - risk score
+      - rollback plan
+    set status=pending
+    notify henry via Telegram
+
+
+# ─── Verification ───────────────────────────────────────────
+verification:
+  - test: tests/architecture/test_boundaries.py
+    checks:
+      - every path in immutable.path_glob resolves to at least one real file
+      - no path listed in autonomous_safe overlaps with immutable
+      - human_review_required paths have at least 1 reviewer

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Boundary Enforcement: Three Levels of Capability Control — OCCP News</title>
+  <meta name="description" content="Task scope validation, registration checks, and capacity limits — three enforcement levels that prevent agent privilege escalation in multi-agent systems.">
+  <meta name="keywords" content="OCCP, agent boundary enforcement, capability control, privilege escalation, multi-agent security, task scope validation">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/agent-boundary-enforcement.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/agent-boundary-enforcement.html">
+  <meta property="og:title" content="Agent Boundary Enforcement: Three Levels of Capability Control">
+  <meta property="og:description" content="Task scope validation, registration checks, and capacity limits — three enforcement levels that prevent agent privilege escalation in multi-agent systems.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-24">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Agent Boundary Enforcement: Three Levels of Capability Control">
+  <meta name="twitter:description" content="Task scope validation, registration checks, and capacity limits — three enforcement levels that prevent agent privilege escalation in multi-agent systems.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Agent Boundary Enforcement: Three Levels of Capability Control",
+    "datePublished": "2026-02-24",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Task scope validation, registration checks, and capacity limits — three enforcement levels that prevent agent privilege escalation in multi-agent systems.",
+    "url": "https://news.occp.ai/articles/agent-boundary-enforcement.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-24</span>
+          <span class="card-tag tag-agent">Agents</span>
+          <span class="card-version">v0.8.2</span>
+        </div>
+        <h1>Agent Boundary Enforcement: Three Levels of Capability Control</h1>
+        <p class="lead">In a multi-agent system, every agent is a potential privilege escalation vector. An agent that can exceed its declared scope, bypass registration requirements, or consume unlimited resources is not governed &mdash; it is merely monitored. OCCP enforces agent boundaries at three distinct levels, each addressing a different category of boundary violation.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>Why Boundaries Are Non-Negotiable</h2>
+
+        <p>Multi-agent AI systems amplify the consequences of boundary failures. In a single-agent system, an agent that exceeds its scope produces incorrect output. In a multi-agent system, an agent that exceeds its scope can influence other agents, corrupt shared state, consume resources allocated to other tasks, and create cascading failures across the entire orchestration pipeline. The blast radius of a boundary violation scales with the number of agents in the system.</p>
+
+        <p>Traditional access control systems (RBAC, ABAC) operate at the user level: they control what a human user can do. Agent boundary enforcement operates at the task level: it controls what an AI agent can do within the context of a specific task execution. The difference is critical. A human user has a persistent identity with stable permissions. An agent's effective permissions should be scoped to its current task, not to a global role.</p>
+
+        <blockquote>Access control governs who can act. Boundary enforcement governs what each actor can do within a specific context. For AI agents, context-scoped boundaries are more important than identity-scoped roles.</blockquote>
+
+        <h2>Level 1: Task Scope Validation</h2>
+
+        <h3>Declared Task Types</h3>
+
+        <p>Every agent in OCCP declares its supported task types at registration time. A text-analysis agent declares that it handles <code>text_analysis</code> and <code>summarization</code> tasks. A code-generation agent declares <code>code_generation</code> and <code>code_review</code>. These declarations are not advisory &mdash; they are enforced at the Gate stage of the Verified Autonomy Pipeline.</p>
+
+        <pre><code># Agent registration with declared task types
+{
+    "agent_id": "agent_text_01",
+    "name": "Text Analysis Agent",
+    "task_types": ["text_analysis", "summarization"],
+    "capabilities": ["llm_call", "text_processing"],
+    "max_concurrent_tasks": 5,
+    "token_budget_per_task": 8192
+}</code></pre>
+
+        <h3>Gate-Stage Enforcement</h3>
+
+        <p>When a task is submitted to the orchestrator, the Plan stage determines the task type and assigns it to an appropriate agent. Before the task reaches the Execute stage, the Gate evaluates whether the assigned agent is authorized to handle that task type. If a <code>text_analysis</code> task is somehow routed to a code-generation agent, the Gate rejects the assignment. This prevents both misconfiguration (an admin accidentally assigns the wrong agent) and manipulation (a compromised routing layer attempts to redirect tasks to a more privileged agent).</p>
+
+        <pre><code>def validate_task_scope(agent: Agent, task: Task) -> GateResult:
+    """Level 1: Verify agent is authorized for this task type."""
+    if task.task_type not in agent.task_types:
+        audit_log(
+            "BOUNDARY_VIOLATION",
+            level="task_scope",
+            agent_id=agent.agent_id,
+            task_type=task.task_type,
+            allowed_types=agent.task_types
+        )
+        return GateResult(
+            allowed=False,
+            reason=f"Agent {agent.agent_id} not authorized "
+                   f"for task type '{task.task_type}'"
+        )
+    return GateResult(allowed=True)</code></pre>
+
+        <h3>Preventing Scope Creep</h3>
+
+        <p>Task scope validation prevents a common failure mode in multi-agent systems: scope creep. Without enforcement, an agent designed for text analysis might gradually be assigned code generation tasks "because it works well enough." Over time, the agent accumulates de facto capabilities far beyond its original design. With scope validation, each new task type must be explicitly declared and approved, making scope expansion a deliberate, audited decision rather than an accidental drift.</p>
+
+        <h2>Level 2: Registration Checks</h2>
+
+        <h3>The Registration Requirement</h3>
+
+        <p>Every agent that executes tasks in OCCP must be registered in the agent registry. Registration requires a unique agent identifier, a name, the declared task types (as described above), the declared capabilities, and resource quotas. Unregistered agents cannot execute tasks. There is no anonymous execution path.</p>
+
+        <h3>Registration as a Trust Boundary</h3>
+
+        <p>Registration is not just an inventory mechanism. It is a trust boundary. The registration process validates the agent's configuration, verifies that its declared capabilities are consistent with its task types (a text analysis agent should not need <code>filesystem_write</code> capability), and records the registrar's identity in the audit chain. Every registered agent has a provenance trail: who registered it, when, and with what configuration.</p>
+
+        <pre><code>def validate_registration(agent_id: str) -> GateResult:
+    """Level 2: Verify agent is registered and active."""
+    agent = agent_registry.get(agent_id)
+    if agent is None:
+        audit_log(
+            "BOUNDARY_VIOLATION",
+            level="registration",
+            agent_id=agent_id,
+            reason="unregistered_agent"
+        )
+        return GateResult(
+            allowed=False,
+            reason=f"Agent {agent_id} is not registered"
+        )
+    if agent.status != "active":
+        audit_log(
+            "BOUNDARY_VIOLATION",
+            level="registration",
+            agent_id=agent_id,
+            status=agent.status
+        )
+        return GateResult(
+            allowed=False,
+            reason=f"Agent {agent_id} status is "
+                   f"'{agent.status}', expected 'active'"
+        )
+    return GateResult(allowed=True)</code></pre>
+
+        <h3>Lifecycle Management</h3>
+
+        <p>Registered agents have lifecycle states: <code>active</code>, <code>suspended</code>, <code>retired</code>. Only active agents can execute tasks. An agent can be suspended immediately in response to a security incident, without deleting its configuration or audit history. Retired agents remain in the registry for audit purposes but cannot be reactivated without a new registration. The lifecycle model ensures that decommissioning an agent does not destroy its audit trail.</p>
+
+        <h2>Level 3: Capacity Limits</h2>
+
+        <h3>Resource Quotas Per Agent</h3>
+
+        <p>Each agent has configurable resource quotas that are enforced at runtime. The quotas cover three dimensions: token budget (maximum tokens per task and per time window), execution time (maximum wall-clock time per task), and concurrency (maximum number of simultaneous tasks).</p>
+
+        <pre><code># Capacity limit configuration
+{
+    "agent_id": "agent_text_01",
+    "limits": {
+        "max_tokens_per_task": 8192,
+        "max_tokens_per_hour": 100000,
+        "max_execution_seconds": 60,
+        "max_concurrent_tasks": 5,
+        "max_tasks_per_hour": 200
+    }
+}</code></pre>
+
+        <h3>Runtime Enforcement</h3>
+
+        <p>Capacity limits are enforced during execution, not just at submission time. If an agent's LLM call approaches its token budget, the orchestrator truncates the request or terminates the call before the budget is exceeded. If an agent's execution time approaches its timeout, the task is cancelled with a timeout error. If an agent attempts to start a new task while at its concurrency limit, the new task is queued until a slot becomes available.</p>
+
+        <h3>Preventing Resource Exhaustion</h3>
+
+        <p>Without capacity limits, a single misbehaving agent can exhaust the platform's resources. A runaway agent making unbounded LLM calls can consume the entire token budget in minutes, at costs that scale linearly with the model's per-token pricing. A task stuck in an infinite loop can hold execution resources indefinitely, starving other agents. Capacity limits ensure that resource exhaustion is bounded per agent: one agent's failure cannot cascade into a platform-wide outage.</p>
+
+        <h2>The Enforcement Chain in the Gate Stage</h2>
+
+        <p>The three enforcement levels execute as a chain in the Gate stage. Level 2 (registration) runs first: if the agent is not registered, there is no point checking scope or capacity. Level 1 (task scope) runs second: if the agent is not authorized for the task type, capacity limits are irrelevant. Level 3 (capacity) runs last: if the agent is registered and authorized, check that it has available capacity.</p>
+
+        <pre><code>def enforce_agent_boundaries(
+    agent_id: str, task: Task
+) -> GateResult:
+    """Three-level boundary enforcement chain."""
+    # Level 2: Registration (must run first)
+    reg_result = validate_registration(agent_id)
+    if not reg_result.allowed:
+        return reg_result
+
+    agent = agent_registry.get(agent_id)
+
+    # Level 1: Task scope
+    scope_result = validate_task_scope(agent, task)
+    if not scope_result.allowed:
+        return scope_result
+
+    # Level 3: Capacity limits
+    capacity_result = validate_capacity(agent, task)
+    if not capacity_result.allowed:
+        return capacity_result
+
+    return GateResult(allowed=True)</code></pre>
+
+        <p>The chain is fail-fast: the first failing check short-circuits the remaining checks. This is both an optimization (avoid unnecessary computation) and a security property (do not leak information about subsequent check results to an unauthorized agent). An unregistered agent learns only that it is unregistered, not whether it would have passed scope or capacity checks.</p>
+
+        <h2>Audit Trail for Boundary Violations</h2>
+
+        <p>Every boundary violation is recorded in the SHA-256 audit chain with the violation level, the agent identity, the attempted action, and the enforcement result. This audit trail serves three purposes. Operational: it helps administrators identify misconfigured agents. Security: it detects potential attacks where an agent repeatedly probes boundaries. Compliance: it provides evidence that boundary enforcement is active and effective for regulatory audits.</p>
+
+        <p>The audit entries for boundary violations are immutable and hash-chained, just like all other audit entries. An attacker who compromises an agent cannot retroactively erase the evidence of its boundary violations. The audit trail persists even if the agent is subsequently deregistered and purged from the active registry.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Level 1 (Task Scope): agents can only execute task types they declared at registration, preventing scope creep</li>
+          <li>Level 2 (Registration): unregistered agents cannot execute any tasks, enforcing a mandatory trust boundary</li>
+          <li>Level 3 (Capacity): per-agent quotas on tokens, time, and concurrency prevent resource exhaustion</li>
+          <li>The enforcement chain runs in the Gate stage with fail-fast short-circuiting</li>
+          <li>All boundary violations are recorded in the immutable SHA-256 audit chain</li>
+          <li>Agent lifecycle states (active, suspended, retired) enable immediate incident response without losing audit history</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="supply-chain-security.html">&larr; Supply Chain Security</a>
+        <a href="eu-ai-act-compliance.html">EU AI Act Compliance &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

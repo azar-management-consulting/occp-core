@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQLAlchemy 2.0 Async ORM: Migrating a Production AI Platform — OCCP News</title>
+  <meta name="description" content="Moving from raw SQL to async mapped models while maintaining dual-backend compatibility and zero downtime.">
+  <meta name="keywords" content="OCCP, SQLAlchemy, async ORM, database migration, FastAPI, PostgreSQL, SQLite, Alembic">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/sqlalchemy-async-migration.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/sqlalchemy-async-migration.html">
+  <meta property="og:title" content="SQLAlchemy 2.0 Async ORM: Migrating a Production AI Platform">
+  <meta property="og:description" content="Moving from raw SQL to async mapped models while maintaining dual-backend compatibility and zero downtime.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-09">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SQLAlchemy 2.0 Async ORM: Migrating a Production AI Platform">
+  <meta name="twitter:description" content="Moving from raw SQL to async mapped models while maintaining dual-backend compatibility and zero downtime.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "SQLAlchemy 2.0 Async ORM: Migrating a Production AI Platform",
+    "datePublished": "2026-02-09",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Moving from raw SQL to async mapped models while maintaining dual-backend compatibility and zero downtime.",
+    "url": "https://news.occp.ai/articles/sqlalchemy-async-migration.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-09</span>
+          <span class="card-tag tag-architecture">Architecture</span>
+          <span class="card-version">v0.7.0</span>
+        </div>
+        <h1>SQLAlchemy 2.0 Async ORM: Migrating a Production AI Platform</h1>
+        <p class="lead">Replacing every raw SQL query in a production system with ORM-mapped models is the kind of migration that can either modernize a codebase or destabilize it. The key to doing it safely is maintaining dual compatibility throughout the transition &mdash; old and new coexisting until the old is fully eliminated.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>Why Async Matters for FastAPI</h2>
+
+        <p>FastAPI is built on Starlette, which is built on ASGI &mdash; the async successor to WSGI. Every request handler in OCCP is an <code>async def</code> function that can yield control while waiting for I/O. This architecture enables high concurrency: while one request is waiting for an LLM API response, another request can process a database query, and a third can evaluate a policy check.</p>
+
+        <p>But this concurrency model breaks down when database calls are synchronous. A synchronous <code>sqlite3.connect()</code> call blocks the entire event loop thread for the duration of the query. During that time, no other request can be processed. For a platform that needs to handle concurrent pipeline executions, this is a bottleneck.</p>
+
+        <pre><code># The blocking problem (pre-v0.7.0)
+async def handle_request(task_id: str):
+    # This blocks the event loop for ~5ms per query
+    task = db.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+
+    # While blocked above, zero other requests are processed
+    return TaskResponse(task=task)</code></pre>
+
+        <p>SQLAlchemy 2.0's async extension solves this by running database operations through an async driver (aiosqlite for SQLite, asyncpg for PostgreSQL). The database call yields control to the event loop, allowing other requests to proceed while the query executes.</p>
+
+        <pre><code># The non-blocking solution (v0.7.0)
+async def handle_request(session: AsyncSession, task_id: str):
+    # This yields control while the query executes
+    result = await session.execute(select(Task).where(Task.id == task_id))
+    task = result.scalar_one_or_none()
+
+    # Other requests processed during the await above
+    return TaskResponse(task=task)</code></pre>
+
+        <h2>The Migration Strategy</h2>
+
+        <p>Migrating from raw SQL to ORM is not a single commit. It is a multi-step process that must maintain a working system at every step. OCCP used a parallel-path strategy: the new ORM layer was built alongside the existing raw SQL layer, and endpoints were migrated one at a time.</p>
+
+        <h3>Step 1: Define Models</h3>
+
+        <p>The first step was defining SQLAlchemy 2.0 mapped models for every table in the existing schema. The models had to match the existing schema exactly &mdash; same column names, same types, same constraints. Any discrepancy would cause the ORM to generate SQL that does not match the existing tables.</p>
+
+        <pre><code>from sqlalchemy import String, DateTime, Integer, Text, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship, DeclarativeBase
+
+class Base(DeclarativeBase):
+    pass
+
+class Task(Base):
+    __tablename__ = "tasks"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    agent_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("agents.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, onupdate=func.now())
+
+    # Relationships
+    agent: Mapped["Agent"] = relationship(back_populates="tasks", lazy="selectin")
+    audit_entries: Mapped[list["AuditEntry"]] = relationship(
+        back_populates="task", lazy="selectin"
+    )</code></pre>
+
+        <p>Four core models were defined: <code>Task</code>, <code>AuditEntry</code>, <code>User</code>, and <code>Agent</code>. Each model corresponds to a table that existed in the raw SQL schema. The relationships between models (Task has many AuditEntries, Agent has many Tasks) were encoded as <code>relationship()</code> declarations with explicit loading strategies.</p>
+
+        <h3>Step 2: Dual-Path Database Access</h3>
+
+        <p>During the transition, both the raw SQL functions and the new ORM functions existed in the codebase. A feature flag controlled which path was active:</p>
+
+        <pre><code># Transition period: dual-path access
+async def get_task(task_id: str) -> Task | None:
+    if config.USE_ORM:
+        async with get_session() as session:
+            result = await session.execute(
+                select(Task).where(Task.id == task_id)
+            )
+            return result.scalar_one_or_none()
+    else:
+        row = await legacy_db.execute(
+            "SELECT * FROM tasks WHERE id = ?", (task_id,)
+        )
+        return Task.from_row(row) if row else None</code></pre>
+
+        <p>This dual-path approach allowed the team to migrate endpoints incrementally, testing each one against the ORM path before switching it over. The feature flag could be toggled per-deployment, so staging environments could run the ORM path while production continued on raw SQL until confidence was established.</p>
+
+        <h3>Step 3: Endpoint Migration</h3>
+
+        <p>Each endpoint was migrated individually. The process for each endpoint was: (1) write the ORM equivalent of the raw SQL query, (2) write tests that verify identical behavior between the two paths, (3) switch the endpoint to the ORM path, (4) verify in staging, (5) remove the raw SQL path. This process was repeated for every database-touching endpoint in the API.</p>
+
+        <h3>Step 4: Legacy Removal</h3>
+
+        <p>Once all endpoints were migrated and the ORM path was verified in production, the raw SQL functions, the legacy database module, and the feature flag were removed in a single cleanup commit. This commit was the largest single deletion in OCCP's history &mdash; removing over 600 lines of raw SQL queries and their associated helper functions.</p>
+
+        <h2>Dual-Backend Support</h2>
+
+        <p>OCCP supports two database backends: SQLite for local development and PostgreSQL for production deployments. The ORM abstraction makes this transparent to the application code &mdash; the same model definitions and queries work with both backends. The only difference is the connection URL and the async driver.</p>
+
+        <pre><code># Database engine configuration
+def create_engine(database_url: str) -> AsyncEngine:
+    if database_url.startswith("sqlite"):
+        # Use aiosqlite driver for async SQLite
+        url = database_url.replace("sqlite://", "sqlite+aiosqlite://")
+        return create_async_engine(url, echo=False)
+    elif database_url.startswith("postgresql"):
+        # Use asyncpg driver for async PostgreSQL
+        url = database_url.replace("postgresql://", "postgresql+asyncpg://")
+        return create_async_engine(url, echo=False, pool_size=10, max_overflow=20)
+    else:
+        raise ValueError(f"Unsupported database backend: {database_url}")</code></pre>
+
+        <p>The PostgreSQL configuration includes connection pooling parameters (<code>pool_size=10, max_overflow=20</code>) that are not applicable to SQLite. These are set at the engine level and do not affect the application code. Developers work with SQLite locally and the CI runs tests against both backends to ensure compatibility.</p>
+
+        <h2>Relationship Mapping and Loading</h2>
+
+        <p>One of the most impactful benefits of the ORM is explicit relationship management. In the raw SQL era, fetching a task with its audit entries required a manual JOIN or a separate query. With the ORM, the relationship is declared once and loaded according to the specified strategy.</p>
+
+        <p>OCCP uses <code>selectin</code> loading as the default strategy for all relationships. This strategy executes a second <code>SELECT ... WHERE id IN (...)</code> query to load related objects, avoiding the N+1 problem while keeping the primary query simple. For dashboard views that need to display many tasks with their agents, this reduces the query count from N+1 to exactly 2.</p>
+
+        <blockquote>The move from raw SQL to ORM was not about writing less code. It was about making database interactions auditable, type-checked, and portable. Every query that was previously a string is now a typed expression that the IDE can analyze and the compiler can verify.</blockquote>
+
+        <h2>Alembic Migration System</h2>
+
+        <p>With the ORM in place, Alembic provides automated schema migration. Each schema change generates a migration file with <code>upgrade()</code> and <code>downgrade()</code> functions. Migrations are versioned and ordered, creating a linear history of schema evolution.</p>
+
+        <pre><code># Example Alembic migration
+def upgrade() -> None:
+    op.add_column('tasks', sa.Column('priority', sa.Integer(), default=5))
+    op.create_index('ix_tasks_priority', 'tasks', ['priority'])
+
+def downgrade() -> None:
+    op.drop_index('ix_tasks_priority', table_name='tasks')
+    op.drop_column('tasks', 'priority')</code></pre>
+
+        <p>The migration system uses async Alembic configuration to work with the async engine. Migrations run as part of the deployment process: <code>alembic upgrade head</code> is executed before the application starts, ensuring the schema is always current. If a migration fails, the deployment is aborted and the previous version continues running.</p>
+
+        <h2>Performance Impact</h2>
+
+        <p>The async migration had a measurable impact on request throughput under concurrent load. Benchmarks on a development machine with 50 concurrent requests showed a 40% reduction in p95 response time for database-heavy endpoints. The improvement comes entirely from eliminating event loop blocking &mdash; the database queries themselves are not faster, but the server can process other requests while waiting for them.</p>
+
+        <p>For single-request latency, the ORM adds approximately 1-2ms of overhead compared to raw SQL due to model instantiation and relationship loading. This overhead is negligible compared to the 200-500ms typical LLM API call that dominates pipeline execution time.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Async ORM eliminates event loop blocking that caused concurrency bottlenecks with raw SQL</li>
+          <li>Four core models (Task, AuditEntry, User, Agent) with explicit relationships and selectin loading</li>
+          <li>Parallel dual-path migration strategy maintained a working system throughout the transition</li>
+          <li>Dual-backend support: SQLite (aiosqlite) for development, PostgreSQL (asyncpg) for production</li>
+          <li>Alembic migrations provide versioned, reversible schema evolution with async support</li>
+          <li>40% p95 latency reduction under concurrent load; 1-2ms single-request overhead from ORM instantiation</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="occp-v070-orm-rbac-sandbox.html">&larr; OCCP v0.7.0 Release</a>
+        <a href="casbin-rbac-governance.html">Casbin RBAC &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

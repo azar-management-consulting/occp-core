@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OCCP v0.3.0: LLM Integration and Production Intelligence — OCCP News</title>
+  <meta name="description" content="Real Claude integration, prompt injection detection, and pipeline visualization. OCCP v0.3.0 becomes production-intelligent.">
+  <meta name="keywords" content="OCCP v0.3.0, LLM integration, Claude API, prompt injection, pipeline visualization, WebSocket, OCCP">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/occp-v030-llm-integration.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/occp-v030-llm-integration.html">
+  <meta property="og:title" content="OCCP v0.3.0: LLM Integration and Production Intelligence">
+  <meta property="og:description" content="Real Claude integration, prompt injection detection, and pipeline visualization. The release that made OCCP production-intelligent.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2025-12-22">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="OCCP v0.3.0: LLM Integration and Production Intelligence">
+  <meta name="twitter:description" content="Real Claude integration, prompt injection detection, and pipeline visualization.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "OCCP v0.3.0: LLM Integration and Production Intelligence",
+    "description": "Real Claude integration, prompt injection detection, and pipeline visualization.",
+    "datePublished": "2025-12-22",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "url": "https://news.occp.ai/articles/occp-v030-llm-integration.html",
+    "mainEntityOfPage": "https://news.occp.ai/articles/occp-v030-llm-integration.html",
+    "proficiencyLevel": "Advanced",
+    "dependencies": "Anthropic SDK, FastAPI, WebSocket"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo">OCCP <span>// news</span></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="https://news.occp.ai/" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+
+    <!-- Article Header -->
+    <header class="article-header">
+      <div class="card-meta">
+        <span class="card-date">2025-12-22</span>
+        <span class="card-tag tag-milestone">Milestone</span>
+        <span class="card-version">v0.3.0</span>
+      </div>
+      <h1>OCCP v0.3.0: LLM Integration and Production Intelligence</h1>
+      <p class="lead">Version 0.3.0 marks the moment OCCP stopped being a task queue with aspirations and became a production-intelligent platform. Real Claude API integration, multi-pattern prompt injection detection, and a dashboard with live pipeline visualization -- this release connected the orchestration engine to actual AI capability.</p>
+    </header>
+
+    <!-- Article Body -->
+    <div class="article-body">
+
+      <h2>What Changed in v0.3.0</h2>
+
+      <p>Prior to v0.3.0, OCCP orchestrated tasks through the Verified Autonomy Pipeline but never made actual LLM calls. The pipeline stages (Plan, Gate, Execute, Validate, Ship) were functional, but the Execute stage used mock responses. The platform could schedule, validate, and audit tasks -- it just could not think.</p>
+
+      <p>Version 0.3.0 added three major capabilities:</p>
+
+      <ul>
+        <li><strong>Real Claude API integration</strong> via the official Anthropic Python SDK</li>
+        <li><strong>Multi-pattern prompt injection detection</strong> upgraded from basic string matching to a comprehensive guard system</li>
+        <li><strong>Dashboard with real-time pipeline visualization</strong> using WebSocket connections for live stage updates</li>
+      </ul>
+
+      <p>Together, these additions transformed OCCP from an orchestration framework into an intelligent orchestration platform.</p>
+
+      <h2>Claude API Integration</h2>
+
+      <p>The integration uses the official <code>anthropic</code> Python SDK to make calls to the Claude API. The LLM adapter sits within the Execute stage of the pipeline, meaning every call passes through the Gate stage (policy evaluation) before reaching Claude:</p>
+
+      <pre><code>from anthropic import Anthropic
+
+class ClaudeLLMAdapter:
+    def __init__(self, api_key: str, model: str = "claude-sonnet-4-20250514"):
+        self.client = Anthropic(api_key=api_key)
+        self.model = model
+
+    async def execute(self, task_context: TaskContext) -> LLMResponse:
+        # The prompt has already passed through the Gate stage
+        # Policy engine has verified: no injection, no PII, within limits
+        response = self.client.messages.create(
+            model=self.model,
+            max_tokens=task_context.max_tokens,
+            messages=[{
+                "role": "user",
+                "content": task_context.prompt
+            }]
+        )
+        return LLMResponse(
+            content=response.content[0].text,
+            model=response.model,
+            usage={
+                "input_tokens": response.usage.input_tokens,
+                "output_tokens": response.usage.output_tokens
+            }
+        )</code></pre>
+
+      <h3>The Adapter Pattern</h3>
+
+      <p>The LLM integration uses an adapter pattern rather than direct SDK calls in the orchestrator. This abstraction serves two purposes. First, it enables testing: the test suite uses a mock adapter that returns deterministic responses, allowing pipeline tests to run without API credentials. Second, it enables provider flexibility: adding support for other LLM providers requires implementing a new adapter class, not modifying the orchestrator.</p>
+
+      <pre><code># Protocol defining the LLM adapter interface
+class LLMAdapter(Protocol):
+    async def execute(self, task_context: TaskContext) -> LLMResponse: ...
+
+# Mock adapter for testing
+class MockLLMAdapter:
+    async def execute(self, task_context: TaskContext) -> LLMResponse:
+        return LLMResponse(
+            content="Mock response for testing",
+            model="mock-v1",
+            usage={"input_tokens": 10, "output_tokens": 5}
+        )</code></pre>
+
+      <blockquote>The adapter pattern was not premature abstraction. We tested against two LLM providers during development and the interface stabilized naturally. When the interface emerges from real usage rather than speculation, it tends to be the right one.</blockquote>
+
+      <h2>Prompt Injection Detection</h2>
+
+      <p>With real LLM calls flowing through the pipeline, prompt injection defense moved from theoretical to critical. The v0.3.0 Gate stage includes a multi-pattern detection system that evaluates every prompt before it reaches the LLM adapter.</p>
+
+      <h3>Detection Categories</h3>
+
+      <p>The guard system organizes detection patterns into categories based on attack vector:</p>
+
+      <ul>
+        <li><strong>Instruction override</strong> -- patterns like "ignore previous instructions", "disregard your system prompt", "forget everything above"</li>
+        <li><strong>Role manipulation</strong> -- attempts to change the model's behavior through "you are now", "act as", "pretend to be" prefixes</li>
+        <li><strong>System prompt extraction</strong> -- queries designed to reveal the system prompt like "repeat your instructions", "what were you told"</li>
+        <li><strong>Encoding evasion</strong> -- base64-encoded instructions, Unicode homoglyphs, and character substitution patterns</li>
+      </ul>
+
+      <p>Each category runs independently. A prompt must pass all categories to proceed. This architecture means a new detection pattern can be added to any category without affecting the others, and the system fails closed -- if any guard raises a flag, the entire request is blocked.</p>
+
+      <pre><code>class PromptInjectionGuard:
+    def evaluate(self, prompt: str) -> GuardResult:
+        results = []
+        for pattern_set in self.pattern_categories:
+            result = pattern_set.check(prompt)
+            results.append(result)
+            if result.blocked:
+                return GuardResult(
+                    allowed=False,
+                    reason=result.reason,
+                    category=pattern_set.name,
+                    pattern_id=result.pattern_id
+                )
+        return GuardResult(allowed=True)</code></pre>
+
+      <p>The initial v0.3.0 release shipped with 8 detection patterns across the four categories. This number would grow to 24 by v0.6.0 as we encountered and catalogued new attack vectors. The guard architecture was designed for this growth -- adding a pattern is a configuration change, not a code change.</p>
+
+      <h2>Dashboard with Pipeline Visualization</h2>
+
+      <p>The v0.3.0 dashboard introduced real-time pipeline visualization. Operators can watch tasks move through the five stages of the Verified Autonomy Pipeline as they happen. The visualization uses a horizontal stage indicator with color-coded status:</p>
+
+      <ul>
+        <li><strong>Gray</strong> -- pending, not yet reached</li>
+        <li><strong>Amber</strong> -- currently active, in progress</li>
+        <li><strong>Green</strong> -- completed successfully</li>
+        <li><strong>Red</strong> -- failed or blocked by policy</li>
+      </ul>
+
+      <h3>WebSocket Architecture</h3>
+
+      <p>The live updates are powered by WebSocket connections from the dashboard to the API server. When a task transitions between pipeline stages, the API broadcasts the state change to all connected dashboard clients:</p>
+
+      <pre><code># Server-side WebSocket broadcast
+@app.websocket("/ws/pipeline/{task_id}")
+async def pipeline_ws(websocket: WebSocket, task_id: str):
+    await websocket.accept()
+    try:
+        async for event in pipeline_events(task_id):
+            await websocket.send_json({
+                "type": "stage_transition",
+                "task_id": task_id,
+                "from_stage": event.from_stage,
+                "to_stage": event.to_stage,
+                "timestamp": event.timestamp.isoformat(),
+                "duration_ms": event.duration_ms
+            })
+    except WebSocketDisconnect:
+        pass</code></pre>
+
+      <p>The WebSocket connection is scoped to a specific task ID, so the dashboard only receives updates for tasks it is currently displaying. This prevents bandwidth waste when many tasks are running simultaneously.</p>
+
+      <h2>The Production Intelligence Threshold</h2>
+
+      <p>Version 0.3.0 represents a qualitative threshold in the OCCP platform's evolution. Before this release, the pipeline processed data through well-defined stages but produced deterministic, predictable outputs. After this release, the pipeline incorporates non-deterministic LLM responses that require validation, sanitization, and audit tracking at a fundamentally different level.</p>
+
+      <p>The combination of real LLM integration with injection detection and live monitoring creates a feedback loop: operators see pipeline execution in real time, injection attempts are visible in the dashboard, and the audit trail captures every LLM interaction with its input, output, and token usage. This visibility is what distinguishes an orchestration platform from a script that calls an API.</p>
+
+      <h2>Metrics from the Release</h2>
+
+      <p>The v0.3.0 release included 47 new tests, bringing the total to 84. Test coverage for the injection detection module reached 94%. The Claude adapter integration required adding a single new dependency (<code>anthropic</code>) to the API service -- the first external dependency beyond the web framework itself. The WebSocket implementation added zero new dependencies, using FastAPI's built-in WebSocket support from Starlette.</p>
+
+    </div>
+
+    <!-- Summary Box -->
+    <div class="summary-box">
+      <h3>// Key Takeaways</h3>
+      <ul>
+        <li>v0.3.0 added real Claude API integration, making OCCP production-intelligent</li>
+        <li>LLM adapter pattern enables provider flexibility and deterministic testing</li>
+        <li>Multi-pattern prompt injection detection blocks requests before they reach the LLM</li>
+        <li>Guard system fails closed: any single pattern match blocks the entire request</li>
+        <li>WebSocket-powered pipeline visualization provides real-time operator visibility</li>
+        <li>The release established the feedback loop between execution, detection, and monitoring</li>
+      </ul>
+    </div>
+
+    <!-- Article Navigation -->
+    <nav class="article-nav">
+      <a href="sdk-design-philosophy.html">&larr; #014 SDK Design Philosophy</a>
+      <a href="prompt-injection-detection.html">#016 Prompt Injection Detection &rarr;</a>
+    </nav>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP — OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

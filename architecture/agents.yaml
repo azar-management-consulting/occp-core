@@ -1,0 +1,148 @@
+version: 1
+generated: 2026-04-08
+schema: occp.architecture.agents.v1
+
+# OCCP Agent Registry — all agents that participate in task execution.
+# Split into: (1) 8 specialists (routing targets),
+# (2) 1 brain orchestrator (MCP dispatch surface),
+# (3) 12 seeded pipeline agents (default internal types).
+
+specialists:
+
+  - id: eng-core
+    name: Engineering Agent
+    purpose: Core engineering work, code generation, refactoring
+    allowlist_tools: [bash, read, write, edit, grep, glob, browser, exec, test_runner]
+    risk_default: medium
+    requires_approval: [deploy, exec, bash]
+
+  - id: wp-web
+    name: WordPress & Web Agent
+    purpose: WordPress development, Elementor, web front-end
+    allowlist_tools: [bash, read, write, edit, grep, glob, browser, wp_cli, ftp]
+    risk_default: medium
+    requires_approval: [ftp, wp_cli]
+
+  - id: infra-ops
+    name: Infrastructure & DevOps Agent
+    purpose: Server operations, Docker, DNS, SSL, deployment
+    allowlist_tools: [bash, read, exec, ssh, docker, dns, ssl, grep, glob]
+    risk_default: high
+    requires_approval: [ssh, docker, exec, dns, ssl]
+
+  - id: design-lab
+    name: Design Lab
+    purpose: UI/UX design, screenshots, visual review
+    allowlist_tools: [read, write, browser, screenshot]
+    risk_default: low
+    requires_approval: []
+
+  - id: content-forge
+    name: Content Forge
+    purpose: Content generation, copywriting, translation
+    allowlist_tools: [read, write, browser, translate]
+    risk_default: low
+    requires_approval: []
+
+  - id: social-growth
+    name: Social Growth
+    purpose: Social media scheduling, growth experiments
+    allowlist_tools: [read, write, browser, api_call]
+    risk_default: medium
+    requires_approval: [api_call]
+
+  - id: intel-research
+    name: Intelligence & Research
+    purpose: Web research, fact-checking, intelligence gathering
+    allowlist_tools: [read, browser, web_search, web_fetch, grep, glob]
+    risk_default: low
+    requires_approval: []
+
+  - id: biz-strategy
+    name: Business Strategy
+    purpose: Business planning, strategic analysis
+    allowlist_tools: [read, write, browser, calculator, web_search]
+    risk_default: low
+    requires_approval: []
+
+
+orchestrators:
+
+  - id: brain
+    name: Brian the Brain (Primary Orchestrator)
+    purpose: Single authorized orchestrator — routes tasks to specialists
+    allowlist_tools:
+      - brain.status
+      - brain.health
+      - filesystem.read
+      - filesystem.write
+      - filesystem.list
+      - http.get
+      - http.post
+      - read
+      - write
+      - grep
+      - glob
+    module: orchestrator.brain_flow.BrainFlowEngine
+    phases: [INTAKE, UNDERSTAND, PLAN, CONFIRM, DISPATCH, MONITOR, DELIVER]
+    introduced_in: v0.9.0-l4
+
+
+# Pipeline-internal agents (seeded via api/app.py _DEFAULT_AGENTS)
+# These are NOT routing targets — they handle internal pipeline stages.
+seeded_pipeline_agents:
+
+  - id: general
+    purpose: Default catch-all when intent is unclear
+    allowlist_tools: [read, write, execute, browser, web_search]
+
+  - id: demo
+    purpose: Demo / smoke-test execution
+    allowlist_tools: [execute, read]
+
+  - id: code-reviewer
+    purpose: Automated code review pre-merge
+    allowlist_tools: [read, grep, glob, execute]
+
+  - id: onboarding-wizard
+    purpose: 10-step enterprise onboarding flow
+    allowlist_tools: [read, write, execute]
+
+  - id: mcp-installer
+    purpose: MCP connector installation
+    allowlist_tools: [read, write, execute, browser]
+
+  - id: llm-setup
+    purpose: LLM API token configuration
+    allowlist_tools: [read, write, execute]
+
+  - id: skills-manager
+    purpose: Skill enable/disable, manifest validation
+    allowlist_tools: [read, write, execute]
+
+  - id: session-policy
+    purpose: Session-scoped policy evaluation
+    allowlist_tools: [read, execute]
+
+  - id: ux-copy
+    purpose: UX copy translation + review
+    allowlist_tools: [read, write, translate]
+
+  - id: openclaw
+    purpose: OpenClaw executor bridge agent type
+    allowlist_tools: [read, write, execute, browser, api_call]
+
+  - id: remote-agent
+    purpose: Remote node (iMac, MBP) dispatch
+    allowlist_tools: [read, write, execute, browser, api_call]
+
+  - id: main
+    purpose: Brain pipeline session agent (OpenClaw chat.final routing)
+    allowlist_tools: [read, write, execute]
+
+
+# Immutable agent rules — never mutable by self-modifier
+immutable:
+  - rule: agents with risk_default=high MUST have non-empty requires_approval
+  - rule: brain orchestrator tool list may only be extended via human PR
+  - rule: specialists list may not be shrunk below 8

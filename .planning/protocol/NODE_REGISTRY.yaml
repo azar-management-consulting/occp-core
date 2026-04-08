@@ -1,0 +1,246 @@
+version: 1
+generated: 2026-04-07
+maintainer: Henry (Fülöp Henrik)
+
+# OCCP Node Registry — Single Source of Truth
+# Every node that participates in the OCCP ecosystem.
+# Status: ACTIVE | PARTIAL | UNKNOWN | INACTIVE
+
+nodes:
+
+  # ──────────────────────────────────────────────────────────────
+  # CONTROL PLANE — Henry's primary mobile control node
+  # ──────────────────────────────────────────────────────────────
+  - id: mba-henry
+    type: macbook-air-m
+    role: primary-control-node
+    owner: henry
+    user: air
+    os: macOS 26.4 (Darwin 25.4.0)
+    arch: arm64
+    hostname: F-MacBook-Air.local
+    network:
+      tailscale_ip: 100.114.146.86
+      tailscale_hostname: f-macbook-air-1
+      tailscale_owner: fulophenry@
+      tailscale_app: /Applications/Tailscale.app (v1.96.2, App Store sandboxed, no CLI symlink)
+      tailscale_cli: /Applications/Tailscale.app/Contents/MacOS/Tailscale
+      wireguard: client-config-present (MatraCOMP)
+    runtime_role:
+      - claude-code-cli
+      - mcp-client (28 servers configured)
+      - git origin
+      - vpn-gateway-to-matracomp
+      - ops-control-source
+    paths:
+      occp_local: /Users/air/Desktop/PROJECTEK/OCCP/occp-core
+      credentials_index: /Users/air/Desktop/PROJECTEK/Rendszer/secrets/credentials.env
+      occp_vault: /Users/air/Desktop/PROJECTEK/OCCP/OPENCLAW/OCCP-SECURITY-VAULT.enc
+      ssh_keys: ~/.ssh/openclaw_ed25519, ~/.ssh/id_ed25519
+      ssh_config: ~/.ssh/config (aliases: imac, pro)
+    status: ACTIVE
+
+  - id: imac-boss
+    type: imac
+    bonjour_name: BOSS iMac
+    hostname: BOSS-iMac.local
+    role: storage-host + secondary-control-node
+    owner: henry
+    user: boss
+    os: macOS 14.8.5 Sonoma
+    arch: x86_64
+    network:
+      lan_ip: 192.168.1.109
+      tailscale_ip: 100.88.122.102
+      tailscale_hostname: boss-imac
+      tailscale_owner: fulophenry@
+      mac: b4:18:d1:e5:3c:1b
+    storage:
+      internal_disk: 3.6 TB (only 1% used = 9.9 GB) ← THIS IS THE 4TB SHARED
+      external: 128GB SSD (Macintosh HD)
+    ssh:
+      key_auth: ACTIVE (~/.ssh/id_ed25519 → ~/.ssh/authorized_keys on iMac)
+      alias: imac (in ~/.ssh/config)
+      direct: ssh boss@192.168.1.109
+      tailscale: ssh boss@100.88.122.102
+    runtime_role:
+      - storage-host (3.6TB free, candidate for shared workspace)
+      - secondary-control-node (Tailscale mesh)
+    status: ACTIVE
+
+  - id: mbp-aiallmacpro
+    type: macbook-pro
+    bonjour_name: AI MacBook Pro
+    hostname: AI-MacBook-Pro.local
+    role: secondary-dev-machine
+    owner: henry
+    user: aiallmacpro
+    os: macOS 13.7.8 Ventura
+    arch: x86_64
+    network:
+      lan_ip: 192.168.1.148
+      tailscale_ip: 100.65.58.71
+      tailscale_hostname: ai-macbook-pro
+      tailscale_owner: fulophenry@
+      mac: 8c:85:90:78:f4:d9
+    resources:
+      ram: 16 GB
+      disk: 466 GB (2% used)
+    ssh:
+      key_auth: ACTIVE (existed before)
+      alias: pro (in ~/.ssh/config)
+      direct: ssh aiallmacpro@192.168.1.148
+      tailscale: ssh aiallmacpro@100.65.58.71
+    runtime_role:
+      - secondary-dev-machine
+      - ai-workstation (per name)
+    status: ACTIVE
+
+  # ──────────────────────────────────────────────────────────────
+  # OCCP BRAIN PLANE — Hetzner #1
+  # ──────────────────────────────────────────────────────────────
+  - id: hetzner-occp-brain
+    type: hetzner-cloud-cx42
+    role: occp-control-plane
+    label_provider: AZAR
+    location: fsn1-dc14
+    public_ip: 195.201.238.144
+    ipv6: 2a01:4f8:c013:bba9::/64
+    os: Ubuntu 24.04
+    resources:
+      disk: 150G (58% used)
+      ram: 15Gi (4.2Gi used)
+      cpu: cx42 (8 vCPU)
+    uptime: 40 days
+    services:
+      - apache2 (active, 85 vhosts)
+      - docker (active)
+      - ufw (active)
+      - fail2ban (active)
+      - mailcow (20 containers, 5 weeks uptime)
+    occp_runtime:
+      api_container: occp-api-1 (healthy, 7 days uptime, v0.9.0)
+      dash_container: occp-dash-1 (healthy, 7 days uptime)
+      api_port: 127.0.0.1:8000
+      dash_port: 127.0.0.1:3000
+      source_root: /opt/occp/
+      data_db: /opt/occp/data/occp.db (36KB SQLite, 9 tables)
+      config_env: /opt/occp/.env
+      apache_vhosts:
+        - occp.ai (SSL LE)
+        - api.occp.ai (SSL LE → 127.0.0.1:8000)
+        - dash.occp.ai (SSL LE → 127.0.0.1:3000)
+        - news.occp.ai (SSL LE)
+        - mail.magyarorszag.ai (SSL LE → mailcow)
+    backups:
+      - /opt/occp-backup-FINAL-*.tar.gz
+    access:
+      ssh: root@195.201.238.144
+    status: ACTIVE
+
+  # ──────────────────────────────────────────────────────────────
+  # OCCP EXECUTION PLANE — Hetzner #2 (separate Hetzner project!)
+  # ──────────────────────────────────────────────────────────────
+  - id: hetzner-openclaw
+    type: hetzner-cloud-cpx52
+    role: occp-execution-plane
+    location: hel1 (Helsinki)
+    public_ip: 95.216.212.174
+    os: Ubuntu (assumed)
+    resources:
+      disk: 451G (3% used)
+      ram: 22Gi (1.2Gi used)
+    note: NOT in same Hetzner project as occp-brain (Hetzner MCP only sees AZAR)
+    services:
+      - docker
+      - caddy (reverse proxy, LE SSL, Basic Auth)
+    runtime:
+      gateway_container: openclaw-deploy-openclaw-gateway-1 (healthy, 8 days)
+      gateway_port: 127.0.0.1:18789-18790
+      domain: claw.occp.ai
+      primary_model: anthropic/claude-sonnet-4-6
+      fallbacks: [openai/gpt-4.1, openai/gpt-4.1-mini]
+      agent_count: 8 specialists
+      channels: [telegram, slack]
+      telegram_bot: "@occp_bot"
+    config:
+      json: /home/openclawadmin/.openclaw/openclaw.json
+      workspace: /home/openclawadmin/.openclaw/workspace/
+      deploy: /home/openclawadmin/openclaw-deploy/
+    backup:
+      vault: /Users/air/Desktop/PROJECTEK/OCCP/OPENCLAW/OCCP-SECURITY-VAULT.enc
+      schedule: daily 03:00 (14-day retention)
+    monitoring: node-exporter + custom 5-min script
+    access:
+      ssh: ssh -i ~/.ssh/openclaw_ed25519 root@95.216.212.174
+    status: ACTIVE
+
+  # ──────────────────────────────────────────────────────────────
+  # CONNECTED PRODUCTION HOSTS (NOT OCCP-controlled, but ecosystem)
+  # ──────────────────────────────────────────────────────────────
+  - id: bestweb-shared
+    type: bestweb-vps
+    role: legacy-wordpress-hosting
+    public_ip: 185.217.74.211
+    sites:
+      - azar.hu
+      - felnottkepzes.hu
+    services:
+      - apache (ISPConfig managed)
+      - mysql
+    access:
+      ispconfig: https://185.217.74.211:50443/
+      phpmyadmin: https://azar.bestweb.hu:50443/phpmyadmin/
+      ftp: passive-mode-broken-from-macos
+      wp_admin: per-site
+    relation_to_occp: NONE (independent hosting; OCCP could remote-manage but does not currently)
+    status: ACTIVE
+
+  - id: matracomp-mail
+    type: dedicated-server
+    role: mail-server
+    hostname: mail.felnottkepzes.hu
+    public_ip: 185.217.74.193
+    vpn_ip: 192.168.6.193
+    os: FreeBSD 13.1-RELEASE-p5 (EOL)
+    cpu: Intel Xeon E5-2630 v4 (40 core)
+    ram: 128GB
+    storage:
+      raid1: 2x 894GB Intel SSD
+      raid6: 6x 3.7TB Toshiba HDD (PD 05 predictive failure)
+    access:
+      ssh: ssh -p 222 root@192.168.6.193 (via WireGuard VPN)
+      vpn_config: /Users/air/Desktop/MatraCOMP-Wireguard-VPS-WG-Henrik.conf
+    services:
+      - postfix
+      - courier-imap
+      - mysql 8.0
+      - apache 2.4
+    risks:
+      - FreeBSD 13.1 EOL
+      - 65 CVE in 26 packages
+      - PD 05 disk predictive failure
+      - mail storage 1.8TB
+    relation_to_occp: NONE (legacy mail infrastructure for felnottkepzes.hu)
+    status: ACTIVE-WITH-RISK
+
+  - id: hostinger-shared
+    type: shared-hosting
+    role: wordpress-hosting
+    sites:
+      - magyarorszag.ai
+      - tanfolyam.ai
+    ips: [77.37.50.20, 147.79.119.7]
+    runtime_role: WordPress sites only
+    relation_to_occp: NONE (shared hosting limitation)
+    status: ACTIVE
+
+  - id: hetzner-azar-old
+    type: hetzner-cloud
+    role: legacy-wordpress
+    public_ip: 138.199.233.91
+    sites:
+      - azar.hu (UNCERTAIN — memory says 138.199.233.91 but DNS says 185.217.74.211)
+      - felnottkepzes.hu (legacy)
+    note: Memory graph contains conflicting IP info — VERIFY
+    status: UNKNOWN

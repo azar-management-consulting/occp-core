@@ -56,6 +56,31 @@ p, org_admin, admin, read
 # ── Org Admin — Governance read (supply-chain audit logs) ────────
 p, org_admin, governance, read
 
+# ── Viewer — Brain registry read ──────────────────────────────────
+p, viewer, brain, read
+
+# ── Operator — Brain dispatch / workflows ────────────────────────
+p, operator, brain, dispatch
+p, operator, workflows, create
+p, operator, workflows, read
+
+# ── Viewer — Projects read ──────────────────────────────────────
+p, viewer, projects, read
+
+# ── Operator — Projects create / update / dispatch ─────────────
+p, operator, projects, create
+p, operator, projects, update
+p, operator, projects, dispatch
+
+# ── Org Admin — Projects delete ────────────────────────────────
+p, org_admin, projects, delete
+
+# ── Viewer — Quality check results read ─────────────────────────
+p, viewer, quality, read
+
+# ── Operator — Feedback submit ─────────────────────────────────
+p, operator, quality, feedback
+
 # ── System Admin Permissions (+ org_admin) ──────────────────────
 p, system_admin, users, delete
 p, system_admin, policy, update

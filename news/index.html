@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OCCP News — Engineering Blog | AI Orchestration Platform</title>
+  <meta name="description" content="Engineering updates, architecture decisions, and milestone announcements from the OCCP team. Building the next-generation AI orchestration and agent governance platform.">
+  <meta name="keywords" content="OCCP news, AI orchestration blog, agent governance updates, MCP integration, verified autonomy pipeline, enterprise AI platform">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://news.occp.ai/">
+  <meta property="og:title" content="OCCP News — Engineering Blog">
+  <meta property="og:description" content="Engineering updates and architecture decisions from the team building the next-generation AI orchestration platform.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="OCCP News — Engineering Blog">
+  <meta name="twitter:description" content="Engineering updates from the OCCP AI orchestration platform team.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "name": "OCCP News",
+    "description": "Engineering blog of the OCCP AI orchestration platform",
+    "url": "https://news.occp.ai/",
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "inLanguage": "en",
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "OCCP",
+      "url": "https://occp.ai"
+    }
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo">OCCP <span>// news</span></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="https://news.occp.ai/" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="news-hero">
+    <h1>Engineering Log<span class="cursor"></span></h1>
+    <p>Architecture decisions, milestone announcements, and technical deep-dives from the team building the next-generation AI orchestration platform.</p>
+  </section>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="milestone">Milestones</button>
+    <button class="filter-btn" data-filter="architecture">Architecture</button>
+    <button class="filter-btn" data-filter="security">Security</button>
+    <button class="filter-btn" data-filter="agent">Agents</button>
+    <button class="filter-btn" data-filter="governance">Governance</button>
+    <button class="filter-btn" data-filter="infra">Infrastructure</button>
+    <button class="filter-btn" data-filter="ux">UX</button>
+    <button class="filter-btn" data-filter="vision">Vision</button>
+  </div>
+
+  <!-- Articles will be injected here by JS -->
+  <div id="articles-container"></div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP — OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+  <script>
+  // Article index — generated from article files
+  const ARTICLES = [
+    {id:"055",date:"2026-02-27",tag:"vision",version:"",title:"OCCP Roadmap: What Comes After v0.8",slug:"roadmap-after-v08",excerpt:"A look ahead at multi-tenancy, PostgreSQL cutover, observability, and the features that will define the next chapter of the OCCP platform.",readTime:"8 min"},
+    {id:"054",date:"2026-02-27",tag:"vision",version:"",title:"Open Source AI Governance: Building Trust Through Transparency",slug:"open-source-governance",excerpt:"Why we chose to build OCCP as an open-source platform, and how transparency strengthens enterprise trust in AI governance systems.",readTime:"7 min"},
+    {id:"053",date:"2026-02-27",tag:"architecture",version:"",title:"Multi-Tenancy and the Future of Shared AI Infrastructure",slug:"multi-tenancy-future",excerpt:"Designing isolation boundaries for multi-tenant AI orchestration where security and performance must coexist at scale.",readTime:"8 min"},
+    {id:"052",date:"2026-02-27",tag:"vision",version:"",title:"Why Every Enterprise Will Need an Agent Governance Layer",slug:"enterprise-agent-governance",excerpt:"As AI agents move from experimentation to production, the need for governance infrastructure becomes non-negotiable.",readTime:"7 min"},
+    {id:"051",date:"2026-02-26",tag:"vision",version:"",title:"The Category We Are Creating: AI Orchestration as Infrastructure",slug:"creating-ai-orchestration-category",excerpt:"OCCP is not a tool. It is a new infrastructure layer — the control plane that governs autonomous AI systems.",readTime:"8 min"},
+    {id:"050",date:"2026-02-26",tag:"security",version:"v0.8.2",title:"Key Rotation Architecture: Zero-Downtime Credential Management",slug:"key-rotation-architecture",excerpt:"How OCCP handles cryptographic key rotation without service interruption, ensuring continuous security for enterprise deployments.",readTime:"7 min"},
+    {id:"049",date:"2026-02-25",tag:"architecture",version:"v0.8.2",title:"Audit Retention Engineering: Automated Compliance at Startup",slug:"audit-retention-engineering",excerpt:"Implementing EU AI Act Article 19 compliance through automated audit log retention and startup-time enforcement.",readTime:"7 min"},
+    {id:"048",date:"2026-02-25",tag:"governance",version:"v0.8.2",title:"EU AI Act Compliance: Article 12, 14, and 19 in Practice",slug:"eu-ai-act-compliance",excerpt:"How OCCP implements the three most critical EU AI Act requirements: record-keeping, human oversight, and log retention.",readTime:"8 min"},
+    {id:"047",date:"2026-02-24",tag:"agent",version:"v0.8.2",title:"Agent Boundary Enforcement: Three Levels of Capability Control",slug:"agent-boundary-enforcement",excerpt:"Task scope validation, registration checks, and capacity limits — three layers that prevent agent privilege escalation.",readTime:"7 min"},
+    {id:"046",date:"2026-02-24",tag:"governance",version:"v0.8.2",title:"Supply Chain Security: Allowlists, Static Analysis, and Fail-Closed Verification",slug:"supply-chain-security",excerpt:"A multi-layered approach to verifying MCP packages and agent extensions before they enter the OCCP ecosystem.",readTime:"8 min"},
+    {id:"045",date:"2026-02-23",tag:"security",version:"v0.8.2",title:"AES-256-GCM Envelope Encryption: Securing LLM API Tokens",slug:"aes256-gcm-encryption",excerpt:"Enterprise-grade token encryption with HKDF key derivation, ensuring API credentials are protected at rest and in transit.",readTime:"7 min"},
+    {id:"044",date:"2026-02-23",tag:"milestone",version:"v0.8.2",title:"OCCP v0.8.2: Enterprise-Grade Token Security",slug:"occp-v082-enterprise-security",excerpt:"Token encryption, supply chain verification, agent boundaries, and EU AI Act compliance — the enterprise security release.",readTime:"8 min"},
+    {id:"043",date:"2026-02-22",tag:"infra",version:"v0.8.0",title:"Deployment Challenges: IP Migration and Production Resilience",slug:"deployment-challenges",excerpt:"When your primary IP gets blocked by the datacenter: lessons in production resilience, DNS migration, and zero-downtime recovery.",readTime:"7 min"},
+    {id:"042",date:"2026-02-21",tag:"ux",version:"v0.8.0",title:"Settings Architecture: LLM Provider Configuration at Scale",slug:"settings-architecture",excerpt:"Designing a settings system that handles multiple LLM providers, API keys, and configuration hierarchies cleanly.",readTime:"6 min"},
+    {id:"041",date:"2026-02-20",tag:"agent",version:"v0.8.0",title:"Skills System Architecture: Modular Capabilities for AI Agents",slug:"skills-system-architecture",excerpt:"How OCCP's skills framework enables agents to acquire, validate, and execute domain-specific capabilities on demand.",readTime:"7 min"},
+    {id:"040",date:"2026-02-20",tag:"architecture",version:"v0.8.0",title:"MCP Integration: Connecting AI Agents to External Tools",slug:"mcp-integration",excerpt:"Implementing Model Context Protocol support to give OCCP agents secure access to external services, databases, and APIs.",readTime:"8 min"},
+    {id:"039",date:"2026-02-19",tag:"ux",version:"v0.8.0",title:"10-Step Wizard: Designing Zero-Friction AI Platform Onboarding",slug:"10-step-wizard",excerpt:"From landing page to first autonomous task — engineering a guided onboarding experience that respects developer intelligence.",readTime:"7 min"},
+    {id:"038",date:"2026-02-18",tag:"milestone",version:"v0.8.0",title:"OCCP v0.8.0: The Onboarding Revolution",slug:"occp-v080-onboarding",excerpt:"MCP connectors, skills system, settings pages, and a 10-step onboarding wizard — making enterprise AI orchestration accessible.",readTime:"8 min"},
+    {id:"037",date:"2026-02-16",tag:"vision",version:"v0.7.0",title:"What We Learned Building 7 Versions in 4 Months",slug:"seven-versions-four-months",excerpt:"Reflections on rapid iteration, architectural pivots, and the engineering discipline required to build a production AI platform at startup speed.",readTime:"8 min"},
+    {id:"036",date:"2026-02-14",tag:"infra",version:"v0.7.0",title:"313 Tests and Counting: The Testing Philosophy of OCCP",slug:"testing-philosophy",excerpt:"From 37 to 313 tests in 7 releases — how we approach testing for an AI orchestration platform where correctness is critical.",readTime:"7 min"},
+    {id:"035",date:"2026-02-13",tag:"security",version:"v0.7.0",title:"Security Middleware Stack: HSTS, Rate Limiting, and Request Logging",slug:"security-middleware-stack",excerpt:"Building defense-in-depth through composable middleware: structured logging, rate limiting, and transport security.",readTime:"7 min"},
+    {id:"034",date:"2026-02-12",tag:"infra",version:"v0.7.0",title:"Alembic Migrations: Managing Schema Evolution in AI Systems",slug:"alembic-migrations",excerpt:"How async Alembic migrations enable safe schema evolution across SQLite development and PostgreSQL production environments.",readTime:"6 min"},
+    {id:"033",date:"2026-02-11",tag:"security",version:"v0.7.0",title:"Sandbox Isolation: nsjail, Bubblewrap, and Defense in Depth",slug:"sandbox-isolation",excerpt:"Three-tier sandbox architecture with automatic fallback — isolating AI-generated code execution from the host system.",readTime:"7 min"},
+    {id:"032",date:"2026-02-10",tag:"security",version:"v0.7.0",title:"Casbin RBAC: Role-Based Access Control for AI Governance",slug:"casbin-rbac-governance",excerpt:"Implementing a 4-role hierarchy with Casbin to enforce least-privilege access across the AI orchestration platform.",readTime:"7 min"},
+    {id:"031",date:"2026-02-09",tag:"architecture",version:"v0.7.0",title:"SQLAlchemy 2.0 Async ORM: Migrating a Production AI Platform",slug:"sqlalchemy-async-migration",excerpt:"Moving from raw SQL to async mapped models while maintaining dual-backend compatibility and zero downtime.",readTime:"8 min"},
+    {id:"030",date:"2026-02-07",tag:"milestone",version:"v0.7.0",title:"OCCP v0.7.0: ORM Migration, RBAC, and Sandbox Isolation",slug:"occp-v070-orm-rbac-sandbox",excerpt:"The maturity release — proper ORM, role-based access control, and sandboxed code execution mark OCCP's transition to enterprise readiness.",readTime:"8 min"},
+    {id:"029",date:"2026-02-05",tag:"architecture",version:"v0.6.0",title:"Pipeline Resilience: Retry Strategies for AI Workflows",slug:"pipeline-resilience",excerpt:"Configurable retry policies, per-stage timing metrics, and graceful degradation in multi-step AI orchestration pipelines.",readTime:"7 min"},
+    {id:"028",date:"2026-02-03",tag:"security",version:"v0.6.0",title:"From 5 to 24 Detection Patterns: Evolving Prompt Injection Guards",slug:"evolving-injection-guards",excerpt:"How our prompt injection detection evolved from basic pattern matching to a comprehensive multi-vector guard system.",readTime:"7 min"},
+    {id:"027",date:"2026-02-01",tag:"governance",version:"v0.6.0",title:"GDPR by Design: Privacy Engineering for AI Platforms",slug:"gdpr-by-design",excerpt:"Building privacy into the architecture — data minimization, purpose limitation, and consent management in AI orchestration.",readTime:"7 min"},
+    {id:"026",date:"2026-01-30",tag:"security",version:"v0.6.0",title:"Output Sanitization: Preventing Credential Leakage in AI Responses",slug:"output-sanitization",excerpt:"7-pattern output guard that strips credentials, tokens, and PII from LLM responses before they reach the user.",readTime:"7 min"},
+    {id:"025",date:"2026-01-28",tag:"milestone",version:"v0.6.0",title:"OCCP v0.6.0: Security Hardening and GDPR Compliance",slug:"occp-v060-security-gdpr",excerpt:"Structured validation, output sanitization, 24-pattern injection detection, and GDPR-compliant legal pages.",readTime:"8 min"},
+    {id:"024",date:"2026-01-25",tag:"governance",version:"v0.5.0",title:"Capability Badges: Visualizing Agent Permissions",slug:"capability-badges",excerpt:"Making agent capabilities visible and understandable through visual indicators in the OCCP dashboard.",readTime:"6 min"},
+    {id:"023",date:"2026-01-22",tag:"agent",version:"v0.5.0",title:"Agent Registry Architecture: Capability-Based Access Control",slug:"agent-registry-architecture",excerpt:"Designing a registration system where agents declare capabilities and the platform enforces boundaries at runtime.",readTime:"7 min"},
+    {id:"022",date:"2026-01-18",tag:"milestone",version:"v0.5.0",title:"OCCP v0.5.0: Agent Management Comes to the Dashboard",slug:"occp-v050-agent-management",excerpt:"Full agent lifecycle management in the browser — register, configure, monitor, and retire AI agents from a single interface.",readTime:"7 min"},
+    {id:"021",date:"2026-01-15",tag:"architecture",version:"v0.4.0",title:"React 19 Server Components in AI Dashboards",slug:"react-19-server-components",excerpt:"Leveraging React 19 server components for faster initial loads and better streaming in AI operations dashboards.",readTime:"7 min"},
+    {id:"020",date:"2026-01-12",tag:"ux",version:"v0.4.0",title:"Retro-Terminal Aesthetics: The Visual Identity of OCCP",slug:"retro-terminal-aesthetics",excerpt:"Why we chose a CRT-inspired design language for an AI platform, and how nostalgia builds trust in cutting-edge technology.",readTime:"6 min"},
+    {id:"019",date:"2026-01-08",tag:"milestone",version:"v0.4.0",title:"OCCP v0.4.0: Dashboard Authentication and the Next.js 15 Migration",slug:"occp-v040-dashboard-auth",excerpt:"JWT authentication in the browser, AuthGuard route protection, and a major framework migration to Next.js 15 + React 19.",readTime:"7 min"},
+    {id:"018",date:"2026-01-05",tag:"infra",version:"v0.3.0",title:"Reverse Proxy Architecture: Routing AI Traffic at Scale",slug:"reverse-proxy-architecture",excerpt:"Apache2 reverse proxy configuration for multi-service AI platforms — routing API, dashboard, and documentation traffic.",readTime:"6 min"},
+    {id:"017",date:"2025-12-30",tag:"ux",version:"v0.3.0",title:"Building the OCCP Dashboard: Design Language for AI Operations",slug:"dashboard-design-language",excerpt:"Creating a visual system for AI operations — from pipeline status visualization to policy evaluation interfaces.",readTime:"7 min"},
+    {id:"016",date:"2025-12-26",tag:"security",version:"v0.3.0",title:"Prompt Injection Detection: The First Line of Defense",slug:"prompt-injection-detection",excerpt:"Regex and keyword guards that intercept malicious prompts before they reach the LLM — the foundation of AI security.",readTime:"7 min"},
+    {id:"015",date:"2025-12-22",tag:"milestone",version:"v0.3.0",title:"OCCP v0.3.0: LLM Integration and Production Intelligence",slug:"occp-v030-llm-integration",excerpt:"Real Claude integration, prompt injection detection, and pipeline visualization — OCCP becomes production-intelligent.",readTime:"8 min"},
+    {id:"014",date:"2025-12-18",tag:"agent",version:"v0.2.0",title:"SDK Design Philosophy: Python and TypeScript Clients for Agent Systems",slug:"sdk-design-philosophy",excerpt:"Building multi-language SDKs with zero external dependencies — stdlib-only HTTP clients for Python and native fetch for TypeScript.",readTime:"7 min"},
+    {id:"013",date:"2025-12-15",tag:"infra",version:"v0.2.0",title:"Docker Compose in Production: Lessons from Deploying AI Services",slug:"docker-compose-production",excerpt:"Healthchecks, read-only filesystems, security contexts, and the operational lessons of running AI services in containers.",readTime:"7 min"},
+    {id:"012",date:"2025-12-12",tag:"architecture",version:"v0.2.0",title:"REST API Design for Autonomous Workflow Engines",slug:"rest-api-design",excerpt:"Designing RESTful endpoints for task lifecycle management, agent coordination, and real-time pipeline execution.",readTime:"7 min"},
+    {id:"011",date:"2025-12-08",tag:"security",version:"v0.2.0",title:"JWT Authentication Architecture for AI Control Planes",slug:"jwt-auth-architecture",excerpt:"Token-based authentication design for AI platforms — balancing security, performance, and developer experience.",readTime:"7 min"},
+    {id:"010",date:"2025-12-05",tag:"milestone",version:"v0.2.0",title:"OCCP v0.2.0: From CLI to Production-Ready Platform",slug:"occp-v020-production-ready",excerpt:"FastAPI REST API, JWT authentication, Docker deployment, and the transition from prototype to production platform.",readTime:"8 min"},
+    {id:"009",date:"2025-12-02",tag:"infra",version:"v0.1.0",title:"CLI-First Design: Why We Started Without a Dashboard",slug:"cli-first-design",excerpt:"The deliberate choice to build the CLI before the GUI — and why it produced a better API and faster iteration cycles.",readTime:"6 min"},
+    {id:"008",date:"2025-11-28",tag:"architecture",version:"v0.1.0",title:"Protocol-Based Adapters: Making AI Orchestration Pluggable",slug:"protocol-based-adapters",excerpt:"Designing the adapter pattern for planners, executors, validators, and shippers — pluggable AI orchestration at its core.",readTime:"7 min"},
+    {id:"007",date:"2025-11-20",tag:"agent",version:"v0.1.0",title:"Agent Scheduling and Concurrency Control in Distributed AI Systems",slug:"agent-scheduling-concurrency",excerpt:"Managing concurrent agent execution with resource-aware scheduling — preventing bottlenecks in multi-agent orchestration.",readTime:"7 min"},
+    {id:"006",date:"2025-11-15",tag:"security",version:"v0.1.0",title:"SHA-256 Hash Chains: Building a Tamper-Evident Audit Trail",slug:"sha256-audit-trail",excerpt:"How cryptographic hash chaining creates an immutable record of every AI action — the foundation of trustworthy autonomy.",readTime:"7 min"},
+    {id:"005",date:"2025-11-10",tag:"architecture",version:"v0.1.0",title:"Inside the Policy Engine: Code-Level Governance for LLM Actions",slug:"policy-engine-governance",excerpt:"Policy-as-code enforcement with PII detection, prompt injection guards, and resource limits — governance at the speed of AI.",readTime:"7 min"},
+    {id:"004",date:"2025-11-05",tag:"milestone",version:"v0.1.0",title:"OCCP v0.1.0: The First Verified Orchestration Cycle",slug:"occp-v010-first-cycle",excerpt:"The initial release — orchestrator, policy engine, CLI, and SDK. The first complete Plan-Gate-Execute-Validate-Ship cycle.",readTime:"8 min"},
+    {id:"003",date:"2025-10-30",tag:"vision",version:"",title:"Beyond Prompt Engineering: Why AI Needs Governance Infrastructure",slug:"beyond-prompt-engineering",excerpt:"Prompt engineering optimizes individual interactions. Governance infrastructure ensures every AI action is verified, logged, and compliant.",readTime:"7 min"},
+    {id:"002",date:"2025-10-22",tag:"architecture",version:"",title:"Designing the Verified Autonomy Pipeline: First Principles",slug:"designing-verified-autonomy-pipeline",excerpt:"The five-stage pipeline that ensures no AI action executes without verification: Plan, Gate, Execute, Validate, Ship.",readTime:"8 min"},
+    {id:"001",date:"2025-10-15",tag:"vision",version:"",title:"Why We Built OCCP: The Case for a New AI Orchestration Layer",slug:"why-we-built-occp",excerpt:"The AI ecosystem has powerful models but no governance layer. OCCP exists to fill that gap.",readTime:"8 min"},
+  ];
+
+  const TAG_CLASSES = {
+    milestone:"tag-milestone", security:"tag-security", architecture:"tag-architecture",
+    agent:"tag-agent", infra:"tag-infra", vision:"tag-vision", ux:"tag-ux",
+    governance:"tag-governance"
+  };
+  const TAG_LABELS = {
+    milestone:"Milestone", security:"Security", architecture:"Architecture",
+    agent:"Agents", infra:"Infrastructure", vision:"Vision", ux:"UX",
+    governance:"Governance"
+  };
+
+  let activeFilter = "all";
+
+  function renderArticles(filter) {
+    const container = document.getElementById('articles-container');
+    const filtered = filter === "all" ? ARTICLES : ARTICLES.filter(a => a.tag === filter);
+
+    let currentYear = "";
+    let html = "";
+
+    filtered.forEach((a, i) => {
+      const year = a.date.substring(0, 4);
+      if (year !== currentYear) {
+        currentYear = year;
+        if (i > 0) html += '</div>'; // close previous grid
+        html += `<div class="year-divider"><span>/// ${year}</span></div>`;
+        html += '<div class="articles-grid">';
+      }
+
+      const versionBadge = a.version ? `<span class="card-version">${a.version}</span>` : '';
+      html += `
+        <article class="article-card" style="animation-delay:${Math.min(i*0.05, 0.5)}s" data-tag="${a.tag}">
+          <div class="card-meta">
+            <span class="card-date">${a.date}</span>
+            <span class="card-tag ${TAG_CLASSES[a.tag]}">${TAG_LABELS[a.tag]}</span>
+            ${versionBadge}
+          </div>
+          <h2 class="card-title"><a href="articles/${a.slug}.html">${a.title}</a></h2>
+          <p class="card-excerpt">${a.excerpt}</p>
+          <div class="card-footer">
+            <span class="read-time">${a.readTime} read</span>
+            <a href="articles/${a.slug}.html" style="color:var(--green);font-size:0.7rem;">READ &rarr;</a>
+          </div>
+        </article>`;
+    });
+
+    html += '</div>'; // close last grid
+    container.innerHTML = html;
+  }
+
+  // Filter buttons
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeFilter = btn.dataset.filter;
+      renderArticles(activeFilter);
+    });
+  });
+
+  // Initial render
+  renderArticles("all");
+  </script>
+
+</body>
+</html>

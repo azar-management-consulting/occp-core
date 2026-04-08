@@ -14,6 +14,7 @@ class TaskStatus(enum.Enum):
 
     PENDING = "pending"
     PLANNING = "planning"
+    AWAITING_CONFIRMATION = "awaiting_confirmation"
     GATED = "gated"
     EXECUTING = "executing"
     VALIDATING = "validating"
@@ -68,7 +69,8 @@ class Task:
     # Valid state transitions for the Verified Autonomy Pipeline
     _VALID_TRANSITIONS: ClassVar[dict[TaskStatus, set[TaskStatus]]] = {
         TaskStatus.PENDING: {TaskStatus.PLANNING, TaskStatus.FAILED},
-        TaskStatus.PLANNING: {TaskStatus.GATED, TaskStatus.FAILED},
+        TaskStatus.PLANNING: {TaskStatus.AWAITING_CONFIRMATION, TaskStatus.GATED, TaskStatus.FAILED},
+        TaskStatus.AWAITING_CONFIRMATION: {TaskStatus.GATED, TaskStatus.REJECTED, TaskStatus.FAILED},
         TaskStatus.GATED: {TaskStatus.EXECUTING, TaskStatus.REJECTED, TaskStatus.FAILED},
         TaskStatus.EXECUTING: {TaskStatus.VALIDATING, TaskStatus.FAILED},
         TaskStatus.VALIDATING: {TaskStatus.SHIPPING, TaskStatus.FAILED},

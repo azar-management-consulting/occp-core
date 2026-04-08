@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open Source AI Governance: Building Trust Through Transparency — OCCP News</title>
+  <meta name="description" content="Why open source is the right model for AI governance infrastructure. Trust requires verifiability, and enterprises must audit the governance engine itself.">
+  <meta name="keywords" content="OCCP, open source, AI governance, transparency, trust, MIT license, open-core, community, vendor lock-in">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/open-source-governance.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/open-source-governance.html">
+  <meta property="og:title" content="Open Source AI Governance: Building Trust Through Transparency">
+  <meta property="og:description" content="Why open source is the right model for AI governance infrastructure. Trust requires verifiability.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-27">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Open Source AI Governance: Building Trust Through Transparency">
+  <meta name="twitter:description" content="Why open source is the right model for AI governance infrastructure. Trust requires verifiability.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Open Source AI Governance: Building Trust Through Transparency",
+    "datePublished": "2026-02-27",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Why open source is the right model for AI governance infrastructure. Trust requires verifiability.",
+    "url": "https://news.occp.ai/articles/open-source-governance.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-27</span>
+          <span class="card-tag tag-vision">Vision</span>
+        </div>
+        <h1>Open Source AI Governance: Building Trust Through Transparency</h1>
+        <p class="lead">A governance system that cannot be inspected cannot be trusted. When an enterprise adopts an AI governance layer, it is trusting that layer to enforce policies correctly, record audit trails faithfully, and protect sensitive data reliably. If the governance engine is a black box, the enterprise is replacing one trust problem (trusting the AI) with another (trusting the governance vendor). Open source eliminates this trust chain.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Trust Problem in AI Governance</h2>
+
+        <p>AI governance is fundamentally a trust infrastructure. It sits between the organization and its AI agents, claiming to enforce policies, detect violations, and maintain audit records. Every claim the governance system makes must be verifiable. "Your PII detection is working" &mdash; prove it. "Your audit trail is immutable" &mdash; prove it. "Your encryption is AES-256-GCM" &mdash; prove it.</p>
+
+        <p>With closed-source governance software, verification depends on the vendor's assurances: documentation, certifications, third-party audits. These provide indirect evidence. The enterprise cannot verify the claims independently. It cannot examine the PII detection regex patterns, the hash chain implementation, or the encryption code. It must trust that the vendor's code matches the vendor's documentation.</p>
+
+        <p>With open-source governance software, verification is direct. The PII detection patterns are in the repository. The hash chain implementation is readable. The encryption code uses standard cryptographic libraries that can be inspected and tested. An enterprise security team can audit every line of governance code before deploying it. Trust is not delegated to the vendor; it is verified by the customer.</p>
+
+        <blockquote>Trust in governance infrastructure must be earned through transparency, not granted through vendor relationships. Open source is the mechanism that converts trust-by-assertion into trust-by-verification.</blockquote>
+
+        <h2>Why Open Source for Governance Specifically</h2>
+
+        <h3>Governance Code Must Be Auditable</h3>
+
+        <p>Not all software needs to be open source. A project management tool's implementation details do not affect its trustworthiness &mdash; it either tracks tasks correctly or it does not. But governance software is different. A governance engine's correctness directly determines whether the organization is compliant with regulations, whether security policies are actually enforced, and whether audit records are actually immutable. The consequences of a governance bug are not a missing feature &mdash; they are regulatory violations, security breaches, and invalid audit evidence.</p>
+
+        <p>For this reason, governance code must be auditable by the organizations that rely on it. Open source provides this auditability. A CISO can assign a security engineer to review the policy evaluation logic. A compliance officer can commission an audit of the retention enforcement code. A legal team can verify that the EU AI Act compliance claims are backed by actual implementation. None of this is possible with closed-source governance software.</p>
+
+        <h3>Security Through Visibility</h3>
+
+        <p>The "many eyes" principle applies with particular force to security-critical software. OCCP's codebase handles API token encryption, prompt injection detection, PII scanning, and audit chain integrity. Each of these is a security function where a subtle bug could have significant consequences. With an open codebase, security researchers, enterprise security teams, and the broader developer community can identify vulnerabilities that the core team might miss. Closed-source security software relies on the vendor's internal team finding every bug &mdash; a team that is, by definition, smaller than the community.</p>
+
+        <pre><code># Open source enables community security review
+# Example: the PII detection patterns are visible to all
+
+PII_PATTERNS = {
+    "email": r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
+    "phone_us": r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b",
+    "ssn": r"\b\d{3}-\d{2}-\d{4}\b",
+    "credit_card": r"\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b",
+}
+
+# Community can identify:
+# - Missing patterns (new PII types)
+# - False positive patterns (over-matching)
+# - Evasion techniques (encoding, spacing)
+# - Performance issues (catastrophic backtracking)</code></pre>
+
+        <h2>The Open-Core Model</h2>
+
+        <h3>MIT-Licensed Community Edition</h3>
+
+        <p>OCCP's community edition is licensed under the MIT license, one of the most permissive open-source licenses available. The MIT license allows anyone to use, modify, and distribute the software, including in commercial products, with no copyleft requirements. This choice is deliberate: governance infrastructure should not create legal friction for adoption. An organization evaluating OCCP should not need a lawyer to determine whether they can use it.</p>
+
+        <p>The community edition includes the complete Verified Autonomy Pipeline, the policy-as-code engine with PII detection and injection guards, the SHA-256 audit chain, Casbin RBAC, sandbox isolation, the REST API, the CLI, and the Python and TypeScript SDKs. These are the foundational governance capabilities that every organization needs. There is no "governance lite" community edition with a reduced feature set that forces an upgrade for basic compliance.</p>
+
+        <h3>Enterprise Features</h3>
+
+        <p>The enterprise edition (separate repository, separate license) adds features that are specific to large-scale, multi-tenant, and highly regulated deployments: advanced multi-tenancy with database-per-tenant isolation, SSO/SAML integration, enterprise audit export formats (SIEM integration), priority support, and SLA guarantees. These features serve the operational requirements of large organizations, not the core governance requirements that all organizations share.</p>
+
+        <pre><code># Open-core feature boundary
+Community Edition (MIT License):
+  - Verified Autonomy Pipeline (Plan/Gate/Execute/Validate/Ship)
+  - Policy-as-code engine (PII detection, injection guards)
+  - SHA-256 audit chain
+  - Casbin RBAC (4-role hierarchy)
+  - Sandbox isolation (nsjail, bubblewrap)
+  - REST API + CLI
+  - Python SDK + TypeScript SDK
+  - Dashboard (Next.js)
+  - EU AI Act compliance features
+
+Enterprise Edition (Commercial License):
+  - Advanced multi-tenancy
+  - SSO/SAML authentication
+  - SIEM audit export
+  - Priority support + SLA
+  - Enterprise onboarding</code></pre>
+
+        <h2>Community Benefits</h2>
+
+        <h3>Contributions Improve Governance Quality</h3>
+
+        <p>Open-source AI governance benefits from contributions across the entire adopter community. A financial services company contributing stricter PII patterns for banking data. A healthcare organization contributing HIPAA-specific policy templates. A government agency contributing public-sector compliance checks. Each contribution strengthens the governance capabilities for every user. This collaborative improvement model is not possible with closed-source software, where each customer's customizations are isolated.</p>
+
+        <h3>Public Security Audits</h3>
+
+        <p>Open-source projects receive security scrutiny from researchers, bounty hunters, and security-conscious adopters. Every vulnerability discovered and fixed makes the software more secure for all users. In contrast, closed-source security vulnerabilities are discovered by the vendor (if they are lucky) or by attackers (if they are not). The vulnerability disclosure and fix cycle is faster and more transparent in open source because the fix is visible in the commit history, not hidden behind a vague "security update" changelog entry.</p>
+
+        <h3>Adoption Without Vendor Lock-In</h3>
+
+        <p>Vendor lock-in is a particularly acute concern for governance infrastructure. If an organization depends on a vendor's governance platform and the vendor raises prices, changes terms, or discontinues the product, the organization loses its governance capabilities. Migrating governance systems is expensive because it requires migrating audit trails, policy definitions, and integration points. With open-source governance, the organization can always self-host, fork, or migrate to a community-maintained version. The governance capabilities belong to the organization, not to the vendor.</p>
+
+        <h2>Transparency Strengthens the Stack</h2>
+
+        <h3>From Governance Layer to Trusted Foundation</h3>
+
+        <p>When the governance layer is transparent, it becomes a trusted foundation for the entire AI stack. Application developers trust it because they can verify its behavior. Security teams trust it because they can audit its code. Compliance officers trust it because they can demonstrate its properties to regulators. This multi-stakeholder trust is only possible when every stakeholder can independently verify the system's claims.</p>
+
+        <h3>Regulatory Alignment</h3>
+
+        <p>Regulators are increasingly favorable to open-source infrastructure in governance contexts. Open source aligns with the EU AI Act's emphasis on transparency (Article 13) and the general regulatory preference for systems that can be independently audited. An organization using open-source governance software can demonstrate to regulators that its governance implementation is publicly auditable, actively maintained, and subject to community security review &mdash; properties that strengthen the organization's compliance posture.</p>
+
+        <p>The choice to build OCCP as open source is not a marketing decision. It is an architectural decision driven by the nature of governance software itself. Governance that cannot be verified is governance on trust alone. Open source replaces trust with verification, and in doing so, builds a stronger foundation for the governed deployment of AI systems.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Governance software must be auditable because its correctness determines regulatory compliance and security posture</li>
+          <li>Open source converts trust-by-assertion into trust-by-verification for every governance claim</li>
+          <li>MIT-licensed community edition includes all core governance features: VAP, policy engine, audit chain, RBAC, sandboxing</li>
+          <li>Community contributions improve governance quality across the entire adopter base</li>
+          <li>Open source eliminates vendor lock-in for governance infrastructure, the most dangerous category for lock-in</li>
+          <li>Regulatory alignment: open source strengthens compliance posture by enabling independent audits</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="multi-tenancy-future.html">&larr; Multi-Tenancy and Shared AI Infrastructure</a>
+        <a href="roadmap-after-v08.html">OCCP Roadmap: After v0.8 &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

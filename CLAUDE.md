@@ -18,7 +18,7 @@ auditálható és policy-vezérelt Agent Control Plane rendszert.
 - cli: `occp` parancsok (start, run, status, export)
 - sdk: python + typescript kliens
 
-## Verified Autonomy Pipeline (VAP)
+## Verified Autonomy Pipeline
 1. **Plan** – feladat terv + kockázati besorolás
 2. **Gate** – policy engine ellenőrzés + szükséges jóváhagyások
 3. **Execute** – sandbox futtatás

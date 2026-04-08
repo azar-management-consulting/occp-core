@@ -12,7 +12,7 @@ All protected endpoints require a JWT Bearer token in the `Authorization` header
 
 ### POST `/api/v1/auth/login`
 
-Authenticate and receive a JWT token pair.
+Authenticate and receive a JWT token.
 
 - **RBAC**: Public (no token required)
 - **Request body**:
@@ -26,42 +26,79 @@ Authenticate and receive a JWT token pair.
   ```json
   {
     "access_token": "eyJhbG...",
-    "refresh_token": "eyJhbG...",
-    "token_type": "bearer"
+    "token_type": "bearer",
+    "expires_in": 86400,
+    "role": "system_admin"
   }
   ```
 - **Error** `401`: Invalid credentials
 
 ### POST `/api/v1/auth/refresh`
 
-Refresh an expired access token.
+Refresh an access token using a valid (non-expired) token.
 
-- **RBAC**: Authenticated (valid refresh token)
+- **RBAC**: Authenticated (valid token)
 - **Request body**:
   ```json
   {
-    "refresh_token": "eyJhbG..."
+    "token": "eyJhbG..."
   }
   ```
-- **Response** `200`: New token pair (same schema as login)
-- **Error** `401`: Invalid or expired refresh token
+- **Response** `200`: New token (same schema as login — `access_token`, `token_type`, `expires_in`, `role`)
+- **Error** `401`: Invalid or expired token
+
+### GET `/api/v1/auth/me`
+
+Return the authenticated user's profile.
+
+- **RBAC**: Authenticated (Bearer token)
+- **Response** `200`:
+  ```json
+  {
+    "username": "admin",
+    "role": "system_admin",
+    "display_name": "Admin"
+  }
+  ```
+- **Error** `401`: Missing or invalid token
 
 ### POST `/api/v1/auth/register`
 
-Create a new user account.
+Public self-registration — creates viewer-only accounts.
 
-- **RBAC**: `system_admin` or `org_admin` — `users:create`
+- **RBAC**: Public (no token required)
 - **Request body**:
   ```json
   {
     "username": "newuser",
     "password": "secure-password",
-    "role": "operator"
+    "display_name": "New User"
   }
   ```
-- **Response** `201`: Token pair for new user
+- **Response** `201`: TokenResponse (`access_token`, `token_type`, `expires_in`, `role: "viewer"`)
+- **Error** `409`: Username already exists
+- **Error** `422`: Validation error (password too short)
+
+### POST `/api/v1/auth/register/admin`
+
+Admin-only user creation — allows any role.
+
+- **RBAC**: `org_admin` or `system_admin` — `users:create`
+- **Request body**:
+  ```json
+  {
+    "username": "newoperator",
+    "password": "secure-password",
+    "role": "operator",
+    "display_name": "New Operator"
+  }
+  ```
+  `role` accepts: `viewer`, `operator`, `org_admin`, `system_admin`
+- **Response** `201`: TokenResponse (`access_token`, `token_type`, `expires_in`, `role`)
+- **Error** `401`: Missing or invalid token
 - **Error** `403`: Insufficient permissions
-- **Error** `422`: Validation error (weak password, duplicate username)
+- **Error** `409`: Username already exists
+- **Error** `422`: Validation error (invalid role, weak password)
 
 ---
 
@@ -75,26 +112,32 @@ System status and version info.
 - **Response** `200`:
   ```json
   {
-    "status": "operational",
-    "version": "0.8.0",
     "platform": "OCCP",
-    "environment": "production",
-    "database": "connected",
-    "sandbox": "nsjail"
+    "version": "0.9.0",
+    "status": "running",
+    "tasks_count": 42,
+    "audit_entries": 500
   }
   ```
 
 ### GET `/api/v1/health`
 
-Lightweight health probe for load balancers.
+Readiness probe — verifies database connectivity and core subsystems.
 
 - **RBAC**: Public
 - **Response** `200`:
   ```json
   {
-    "healthy": true
+    "status": "healthy",
+    "version": "0.9.0",
+    "checks": [
+      { "name": "database", "status": "ok", "latency_ms": 1.5 },
+      { "name": "policy_engine", "status": "ok" },
+      { "name": "pipeline", "status": "ok" }
+    ]
   }
   ```
+  `status` is one of: `healthy`, `degraded`, `unhealthy`
 
 ### GET `/api/v1/llm/health`
 
@@ -105,7 +148,65 @@ LLM adapter connectivity check.
 
 ---
 
-## 3. Tasks
+## 3. User Management
+
+### GET `/api/v1/users`
+
+List all registered users.
+
+- **RBAC**: `org_admin` or `system_admin` — `users:read`
+- **Response** `200`:
+  ```json
+  {
+    "users": [
+      {
+        "id": "abc123...",
+        "username": "admin",
+        "role": "system_admin",
+        "display_name": "Admin",
+        "is_active": true,
+        "created_at": "2026-02-24T10:00:00Z",
+        "updated_at": "2026-02-24T10:00:00Z"
+      }
+    ],
+    "total": 12
+  }
+  ```
+- **Error** `401`: Missing or invalid token
+- **Error** `403`: Insufficient permissions
+
+### GET `/api/v1/admin/stats`
+
+Admin statistics — user counts, onboarding funnel, activity.
+
+- **RBAC**: `org_admin` or `system_admin` — `users:read`
+- **Response** `200`:
+  ```json
+  {
+    "users_total": 12,
+    "users_by_role": { "viewer": 8, "operator": 2, "org_admin": 1, "system_admin": 1 },
+    "registrations_last_7_days": 3,
+    "onboarding_funnel": {
+      "landing": 2,
+      "running": 1,
+      "done": 9
+    },
+    "user_activity": [
+      {
+        "username": "user1",
+        "role": "viewer",
+        "last_seen": "2026-03-02T10:00:00Z",
+        "onboarding_state": "done"
+      }
+    ]
+  }
+  ```
+- **Error** `401`: Missing or invalid token
+- **Error** `403`: Insufficient permissions
+
+---
+
+## 4. Tasks
 
 ### POST `/api/v1/tasks`
 
@@ -158,7 +259,7 @@ Get details for a specific task.
 
 ---
 
-## 4. Pipeline
+## 5. Pipeline
 
 ### POST `/api/v1/pipeline/run/{task_id}`
 
@@ -180,7 +281,7 @@ Execute the full Verified Autonomy Pipeline on a task.
 
 ---
 
-## 5. Policy
+## 6. Policy
 
 ### POST `/api/v1/policy/evaluate`
 
@@ -209,7 +310,7 @@ Test content against all active policy guards.
 
 ---
 
-## 6. Agents
+## 7. Agents
 
 ### GET `/api/v1/agents`
 
@@ -270,7 +371,7 @@ Unregister an agent adapter.
 
 ---
 
-## 7. Audit
+## 8. Audit
 
 ### GET `/api/v1/audit`
 
@@ -301,7 +402,7 @@ Retrieve the tamper-evident audit log with SHA-256 hash chain.
 
 ---
 
-## 8. WebSocket
+## 9. WebSocket
 
 ### WS `/api/v1/ws/pipeline/{task_id}?token=JWT`
 
@@ -319,7 +420,7 @@ Real-time pipeline event stream.
 
 ---
 
-## 9. Error Codes
+## 10. Error Codes
 
 | Code | Meaning | When |
 |------|---------|------|
@@ -327,6 +428,7 @@ Real-time pipeline event stream.
 | `401` | Unauthorized | Missing or expired JWT token |
 | `403` | Forbidden | Valid token but insufficient RBAC permissions |
 | `404` | Not Found | Resource does not exist |
+| `409` | Conflict | Duplicate resource (e.g. username already exists) |
 | `422` | Unprocessable Entity | Validation error (schema mismatch, business rule) |
 | `500` | Internal Server Error | Unexpected server failure |
 

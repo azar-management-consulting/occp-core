@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AES-256-GCM Envelope Encryption: Securing LLM API Tokens — OCCP News</title>
+  <meta name="description" content="Enterprise-grade token encryption with HKDF key derivation, envelope encryption pattern, and zero-downtime key rotation for LLM API credentials.">
+  <meta name="keywords" content="OCCP, AES-256-GCM, envelope encryption, HKDF, LLM API tokens, credential security, key derivation">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/aes256-gcm-encryption.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/aes256-gcm-encryption.html">
+  <meta property="og:title" content="AES-256-GCM Envelope Encryption: Securing LLM API Tokens">
+  <meta property="og:description" content="Enterprise-grade token encryption with HKDF key derivation, envelope encryption pattern, and zero-downtime key rotation for LLM API credentials.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-23">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="AES-256-GCM Envelope Encryption: Securing LLM API Tokens">
+  <meta name="twitter:description" content="Enterprise-grade token encryption with HKDF key derivation, envelope encryption pattern, and zero-downtime key rotation for LLM API credentials.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "AES-256-GCM Envelope Encryption: Securing LLM API Tokens",
+    "datePublished": "2026-02-23",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Enterprise-grade token encryption with HKDF key derivation, envelope encryption pattern, and zero-downtime key rotation for LLM API credentials.",
+    "url": "https://news.occp.ai/articles/aes256-gcm-encryption.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-23</span>
+          <span class="card-tag tag-security">Security</span>
+          <span class="card-version">v0.8.2</span>
+        </div>
+        <h1>AES-256-GCM Envelope Encryption: Securing LLM API Tokens</h1>
+        <p class="lead">LLM API tokens are the most sensitive credentials in an AI orchestration platform. A leaked token does not just compromise one request &mdash; it grants unrestricted access to the model provider, with costs measured in dollars per second. OCCP v0.8.2 introduces envelope encryption with AES-256-GCM and HKDF-derived per-token keys to ensure credentials are protected at rest and in transit.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Problem: API Tokens as High-Value Targets</h2>
+
+        <p>An AI orchestration platform manages credentials for multiple LLM providers: OpenAI, Anthropic, Google, Cohere, and others. Each provider issues API tokens that grant access to their models. These tokens are stored in the platform's configuration database and used on every API call. If an attacker gains read access to the database &mdash; through SQL injection, a backup leak, or a compromised admin account &mdash; they obtain every token simultaneously.</p>
+
+        <p>Plaintext token storage is the default in most AI frameworks. Some use base64 encoding, which provides no security whatsoever. Others use symmetric encryption with a single key, which means all tokens are compromised if that key is exposed. The threat model requires a system where compromising one token does not compromise all tokens, and where key compromise can be mitigated without re-encrypting every stored credential.</p>
+
+        <blockquote>If your encryption strategy means that losing one key compromises every credential in the system, you have centralized your risk rather than distributing it.</blockquote>
+
+        <h2>Why AES-256-GCM</h2>
+
+        <h3>Authenticated Encryption</h3>
+
+        <p>AES-256-GCM is an Authenticated Encryption with Associated Data (AEAD) cipher. Unlike AES-CBC or AES-CTR, GCM mode provides both confidentiality and integrity in a single operation. The ciphertext includes a 128-bit authentication tag that the decryption process verifies before returning plaintext. If even a single bit of the ciphertext has been modified &mdash; by an attacker, by disk corruption, or by a faulty migration script &mdash; decryption fails with an authentication error rather than returning corrupted data.</p>
+
+        <p>This property is critical for credential storage. With unauthenticated encryption modes, an attacker can flip bits in the ciphertext without detection. The decrypted result is garbage, but the system does not know it is garbage until the API call fails with an invalid token error. With GCM, tampering is detected immediately at decryption time, before the corrupted token reaches the provider.</p>
+
+        <h3>Performance Characteristics</h3>
+
+        <p>AES-256-GCM is hardware-accelerated on modern CPUs through the AES-NI instruction set. On a standard server CPU, encryption throughput exceeds 4 GB/s. For OCCP's use case &mdash; encrypting tokens that are typically 40-200 bytes &mdash; the per-operation cost is measured in microseconds. There is no performance argument against using the strongest available cipher.</p>
+
+        <pre><code># Python implementation using cryptography library
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+import os
+
+def encrypt_token(plaintext: bytes, key: bytes) -> bytes:
+    """Encrypt a token with AES-256-GCM.
+    Returns: nonce (12 bytes) || ciphertext || tag (16 bytes)
+    """
+    nonce = os.urandom(12)  # 96-bit nonce, never reused
+    aesgcm = AESGCM(key)
+    ciphertext = aesgcm.encrypt(nonce, plaintext, None)
+    return nonce + ciphertext</code></pre>
+
+        <h2>HKDF Key Derivation: Per-Token Unique Keys</h2>
+
+        <p>Encrypting all tokens with the same key creates a single point of failure. OCCP uses HMAC-based Key Derivation Function (HKDF) to derive a unique encryption key for each token from a single master key. The derivation uses a per-token salt (generated randomly at encryption time) and an info parameter that binds the derived key to its specific context.</p>
+
+        <pre><code>from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives import hashes
+
+def derive_token_key(master_key: bytes, salt: bytes,
+                     provider: str, token_id: str) -> bytes:
+    """Derive a unique 256-bit key for a specific token."""
+    info = f"occp-token-{provider}-{token_id}".encode()
+    hkdf = HKDF(
+        algorithm=hashes.SHA256(),
+        length=32,  # 256 bits
+        salt=salt,
+        info=info,
+    )
+    return hkdf.derive(master_key)</code></pre>
+
+        <h3>Why Per-Token Keys Matter</h3>
+
+        <p>With per-token derived keys, an attacker who somehow recovers one derived key (through a side-channel attack or a memory dump) can only decrypt the specific token that key was derived for. They cannot use it to decrypt other tokens, because each token's key is derived with a different salt and info parameter. The blast radius of a key compromise is reduced from "all credentials" to "one credential."</p>
+
+        <p>The derivation is deterministic: given the same master key, salt, and info, HKDF always produces the same derived key. This means OCCP does not need to store derived keys. It stores the salt alongside the encrypted token, and re-derives the key at decryption time. The only secret that must be protected is the master key.</p>
+
+        <h2>The Envelope Encryption Pattern</h2>
+
+        <h3>Two-Layer Architecture</h3>
+
+        <p>Envelope encryption separates the encryption into two layers. Layer 1: each token is encrypted with its own data encryption key (DEK), derived via HKDF as described above. Layer 2: the master key that seeds HKDF is itself encrypted with a key encryption key (KEK) that can be stored in a hardware security module, a cloud KMS, or an environment variable depending on the deployment context.</p>
+
+        <pre><code># Envelope encryption storage format
+{
+    "token_id": "tok_abc123",
+    "provider": "anthropic",
+    "salt": "base64(random_32_bytes)",
+    "encrypted_token": "base64(nonce || ciphertext || tag)",
+    "kek_version": "kek-2026-02",
+    "created_at": "2026-02-23T10:00:00Z"
+}</code></pre>
+
+        <h3>Why Two Layers</h3>
+
+        <p>The two-layer design solves the key rotation problem. When the master key needs to be rotated (scheduled rotation, suspected compromise, compliance requirement), only the master key's encryption needs to change. The individual token encryptions remain valid because the derived keys are computed from the master key at runtime. The KEK wrapping the master key is the only thing that changes during rotation.</p>
+
+        <p>In a single-layer system, rotating the encryption key requires decrypting every token with the old key and re-encrypting with the new key. For an organization with hundreds of API tokens across dozens of providers, this is an expensive, error-prone operation that requires the system to hold all plaintext tokens in memory simultaneously. Envelope encryption avoids this entirely.</p>
+
+        <h2>Key Rotation Without Re-Encryption</h2>
+
+        <h3>Dual-Key Window</h3>
+
+        <p>During key rotation, OCCP maintains a dual-key window where both the old and new KEK versions are active. When decrypting a token, the system reads the <code>kek_version</code> field from the stored record and uses the corresponding KEK to unwrap the master key. New encryptions use the new KEK version. Old encryptions continue to work until they are naturally re-encrypted (on token update) or until the old KEK is explicitly retired.</p>
+
+        <h3>Rotation Triggers</h3>
+
+        <p>Key rotation can be triggered by three events. Scheduled rotation occurs on a configurable interval (default: 90 days). Manual rotation is available through the admin API for immediate response to security incidents. Breach-triggered rotation occurs automatically when the system detects anomalous decryption patterns, such as a burst of decryption failures that might indicate a key compromise attempt.</p>
+
+        <p>Every rotation event is recorded in the SHA-256 audit chain with the rotation reason, the old and new KEK version identifiers (never the keys themselves), and the timestamp. This audit trail is essential for compliance reporting: auditors can verify that key rotation policies are being followed without ever seeing the actual keys.</p>
+
+        <h2>Protection at Rest and in Transit</h2>
+
+        <h3>At-Rest Protection</h3>
+
+        <p>Tokens are never stored in plaintext. The database contains only the encrypted blob, the salt, and the KEK version identifier. Even a full database dump yields nothing without the master key. The master key is never written to the database &mdash; it is loaded from the environment at startup and held only in process memory.</p>
+
+        <h3>In-Transit Protection</h3>
+
+        <p>When a token is needed for an LLM API call, it is decrypted in memory, used for the HTTP request (which is itself protected by TLS), and then the plaintext is zeroed from memory. The decrypted token is never written to disk, never included in log output, and never returned in API responses. The output sanitization middleware provides an additional safety net: even if a code path accidentally includes a token in a response, the sanitizer detects and strips credential-like strings before they reach the network.</p>
+
+        <h3>Memory Handling</h3>
+
+        <p>Python's garbage collector does not guarantee immediate memory cleanup, which means sensitive data can persist in memory after the variable is reassigned. OCCP mitigates this by overwriting the plaintext buffer with zeros before releasing it. While Python's memory model makes true secure erasure difficult (the runtime may have copied the string internally), the overwrite reduces the window of exposure and eliminates the most common memory dump attack vectors.</p>
+
+        <pre><code># Secure token usage pattern
+def use_token_for_api_call(encrypted_record: dict) -> dict:
+    plaintext = decrypt_token(encrypted_record)
+    try:
+        response = make_llm_call(token=plaintext)
+        return response
+    finally:
+        # Overwrite plaintext before GC
+        if isinstance(plaintext, bytearray):
+            for i in range(len(plaintext)):
+                plaintext[i] = 0</code></pre>
+
+        <h2>Integration with the OCCP Security Stack</h2>
+
+        <p>Token encryption does not exist in isolation. It integrates with OCCP's layered security model: Casbin RBAC controls who can create, read, update, or delete tokens. The policy engine evaluates whether a given agent is authorized to use a specific provider's token. The audit chain records every token access event. And the output sanitization layer prevents accidental token leakage in API responses.</p>
+
+        <p>The encryption layer is the last line of defense. If RBAC is bypassed, if the policy engine has a bug, if an attacker gains database access through any path &mdash; the tokens are still encrypted. This is defense in depth: each layer protects against the failure of every other layer.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>AES-256-GCM provides authenticated encryption that detects both decryption failures and tampering attempts</li>
+          <li>HKDF derives unique per-token encryption keys from a single master key, limiting blast radius of any key compromise</li>
+          <li>Envelope encryption separates data encryption keys from key encryption keys, enabling rotation without re-encrypting all tokens</li>
+          <li>Dual-key windows allow zero-downtime key rotation with automatic fallback to the previous KEK version</li>
+          <li>Tokens are decrypted only in memory, never logged, and overwritten before garbage collection</li>
+          <li>The encryption layer integrates with RBAC, policy engine, and output sanitization for defense in depth</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="occp-v082-enterprise-security.html">&larr; OCCP v0.8.2: Enterprise-Grade Token Security</a>
+        <a href="supply-chain-security.html">Supply Chain Security &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

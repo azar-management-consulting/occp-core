@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deployment Challenges: IP Migration and Production Resilience — OCCP News</title>
+  <meta name="description" content="When your primary IP gets blocked by the datacenter: lessons in production resilience, DNS migration, and zero-downtime recovery.">
+  <meta name="keywords" content="OCCP, deployment, IP migration, production resilience, DNS, Hetzner, infrastructure, disaster recovery">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/deployment-challenges.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/deployment-challenges.html">
+  <meta property="og:title" content="Deployment Challenges: IP Migration and Production Resilience">
+  <meta property="og:description" content="When your primary IP gets blocked by the datacenter: lessons in production resilience, DNS migration, and zero-downtime recovery.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-22">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Deployment Challenges: IP Migration and Production Resilience">
+  <meta name="twitter:description" content="When your primary IP gets blocked by the datacenter: lessons in production resilience, DNS migration, and zero-downtime recovery.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Deployment Challenges: IP Migration and Production Resilience",
+    "datePublished": "2026-02-22",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "When your primary IP gets blocked by the datacenter: lessons in production resilience, DNS migration, and zero-downtime recovery.",
+    "url": "https://news.occp.ai/articles/deployment-challenges.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-22</span>
+          <span class="card-tag tag-infra">Infrastructure</span>
+          <span class="card-version">v0.8.0</span>
+        </div>
+        <h1>Deployment Challenges: IP Migration and Production Resilience</h1>
+        <p class="lead">In February 2026, our Hetzner primary IP was blocked due to an abuse report. The server was reachable over SSH through the console but unreachable from the internet. This is the story of the recovery: allocating a new IP, migrating DNS, verifying SSL, updating CI/CD secrets, and the infrastructure practices that turned a potential disaster into a 45-minute incident.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Incident</h2>
+
+        <p>The first sign was a failing health check. The monitoring system reported that <code>api.occp.ai</code> was unreachable. SSH through the Hetzner console confirmed the server was running &mdash; all Docker containers were healthy, Apache2 was serving responses, and the application logs showed no errors. The problem was at the network level.</p>
+
+        <p>A traceroute from an external host revealed the issue: at hop 10, traffic was being routed to <code>blocked.hetzner.com</code> instead of reaching our server. Hetzner had blocked our primary IPv4 address due to an abuse report. The IPv6 address was also affected. The server was operational but invisible to the internet.</p>
+
+        <pre><code>$ traceroute api.occp.ai
+ 1  gateway (192.168.1.1)       1.234 ms
+ 2  isp-router (10.0.0.1)      5.678 ms
+ ...
+ 9  hetzner-edge.de (213.x.x.x)  18.432 ms
+10  blocked.hetzner.com (...)     19.876 ms  # <-- traffic blackholed here
+11  * * *</code></pre>
+
+        <h2>The Recovery Plan</h2>
+
+        <p>With the IP blocked at the datacenter level, there was no way to unblock it immediately &mdash; abuse reviews take days. The recovery required allocating a new IP address and migrating everything to it. The plan had six steps, executed in sequence because each step depended on the previous one:</p>
+
+        <ol>
+          <li>Allocate a new primary IPv4 address from Hetzner</li>
+          <li>Power off the server, reassign the new IP, power on</li>
+          <li>Update DNS A records for all three subdomains</li>
+          <li>Update the SPF TXT record for email deliverability</li>
+          <li>Re-issue SSL certificates for the new IP</li>
+          <li>Update the GitHub Actions <code>DEPLOY_HOST</code> secret</li>
+        </ol>
+
+        <h3>Step 1: Allocate New Primary IP</h3>
+
+        <p>Hetzner's cloud API allows allocating primary IP addresses independently of servers. We allocated a new IPv4 address in the same datacenter (fsn1-dc14) and assigned it to our server. The critical detail: Hetzner requires the server to be powered off before reassigning a primary IP. This meant a brief period of total unavailability &mdash; even console SSH access would be interrupted.</p>
+
+        <pre><code># Hetzner API — allocate new primary IP
+POST /v1/primary_ips
+{
+  "type": "ipv4",
+  "datacenter": "fsn1-dc14",
+  "auto_delete": false,
+  "assignee_type": "server",
+  "name": "occp-primary-v2"
+}
+
+# Response: new IP 195.201.238.144 (Primary IP ID: 119875925)</code></pre>
+
+        <h3>Step 2: Server Power Cycle</h3>
+
+        <p>The server was powered off through the Hetzner Cloud Console. The old primary IP was unassigned and the new IP was assigned. Power on. The entire power cycle took approximately 90 seconds. Once the server was back, SSH access was verified through the new IP and all Docker containers came back automatically (Docker Compose is configured with <code>restart: unless-stopped</code>).</p>
+
+        <h3>Step 3: DNS Migration</h3>
+
+        <p>DNS records were managed through Hostinger's nameservers. Three A records needed updating: <code>@</code> (occp.ai), <code>api</code> (api.occp.ai), and <code>dash</code> (dash.occp.ai). All three were pointed to the new IP address with a TTL of 300 seconds (5 minutes). The low TTL was a deliberate choice made months earlier &mdash; we anticipated the possibility of IP changes and set the TTL low enough to propagate quickly.</p>
+
+        <pre><code># DNS A record updates (Hostinger)
+@ (occp.ai)     -> 195.201.238.144  TTL 300
+api              -> 195.201.238.144  TTL 300
+dash             -> 195.201.238.144  TTL 300</code></pre>
+
+        <blockquote>DNS TTL is a setting you configure when nothing is wrong and benefit from when everything is wrong. A 300-second TTL means the entire internet will have your new IP within 5 minutes. A 3600-second TTL means you wait an hour. A 86400-second TTL means you spend a day explaining to users why the site is down even though you fixed it.</blockquote>
+
+        <h3>Step 4: SPF Record Update</h3>
+
+        <p>The SPF TXT record for email deliverability referenced the old IP address. Emails sent from the OCCP domain would fail SPF validation if the record was not updated. The new SPF record was set to <code>v=spf1 mx a ip4:195.201.238.144 ~all</code>. TXT record propagation follows the same TTL as A records, so the SPF update was effective within 5 minutes.</p>
+
+        <h3>Step 5: SSL Certificate Verification</h3>
+
+        <p>Let's Encrypt certificates are domain-validated, not IP-validated. The existing certificates for <code>occp.ai</code>, <code>api.occp.ai</code>, and <code>dash.occp.ai</code> remained valid after the IP change because they are tied to the domain names, not the IP address. However, we triggered a manual renewal cycle to confirm that the ACME challenge process worked with the new IP. The HTTP-01 challenge succeeded on all three domains, confirming that traffic was correctly routing through the new IP to the Apache2 reverse proxy and then to the ACME validation endpoint.</p>
+
+        <h3>Step 6: CI/CD Secret Update</h3>
+
+        <p>The GitHub Actions deployment workflow uses an SSH connection to deploy new releases. The <code>DEPLOY_HOST</code> secret stored the old IP address. This was updated to the new IP through the GitHub repository settings API. The next CI run after the update confirmed successful deployment to the new IP.</p>
+
+        <h2>Timeline</h2>
+
+        <p>From incident detection to full recovery:</p>
+
+        <ul>
+          <li><strong>T+0 min</strong> &mdash; Health check failure detected</li>
+          <li><strong>T+5 min</strong> &mdash; Root cause identified (IP blocked at datacenter)</li>
+          <li><strong>T+10 min</strong> &mdash; New primary IP allocated</li>
+          <li><strong>T+15 min</strong> &mdash; Server power cycled, new IP assigned</li>
+          <li><strong>T+20 min</strong> &mdash; DNS A records updated, SPF record updated</li>
+          <li><strong>T+25 min</strong> &mdash; DNS propagation verified from multiple locations</li>
+          <li><strong>T+30 min</strong> &mdash; SSL certificates verified, ACME renewal confirmed</li>
+          <li><strong>T+35 min</strong> &mdash; GitHub DEPLOY_HOST secret updated</li>
+          <li><strong>T+40 min</strong> &mdash; Full production verification: API, dashboard, CI/CD</li>
+          <li><strong>T+45 min</strong> &mdash; Incident closed, all 12 verification checks passed</li>
+        </ul>
+
+        <h2>Lessons in Production Resilience</h2>
+
+        <h3>DNS TTL Management</h3>
+
+        <p>The 300-second TTL was set during initial deployment, not during the incident. Setting a low TTL during an incident is useless because the old high TTL is already cached by resolvers worldwide. The lesson: set your TTL low <em>before</em> you need it. The cost of a low TTL is slightly more DNS queries. The benefit is significantly faster recovery from any IP-level incident.</p>
+
+        <h3>Infrastructure-as-Code</h3>
+
+        <p>Every DNS record, every Apache2 configuration, every Docker Compose service, and every SSL certificate is documented in the project's infrastructure documentation. During the incident, there was no guessing about which records existed or what values they should have. The recovery plan was mechanical: update each documented record to the new IP. Without documentation, recovery would have required discovery &mdash; figuring out which records exist before figuring out what to change them to.</p>
+
+        <h3>Health Check Monitoring</h3>
+
+        <p>The incident was detected by an automated health check within minutes. Without monitoring, the outage would have been detected by user reports &mdash; potentially hours later. The health check monitors three endpoints (<code>api.occp.ai/health</code>, <code>dash.occp.ai</code>, <code>occp.ai</code>) every 60 seconds and alerts on two consecutive failures. This two-failure threshold prevents false alerts from transient network issues while still detecting real outages quickly.</p>
+
+        <h3>Docker Restart Policies</h3>
+
+        <p>When the server powered back on after the IP reassignment, all Docker containers restarted automatically. The <code>restart: unless-stopped</code> policy in Docker Compose ensures that containers survive server reboots without manual intervention. Without this policy, the recovery would have required an additional step: manually starting each container and verifying its health.</p>
+
+        <h3>Disaster Recovery Playbook</h3>
+
+        <p>The six-step recovery plan was not invented during the incident. It was a documented playbook created during initial deployment planning. The playbook covered three scenarios: IP change (which is what happened), server migration (moving to a different Hetzner server), and datacenter migration (moving to a different Hetzner location). Having a pre-written playbook transformed the incident from a crisis into a checklist.</p>
+
+        <blockquote>The difference between a 45-minute incident and a 4-hour outage is preparation. Every minute spent writing disaster recovery documentation before an incident saves ten minutes of decision-making during one.</blockquote>
+
+        <h2>Post-Incident Changes</h2>
+
+        <p>After the recovery, we made three infrastructure changes to improve future resilience. First, we added the new IP to a monitoring allowlist that alerts if the IP appears in any public blocklist databases. Second, we documented the exact Hetzner API calls for IP allocation and reassignment, turning the playbook from a conceptual guide into an executable script. Third, we added a secondary health check that runs from a different geographic location to detect region-specific routing issues that a single-location monitor might miss.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Hetzner IP blocks route traffic to <code>blocked.hetzner.com</code> &mdash; detectable via traceroute at hop 10</li>
+          <li>Recovery: allocate new IP, power cycle server, update DNS (A + SPF), verify SSL, update CI/CD secrets</li>
+          <li>DNS TTL of 300 seconds enabled full propagation within 5 minutes of the DNS update</li>
+          <li>Let's Encrypt certificates are domain-validated, not IP-validated &mdash; no reissuance required on IP change</li>
+          <li>Docker <code>restart: unless-stopped</code> ensures containers survive server power cycles automatically</li>
+          <li>Pre-written disaster recovery playbooks transform incidents from crises into checklists</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="settings-architecture.html">&larr; Settings Architecture</a>
+        <a href="occp-v082-enterprise-security.html">OCCP v0.8.2: Enterprise Security &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

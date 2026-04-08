@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Output Sanitization: Preventing Credential Leakage in AI Responses — OCCP News</title>
+  <meta name="description" content="7-pattern output guard that strips credentials, tokens, and PII from LLM responses before they reach the user.">
+  <meta name="keywords" content="OCCP, output sanitization, credential leakage, AI security, LLM output guard, token stripping">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/output-sanitization.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/output-sanitization.html">
+  <meta property="og:title" content="Output Sanitization: Preventing Credential Leakage in AI Responses">
+  <meta property="og:description" content="7-pattern output guard that strips credentials, tokens, and PII from LLM responses before they reach the user.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-01-30">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Output Sanitization: Preventing Credential Leakage in AI Responses">
+  <meta name="twitter:description" content="7-pattern output guard that strips credentials, tokens, and PII from LLM responses before they reach the user.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Output Sanitization: Preventing Credential Leakage in AI Responses",
+    "datePublished": "2026-01-30",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "7-pattern output guard that strips credentials, tokens, and PII from LLM responses before they reach the user.",
+    "url": "https://news.occp.ai/articles/output-sanitization.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-01-30</span>
+          <span class="card-tag tag-security">Security</span>
+          <span class="card-version">v0.6.0</span>
+        </div>
+        <h1>Output Sanitization: Preventing Credential Leakage in AI Responses</h1>
+        <p class="lead">Large language models are trained on datasets that include configuration files, code repositories, and documentation &mdash; all rich with credential patterns. When these models generate responses, they can reproduce patterns that look exactly like real API keys, database passwords, and authentication tokens. The output sanitization guard is the last line of defense before those patterns reach a user.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Problem: Uncontrolled LLM Output</h2>
+
+        <p>Consider a scenario where an AI agent is asked to help configure a database connection. The LLM generates a helpful response that includes an example connection string. That example string might contain a pattern indistinguishable from a real PostgreSQL connection URI with embedded credentials. The model did not "leak" a real credential &mdash; it synthesized a plausible one. But the user receiving the response cannot know this, and if the pattern matches a real credential format, automated scanning tools will flag it.</p>
+
+        <p>The more dangerous case is when context injection or retrieval-augmented generation feeds the LLM real credential values from internal documents. In this scenario, the LLM may include actual secrets in its response &mdash; not because it was asked to, but because the credential appeared in the context window and the model treated it as relevant information.</p>
+
+        <blockquote>The LLM does not understand what a credential is. It understands that certain token sequences frequently appear in responses about database configuration. Output sanitization is the mechanism that imposes human understanding of sensitive patterns onto machine-generated text.</blockquote>
+
+        <h2>The 7-Pattern Guard</h2>
+
+        <p>The OCCP output sanitization guard detects and redacts seven categories of credential patterns. Each pattern was selected based on empirical analysis of LLM output across thousands of task executions during development, combined with established credential format specifications from the respective service providers.</p>
+
+        <h3>Pattern 1: AWS Access Keys</h3>
+
+        <p>AWS access key IDs follow a known format: 20 uppercase alphanumeric characters beginning with <code>AKIA</code>. The guard matches this pattern and its associated secret access key format. Redaction replaces the key with <code>[AWS_KEY_REDACTED]</code> while preserving the surrounding text structure.</p>
+
+        <h3>Pattern 2: JWT Tokens</h3>
+
+        <p>JSON Web Tokens have a distinctive three-part structure separated by dots, where each part is a base64url-encoded string. The guard detects strings matching this pattern when they exceed a minimum length threshold (to avoid false positives on short dotted strings). JWT tokens are particularly common in LLM output because they appear frequently in API documentation and tutorial content.</p>
+
+        <h3>Pattern 3: Database Connection URIs</h3>
+
+        <p>Connection strings for PostgreSQL, MySQL, MongoDB, and Redis follow predictable URI schemes: <code>postgresql://user:password@host:port/dbname</code>. The guard detects these URI patterns and redacts the credential portion while preserving the scheme and host information. This allows the response to remain useful ("connect to postgresql://[REDACTED]@db.example.com:5432/mydb") while removing the sensitive component.</p>
+
+        <h3>Pattern 4: Generic API Keys</h3>
+
+        <p>Many services use API keys with distinctive prefixes: <code>sk-</code> for certain providers, <code>key-</code> for others, and various service-specific prefixes. The guard maintains a list of known prefixes combined with minimum-length requirements to detect generic API key patterns without excessive false positives.</p>
+
+        <h3>Pattern 5: Private Keys</h3>
+
+        <p>PEM-encoded private keys are bounded by recognizable header and footer markers: <code>-----BEGIN RSA PRIVATE KEY-----</code> and its variants. The guard detects these boundaries and redacts the entire key block. This pattern has the lowest false positive rate because the markers are unambiguous.</p>
+
+        <h3>Pattern 6: Connection Strings</h3>
+
+        <p>Enterprise systems frequently use connection strings with key-value pair formats: <code>Server=host;Database=db;User Id=user;Password=pass;</code>. The guard detects the <code>Password=</code> pattern within connection string contexts and redacts the value while preserving the structure.</p>
+
+        <h3>Pattern 7: Bearer Tokens</h3>
+
+        <p>HTTP authorization headers with bearer tokens appear frequently in API documentation examples. The guard detects <code>Bearer </code> followed by a long alphanumeric string and redacts the token value.</p>
+
+        <h2>Implementation Architecture</h2>
+
+        <p>The sanitization guard is implemented as a pipeline stage that processes text through all seven patterns sequentially. Each pattern is a compiled regular expression for performance, and the guard maintains match statistics for monitoring.</p>
+
+        <pre><code>import re
+from dataclasses import dataclass, field
+
+@dataclass
+class SanitizationResult:
+    text: str
+    redactions: int = 0
+    patterns_matched: list[str] = field(default_factory=list)
+
+class OutputGuard:
+    def __init__(self):
+        self._patterns = self._compile_patterns()
+
+    def _compile_patterns(self) -> list[tuple[str, re.Pattern, str]]:
+        return [
+            ("aws_key", re.compile(r'AKIA[A-Z0-9]{16}'), '[AWS_KEY_REDACTED]'),
+            ("jwt_token", re.compile(
+                r'eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'
+            ), '[JWT_REDACTED]'),
+            ("db_uri", re.compile(
+                r'(postgresql|mysql|mongodb|redis)://[^:]+:[^@]+@'
+            ), r'\1://[CREDENTIALS_REDACTED]@'),
+            # ... patterns 4-7
+        ]
+
+    def sanitize(self, text: str) -> SanitizationResult:
+        result = SanitizationResult(text=text)
+        for name, pattern, replacement in self._patterns:
+            new_text, count = pattern.subn(replacement, result.text)
+            if count > 0:
+                result.redactions += count
+                result.patterns_matched.append(name)
+                result.text = new_text
+        return result</code></pre>
+
+        <p>The <code>SanitizationResult</code> object carries both the sanitized text and metadata about what was redacted. This metadata is essential for monitoring &mdash; if a particular pattern is matching frequently, it may indicate that the LLM is receiving too many credential examples in its context, which is a separate problem to address.</p>
+
+        <h2>Handling False Positives</h2>
+
+        <p>The primary engineering challenge in output sanitization is false positives. A guard that is too aggressive will destroy legitimate content &mdash; redacting example API keys in tutorial responses, mangling base64-encoded data that happens to look like a JWT, or stripping connection string examples that the user explicitly requested.</p>
+
+        <p>OCCP addresses this through three mechanisms:</p>
+
+        <ul>
+          <li><strong>Pattern specificity</strong> &mdash; Each regex is crafted to match the specific format of real credentials, not just similar-looking strings. The AWS key pattern requires the <code>AKIA</code> prefix plus exactly 16 uppercase alphanumeric characters, which matches real key IDs with high precision.</li>
+          <li><strong>Minimum length thresholds</strong> &mdash; Short strings that partially match a pattern are not redacted. A three-character string matching the start of a JWT pattern is ignored; a 100-character string matching the full three-part structure is redacted.</li>
+          <li><strong>Context preservation</strong> &mdash; Redaction replaces only the sensitive portion of a match, not the surrounding context. A database URI keeps its scheme and host; only the credentials are removed. This preserves the response's informational value.</li>
+        </ul>
+
+        <blockquote>A sanitization guard that breaks legitimate responses is worse than no guard at all, because operators will disable it. The guard must be precise enough that operators trust it and leave it enabled.</blockquote>
+
+        <h2>Position in the Pipeline</h2>
+
+        <p>The output guard sits at a critical position in the Verified Autonomy Pipeline: after the Execute stage (LLM response generated) and before both the Validate stage (output verification) and the audit log write. This positioning has two consequences.</p>
+
+        <p>First, the Validate stage sees sanitized output. If validation checks include format verification or content analysis, they operate on the same text that the user will receive. There is no discrepancy between what was validated and what was delivered.</p>
+
+        <p>Second, the audit log records sanitized output. This is a deliberate design decision. The audit log is a compliance artifact that may be reviewed by multiple parties. Storing unsanitized LLM output that might contain credential patterns in the audit log would transfer the security risk from the response to the log store. By sanitizing before logging, OCCP ensures that credential patterns do not persist anywhere in the system.</p>
+
+        <h2>Monitoring and Metrics</h2>
+
+        <p>The guard exposes three metrics: total redactions per time window, redactions by pattern type, and redaction rate (redactions per 100 responses). A sudden increase in the redaction rate signals that something has changed &mdash; perhaps the LLM's context is being populated with more credential-laden documents, or a new integration is exposing sensitive configuration.</p>
+
+        <p>These metrics feed into the dashboard's security panel, where operators can monitor sanitization activity in real time and investigate spikes. The pattern breakdown is particularly useful: if JWT redactions spike but other patterns remain stable, it narrows the investigation to token handling in the current context.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>7 compiled regex patterns detect AWS keys, JWT tokens, database URIs, API keys, private keys, connection strings, and bearer tokens</li>
+          <li>The guard operates post-LLM, pre-validation, and pre-audit to ensure no credential patterns persist anywhere in the system</li>
+          <li>False positive mitigation through pattern specificity, minimum length thresholds, and context-preserving partial redaction</li>
+          <li>SanitizationResult metadata enables monitoring of redaction frequency and pattern distribution</li>
+          <li>The guard cannot be disabled in the Community Edition &mdash; output sanitization is a platform guarantee</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="occp-v060-security-gdpr.html">&larr; OCCP v0.6.0 Release</a>
+        <a href="gdpr-by-design.html">GDPR by Design &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

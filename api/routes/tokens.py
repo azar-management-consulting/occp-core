@@ -223,6 +223,81 @@ async def revoke_token(
     return {"provider": provider, "revoked": True}
 
 
+@router.post(
+    "/tokens/rotate",
+    dependencies=[Depends(PermissionChecker("tokens", "rotate"))],
+)
+async def rotate_all_tokens(
+    payload: dict[str, Any] = Depends(get_current_user_payload),
+    state: AppState = Depends(get_state),
+) -> dict:
+    """Rotate all tokens — re-encrypt under a new master key (system_admin only)."""
+    if state.token_store is None or state.token_encryptor is None:
+        raise HTTPException(status_code=503, detail="Token store or encryptor not available")
+
+    from security.encryption import TokenEncryptor
+
+    user_id = payload["sub"]
+    new_master = TokenEncryptor.generate_master_key()
+    new_encryptor = TokenEncryptor(new_master)
+
+    count = await state.token_store.rotate_all(new_encryptor)
+    state.token_encryptor = new_encryptor
+
+    if state.policy_engine and state.audit_store:
+        await state.policy_engine.audit(
+            actor=user_id,
+            action="token.rotate_all",
+            task_id="",
+            detail={"rotated_count": count},
+            audit_store=state.audit_store,
+        )
+
+    logger.info("Key rotation completed by user=%s, rotated=%d tokens", user_id, count)
+    return {"rotated": count, "success": True}
+
+
+class OrgTokenStoreRequest(BaseModel):
+    org_id: str = Field(..., min_length=1, max_length=64)
+    provider: str = Field(..., pattern=r"^(anthropic|openai)$")
+    token: str = Field(..., min_length=10, max_length=500)
+    label: str = Field(default="", max_length=128)
+
+
+@router.post(
+    "/tokens/org",
+    status_code=201,
+    dependencies=[Depends(PermissionChecker("tokens", "org_manage"))],
+)
+async def store_org_token(
+    body: OrgTokenStoreRequest,
+    payload: dict[str, Any] = Depends(get_current_user_payload),
+    state: AppState = Depends(get_state),
+) -> dict:
+    """Store an org-level default token (org_admin+). Plaintext never returned."""
+    if state.token_store is None:
+        raise HTTPException(status_code=503, detail="Token store not available")
+
+    user_id = payload["sub"]
+    row = await state.token_store.store_org_token(
+        org_id=body.org_id,
+        provider=body.provider,
+        token=body.token,
+        label=body.label,
+    )
+
+    if state.policy_engine and state.audit_store:
+        await state.policy_engine.audit(
+            actor=user_id,
+            action="token.store_org",
+            task_id="",
+            detail={"provider": body.provider, "org_id": body.org_id},
+            audit_store=state.audit_store,
+        )
+
+    return {"provider": body.provider, "org_id": body.org_id, "masked_value": row.masked_value, "stored": True}
+
+
 @router.get(
     "/tokens/check",
     dependencies=[Depends(PermissionChecker("tokens", "read"))],

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pipeline Resilience: Retry Strategies for AI Workflows — OCCP News</title>
+  <meta name="description" content="Configurable retry policies, per-stage timing metrics, and graceful degradation in multi-step AI orchestration pipelines.">
+  <meta name="keywords" content="OCCP, pipeline resilience, retry strategies, circuit breaker, AI workflow, graceful degradation, exponential backoff">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/pipeline-resilience.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/pipeline-resilience.html">
+  <meta property="og:title" content="Pipeline Resilience: Retry Strategies for AI Workflows">
+  <meta property="og:description" content="Configurable retry policies, per-stage timing metrics, and graceful degradation in multi-step AI orchestration pipelines.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-05">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Pipeline Resilience: Retry Strategies for AI Workflows">
+  <meta name="twitter:description" content="Configurable retry policies, per-stage timing metrics, and graceful degradation in multi-step AI orchestration pipelines.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Pipeline Resilience: Retry Strategies for AI Workflows",
+    "datePublished": "2026-02-05",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Configurable retry policies, per-stage timing metrics, and graceful degradation in multi-step AI orchestration pipelines.",
+    "url": "https://news.occp.ai/articles/pipeline-resilience.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-05</span>
+          <span class="card-tag tag-architecture">Architecture</span>
+          <span class="card-version">v0.6.0</span>
+        </div>
+        <h1>Pipeline Resilience: Retry Strategies for AI Workflows</h1>
+        <p class="lead">The Verified Autonomy Pipeline depends on external services &mdash; LLM APIs, databases, tool servers &mdash; that are inherently unreliable. Rate limits, transient network failures, and provider outages are not exceptions; they are normal operating conditions. Resilience engineering ensures the pipeline handles these conditions without corrupting state or losing work.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>Failure Modes in AI Pipelines</h2>
+
+        <p>AI orchestration pipelines have failure characteristics that differ from traditional web applications. A standard web request either succeeds or fails within a predictable time window. An LLM API call can succeed after 200ms, or it can time out after 60 seconds, or it can return an empty response, or it can return a response that is technically valid but contextually wrong. Each of these outcomes requires a different recovery strategy.</p>
+
+        <p>OCCP's five-stage pipeline (Plan, Gate, Execute, Validate, Ship) has failure points at every stage. The Plan stage can fail if the task decomposition prompt exceeds the model's context window. The Gate stage can fail if the policy engine encounters an unrecognized input format. The Execute stage can fail due to LLM API errors, timeouts, or rate limiting. The Validate stage can fail if validation criteria are malformed. The Ship stage can fail due to database write errors or notification delivery failures.</p>
+
+        <p>Each stage has different retry characteristics because the cost and risk of retrying varies. Retrying the Plan stage is safe &mdash; planning is idempotent. Retrying the Execute stage is risky if the execution has side effects (tool invocations, database writes). Retrying the Ship stage requires checking whether the previous attempt partially completed.</p>
+
+        <h2>Retry Policy Configuration</h2>
+
+        <p>OCCP implements configurable retry policies at the per-stage level. Each pipeline stage has its own retry configuration with three parameters: maximum retry count, backoff strategy, and retryable error classification.</p>
+
+        <pre><code>from dataclasses import dataclass
+from enum import Enum
+
+class BackoffStrategy(Enum):
+    FIXED = "fixed"
+    EXPONENTIAL = "exponential"
+    EXPONENTIAL_JITTER = "exponential_jitter"
+
+@dataclass
+class RetryPolicy:
+    max_retries: int
+    backoff: BackoffStrategy
+    base_delay_seconds: float
+    max_delay_seconds: float
+    retryable_errors: list[str]
+
+# Default policies per stage
+STAGE_POLICIES = {
+    "plan":     RetryPolicy(max_retries=3, backoff=BackoffStrategy.EXPONENTIAL_JITTER,
+                            base_delay_seconds=1.0, max_delay_seconds=30.0,
+                            retryable_errors=["timeout", "rate_limit", "server_error"]),
+    "gate":     RetryPolicy(max_retries=1, backoff=BackoffStrategy.FIXED,
+                            base_delay_seconds=0.5, max_delay_seconds=0.5,
+                            retryable_errors=["timeout"]),
+    "execute":  RetryPolicy(max_retries=2, backoff=BackoffStrategy.EXPONENTIAL_JITTER,
+                            base_delay_seconds=2.0, max_delay_seconds=60.0,
+                            retryable_errors=["timeout", "rate_limit", "server_error"]),
+    "validate": RetryPolicy(max_retries=1, backoff=BackoffStrategy.FIXED,
+                            base_delay_seconds=0.5, max_delay_seconds=0.5,
+                            retryable_errors=["timeout"]),
+    "ship":     RetryPolicy(max_retries=3, backoff=BackoffStrategy.EXPONENTIAL,
+                            base_delay_seconds=1.0, max_delay_seconds=15.0,
+                            retryable_errors=["timeout", "db_write_error"]),
+}</code></pre>
+
+        <p>The Gate and Validate stages have minimal retry allowances (1 retry each) because these stages execute local policy evaluation and output checking. If these fail, the problem is unlikely to be transient. The Execute stage allows 2 retries with exponential backoff and jitter because LLM API failures are frequently transient (rate limits, load balancer resets). The Ship stage allows 3 retries because database write failures are often caused by momentary lock contention that resolves quickly.</p>
+
+        <h3>Exponential Backoff with Jitter</h3>
+
+        <p>Plain exponential backoff (1s, 2s, 4s, 8s) creates a thundering herd problem when multiple tasks retry simultaneously. All retries land at the same exponential intervals, creating periodic load spikes. Adding random jitter spreads retries across the interval, smoothing the load on the target service.</p>
+
+        <pre><code>import random
+
+def calculate_delay(policy: RetryPolicy, attempt: int) -> float:
+    if policy.backoff == BackoffStrategy.FIXED:
+        return policy.base_delay_seconds
+
+    exponential = policy.base_delay_seconds * (2 ** attempt)
+    capped = min(exponential, policy.max_delay_seconds)
+
+    if policy.backoff == BackoffStrategy.EXPONENTIAL_JITTER:
+        return random.uniform(0, capped)  # Full jitter
+
+    return capped  # Plain exponential</code></pre>
+
+        <p>OCCP uses full jitter (uniform random between 0 and the exponential cap) rather than equal jitter or decorrelated jitter. Full jitter provides the best spread across the retry window at the cost of occasional very short delays. For LLM API retries, this tradeoff is favorable because the goal is to avoid synchronized retry storms.</p>
+
+        <h2>Per-Stage Timing Metrics</h2>
+
+        <p>Resilience requires observability. If the Execute stage starts taking twice as long, that is a leading indicator of impending failures. OCCP records timing metrics for every stage of every pipeline execution.</p>
+
+        <pre><code># Timing metrics collected per stage execution
+@dataclass
+class StageMetrics:
+    stage_name: str
+    task_id: str
+    started_at: float      # monotonic clock
+    completed_at: float
+    duration_ms: float
+    attempt_number: int    # 1 for first try, 2+ for retries
+    success: bool
+    error_type: str | None</code></pre>
+
+        <p>These metrics are aggregated into percentile distributions (p50, p95, p99) per stage. The dashboard displays these as time-series charts, allowing operators to spot degradation trends before they cause task failures. A p95 Execute stage duration that doubles over an hour is a signal to investigate the LLM provider's status, even if no tasks have failed yet.</p>
+
+        <h2>Graceful Degradation</h2>
+
+        <p>When the primary LLM provider is unavailable, the pipeline cannot execute tasks. But "unavailable" is not a binary state. The provider might be returning responses at 10% of normal speed, or returning errors for 50% of requests, or timing out intermittently. Graceful degradation means the platform adapts its behavior to the current service quality rather than treating any degradation as total failure.</p>
+
+        <p>OCCP implements three degradation levels:</p>
+
+        <ul>
+          <li><strong>Normal</strong> &mdash; All services healthy. Pipeline operates at full capacity with standard retry policies.</li>
+          <li><strong>Degraded</strong> &mdash; LLM provider responding slowly or with partial errors. Pipeline reduces concurrency, increases timeouts, and queues new tasks rather than executing immediately. Operators receive a degradation alert.</li>
+          <li><strong>Unavailable</strong> &mdash; LLM provider is not responding. Pipeline stops accepting new Execute-stage tasks. Plan and Gate stages continue to function (they do not require the LLM). Tasks are queued for execution when the provider recovers. Operators receive an unavailability alert.</li>
+        </ul>
+
+        <blockquote>The worst failure mode is not total outage &mdash; it is partial degradation that goes unnoticed until a queue of retrying tasks overwhelms the system. Explicit degradation levels make the platform's state visible to operators before cascading failures occur.</blockquote>
+
+        <h2>Circuit Breaker Pattern</h2>
+
+        <p>The circuit breaker pattern prevents a failing external service from consuming platform resources through futile retry attempts. When the error rate for a specific service exceeds a threshold, the circuit "opens" and subsequent requests fail immediately without attempting the call. After a configurable cooldown period, the circuit enters a "half-open" state where a single probe request is allowed through. If the probe succeeds, the circuit closes and normal operation resumes. If it fails, the circuit remains open for another cooldown period.</p>
+
+        <pre><code>class CircuitBreaker:
+    def __init__(self, failure_threshold: int = 5,
+                 cooldown_seconds: float = 30.0):
+        self.failure_count = 0
+        self.failure_threshold = failure_threshold
+        self.cooldown_seconds = cooldown_seconds
+        self.state = "closed"  # closed | open | half_open
+        self.last_failure_time = 0.0
+
+    async def call(self, func, *args, **kwargs):
+        if self.state == "open":
+            if time.monotonic() - self.last_failure_time > self.cooldown_seconds:
+                self.state = "half_open"
+            else:
+                raise CircuitOpenError("Circuit is open, call rejected")
+
+        try:
+            result = await func(*args, **kwargs)
+            self._on_success()
+            return result
+        except Exception as e:
+            self._on_failure()
+            raise</code></pre>
+
+        <p>OCCP uses separate circuit breakers for each external service: one for the LLM API, one for any MCP tool servers, and one for external notification endpoints. This isolation ensures that an LLM outage does not affect tool server calls, and vice versa.</p>
+
+        <h2>Partial Failure and Pipeline State</h2>
+
+        <p>The most dangerous failure mode in a multi-stage pipeline is partial completion. If the Execute stage succeeds but the Ship stage fails, the task has produced a result but has not delivered it. If the pipeline simply retries the entire task, the Execute stage runs again, potentially producing a different result and consuming additional LLM tokens unnecessarily.</p>
+
+        <p>OCCP handles this by recording stage completion status in the task record. Each stage writes a completion marker before the next stage begins. When a retry is needed, the pipeline examines the completion markers and resumes from the last incomplete stage rather than restarting from the beginning.</p>
+
+        <pre><code># Stage completion tracking
+task.stage_status = {
+    "plan":     {"completed": True,  "result_hash": "a1b2c3..."},
+    "gate":     {"completed": True,  "result_hash": "d4e5f6..."},
+    "execute":  {"completed": True,  "result_hash": "g7h8i9..."},
+    "validate": {"completed": True,  "result_hash": "j0k1l2..."},
+    "ship":     {"completed": False, "error": "db_write_timeout"},
+}
+# Retry resumes at "ship" stage, using existing execute result</code></pre>
+
+        <p>The <code>result_hash</code> for each stage ensures that the pipeline can verify it is working with the correct intermediate results. If a stage's result hash does not match the expected input hash for the next stage, the pipeline detects the inconsistency and alerts the operator rather than silently proceeding with corrupted state.</p>
+
+        <h2>Operational Impact</h2>
+
+        <p>Since implementing these resilience features, OCCP's task completion rate under degraded conditions has improved measurably. Tasks that previously failed on the first LLM timeout now succeed on retry without operator intervention. The circuit breaker prevents token waste during extended outages. And the per-stage timing metrics have enabled proactive detection of provider degradation before it escalates to task failures.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Per-stage retry policies with configurable max retries, backoff strategy, and retryable error classification</li>
+          <li>Full jitter exponential backoff prevents thundering herd on LLM API retries</li>
+          <li>Three degradation levels (normal, degraded, unavailable) make platform state visible to operators</li>
+          <li>Circuit breaker pattern prevents resource waste during extended external service outages</li>
+          <li>Stage completion markers enable resume-from-failure without re-executing completed stages</li>
+          <li>Per-stage timing metrics (p50/p95/p99) provide early warning of service degradation</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="evolving-injection-guards.html">&larr; Evolving Injection Guards</a>
+        <a href="occp-v070-orm-rbac-sandbox.html">OCCP v0.7.0: ORM, RBAC, Sandbox &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

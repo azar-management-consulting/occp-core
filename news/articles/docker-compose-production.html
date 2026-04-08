@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Docker Compose in Production: Lessons from Deploying AI Services — OCCP News</title>
+  <meta name="description" content="Docker Compose configuration for the OCCP stack: healthchecks, read-only filesystems, non-root users, and operational lessons from running AI services in containers.">
+  <meta name="keywords" content="Docker Compose, production deployment, AI services, container security, healthchecks, OCCP">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/docker-compose-production.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/docker-compose-production.html">
+  <meta property="og:title" content="Docker Compose in Production: Lessons from Deploying AI Services">
+  <meta property="og:description" content="Healthchecks, read-only filesystems, security contexts, and the operational lessons of running AI services in containers.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2025-12-15">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Docker Compose in Production: Lessons from Deploying AI Services">
+  <meta name="twitter:description" content="Healthchecks, read-only filesystems, security contexts, and the operational lessons of running AI services in containers.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Docker Compose in Production: Lessons from Deploying AI Services",
+    "description": "Docker Compose configuration for the OCCP stack with healthchecks, read-only filesystems, and container security.",
+    "datePublished": "2025-12-15",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "url": "https://news.occp.ai/articles/docker-compose-production.html",
+    "mainEntityOfPage": "https://news.occp.ai/articles/docker-compose-production.html",
+    "proficiencyLevel": "Advanced",
+    "dependencies": "Docker, Docker Compose v2"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo">OCCP <span>// news</span></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="https://news.occp.ai/" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+
+    <!-- Article Header -->
+    <header class="article-header">
+      <div class="card-meta">
+        <span class="card-date">2025-12-15</span>
+        <span class="card-tag tag-infra">Infrastructure</span>
+        <span class="card-version">v0.2.0</span>
+      </div>
+      <h1>Docker Compose in Production: Lessons from Deploying AI Services</h1>
+      <p class="lead">Docker Compose is often dismissed as a development-only tool. For OCCP, it became the production deployment target for v0.2.0 -- and the lessons we learned about healthchecks, filesystem security, and service networking shaped every subsequent release.</p>
+    </header>
+
+    <!-- Article Body -->
+    <div class="article-body">
+
+      <h2>The OCCP Production Stack</h2>
+
+      <p>The OCCP platform runs as two primary services: the FastAPI backend (occp-api) on port 8000, and the Next.js dashboard (occp-dash) on port 3000. Both sit behind an Apache2 reverse proxy that handles SSL termination and domain routing. Docker Compose orchestrates the two application containers, their networking, and their shared dependencies.</p>
+
+      <p>We evaluated Kubernetes early and rejected it for the current stage. With two services and predictable load patterns, the operational overhead of a Kubernetes cluster was not justified. Docker Compose provides declarative service definitions, automated restarts, and network isolation -- exactly what we needed without the abstraction tax.</p>
+
+      <h2>The Compose File: Structure and Design Decisions</h2>
+
+      <pre><code>version: "3.9"
+
+services:
+  occp-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: occp-api
+    restart: unless-stopped
+    read_only: true
+    user: "1000:1000"
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - api-data:/app/data
+      - /tmp
+    environment:
+      - OCCP_ENV=production
+      - OCCP_LOG_LEVEL=info
+    healthcheck:
+      test: ["CMD", "python", "-c",
+        "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+
+  occp-dash:
+    build:
+      context: .
+      dockerfile: Dockerfile.dash
+    container_name: occp-dash
+    restart: unless-stopped
+    read_only: true
+    user: "1000:1000"
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=https://api.occp.ai
+    healthcheck:
+      test: ["CMD", "node", "-e",
+        "require('http').get('http://localhost:3000', r => r.statusCode === 200 ? process.exit(0) : process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      occp-api:
+        condition: service_healthy
+
+volumes:
+  api-data:</code></pre>
+
+      <p>Several design decisions are embedded in this configuration. Each one was learned through trial and error during development.</p>
+
+      <h2>Healthcheck Configuration</h2>
+
+      <p>Docker healthchecks are the difference between a service that restarts on failure and one that silently serves errors. The healthcheck for occp-api uses Python's stdlib <code>urllib.request</code> because we cannot assume curl or wget exist in the minimal container image. The dashboard healthcheck uses Node.js's built-in <code>http</code> module for the same reason.</p>
+
+      <h3>The Four Healthcheck Parameters</h3>
+
+      <ul>
+        <li><strong>interval: 30s</strong> -- How often Docker checks. We started at 10s but found it generated unnecessary log noise without improving recovery time.</li>
+        <li><strong>timeout: 10s</strong> -- Maximum time for the check to complete. AI services can have slow startups during model loading, so 10 seconds provides margin.</li>
+        <li><strong>retries: 3</strong> -- Number of consecutive failures before marking unhealthy. This prevents false positives from transient network issues or garbage collection pauses.</li>
+        <li><strong>start_period: 15s</strong> -- Grace period after container start where healthcheck failures do not count. Critical for the API service which needs to initialize database connections and load policy rules.</li>
+      </ul>
+
+      <blockquote>The depends_on condition with service_healthy ensures the dashboard only starts after the API is confirmed responsive. Without this, the dashboard would boot, attempt to verify its API connection, and fail during startup -- creating confusing error logs.</blockquote>
+
+      <h2>Read-Only Filesystem Security</h2>
+
+      <p>The <code>read_only: true</code> directive makes the container's root filesystem immutable. This is a defense-in-depth measure: even if an attacker gains code execution inside the container, they cannot modify application binaries, install persistence mechanisms, or tamper with configuration files.</p>
+
+      <p>Read-only mode requires careful handling of directories that applications legitimately need to write to. The API service needs <code>/app/data</code> for the SQLite database and audit logs, and <code>/tmp</code> for temporary file operations. We provide these as explicit exceptions:</p>
+
+      <pre><code>volumes:
+  - api-data:/app/data     # Named volume for persistent data
+tmpfs:
+  - /tmp:noexec,nosuid,size=100m  # RAM-backed temp, no executables</code></pre>
+
+      <p>The tmpfs mount for <code>/tmp</code> is particularly important. The <code>noexec</code> flag prevents execution of any files written to the temp directory, and <code>nosuid</code> prevents privilege escalation through setuid binaries. The 100MB size limit prevents a runaway process from consuming all available memory through temp file accumulation.</p>
+
+      <h2>Non-Root Container Users</h2>
+
+      <p>Both services run as <code>user: "1000:1000"</code> -- a non-root user created in the Dockerfile. Running containers as root is the single most common container security mistake. A root process inside a container is one kernel exploit away from root on the host.</p>
+
+      <pre><code># In Dockerfile.api
+RUN groupadd -g 1000 occp && \
+    useradd -u 1000 -g occp -s /bin/false occp && \
+    chown -R occp:occp /app
+USER occp</code></pre>
+
+      <p>The user is created with <code>/bin/false</code> as the shell, preventing interactive login even if somehow accessed. File ownership is set during build, so the non-root user has exactly the permissions it needs and nothing more.</p>
+
+      <h2>Network Isolation</h2>
+
+      <p>The port bindings use <code>127.0.0.1:8000:8000</code> rather than <code>8000:8000</code>. This subtle difference is critical: binding to localhost means the service is only accessible from the host machine, not from external networks. The Apache2 reverse proxy on the host forwards external traffic to these local ports after SSL termination.</p>
+
+      <pre><code># WRONG: Exposes port to all network interfaces
+ports:
+  - "8000:8000"
+
+# CORRECT: Binds only to localhost
+ports:
+  - "127.0.0.1:8000:8000"</code></pre>
+
+      <p>Without the localhost binding, the API would be accessible on the server's public IP at port 8000, bypassing the reverse proxy and its SSL encryption. This is the kind of misconfiguration that causes data exposure incidents.</p>
+
+      <h2>Environment Variable Management</h2>
+
+      <p>Secrets never appear in the Compose file. The <code>environment</code> section contains only non-sensitive configuration. Actual secrets -- JWT signing keys, API tokens, database credentials -- are injected at runtime through a <code>.env</code> file that is explicitly excluded from version control:</p>
+
+      <pre><code># .env (NOT in git, deployed via secure copy)
+OCCP_JWT_SECRET=...
+ANTHROPIC_API_KEY=...
+OCCP_DB_URL=sqlite+aiosqlite:///app/data/occp.db</code></pre>
+
+      <p>The Compose file references these with <code>env_file: .env</code> in production deployments. During development, the same variables are set in a <code>.env.example</code> file with placeholder values, ensuring developers know which variables are required without exposing actual credentials.</p>
+
+      <h2>Volume Management for Persistent Data</h2>
+
+      <p>The <code>api-data</code> named volume persists across container restarts and rebuilds. This is where the SQLite database and audit log chain live. Named volumes are managed by Docker and survive <code>docker compose down</code> -- only <code>docker compose down -v</code> removes them.</p>
+
+      <p>We implement a backup strategy that snapshots the volume directory before every deployment. The backup script runs as a pre-deploy hook in our CI/CD pipeline:</p>
+
+      <pre><code>#!/bin/bash
+BACKUP_DIR="/backups/occp/$(date +%Y%m%d_%H%M%S)"
+mkdir -p "$BACKUP_DIR"
+docker compose stop occp-api
+cp -a /var/lib/docker/volumes/occp_api-data/_data/* "$BACKUP_DIR/"
+docker compose start occp-api</code></pre>
+
+      <h2>Lessons Learned</h2>
+
+      <h3>Start Period Matters More Than You Think</h3>
+
+      <p>Our first deployment had no <code>start_period</code>. The API container took 12 seconds to initialize database connections and load policy rules. Docker marked it unhealthy after 3 failed checks (at 10s intervals), restarted it, and entered a restart loop. Adding a 15-second start period fixed the issue immediately.</p>
+
+      <h3>Log Driver Configuration</h3>
+
+      <p>Docker's default json-file log driver has no size limit. In production, AI services generate substantial log output -- especially during pipeline execution with verbose audit logging. We configure log rotation in the Compose file to prevent disk exhaustion:</p>
+
+      <pre><code>logging:
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "5"</code></pre>
+
+      <h3>Compose Watch for Development</h3>
+
+      <p>Docker Compose v2.22+ introduced <code>compose watch</code>, which provides file-syncing and rebuild triggers. During development, code changes sync into the running container without a full rebuild. This reduced our development iteration cycle from 45 seconds (full rebuild) to under 2 seconds (file sync + server restart).</p>
+
+    </div>
+
+    <!-- Summary Box -->
+    <div class="summary-box">
+      <h3>// Key Takeaways</h3>
+      <ul>
+        <li>Read-only filesystem with explicit writable exceptions prevents container modification attacks</li>
+        <li>Non-root users with /bin/false shells enforce least-privilege at the container level</li>
+        <li>Localhost port binding prevents bypassing the reverse proxy and SSL termination</li>
+        <li>Healthcheck start_period prevents restart loops during slow application initialization</li>
+        <li>Named volumes survive container rebuilds; backup before every deployment</li>
+        <li>Log rotation configuration prevents disk exhaustion from verbose AI service output</li>
+      </ul>
+    </div>
+
+    <!-- Article Navigation -->
+    <nav class="article-nav">
+      <a href="rest-api-design.html">&larr; #012 REST API Design</a>
+      <a href="sdk-design-philosophy.html">#014 SDK Design Philosophy &rarr;</a>
+    </nav>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP — OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Scheduling and Concurrency Control in Distributed AI Systems — OCCP News</title>
+  <meta name="description" content="Managing concurrent agent execution with resource-aware scheduling — preventing bottlenecks in multi-agent orchestration.">
+  <meta name="keywords" content="OCCP, agent scheduling, concurrency, distributed AI, task queue, rate limiting">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/agent-scheduling-concurrency.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/agent-scheduling-concurrency.html">
+  <meta property="og:title" content="Agent Scheduling and Concurrency Control in Distributed AI Systems">
+  <meta property="og:description" content="Managing concurrent agent execution with resource-aware scheduling — preventing bottlenecks in multi-agent orchestration.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2025-11-20">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Agent Scheduling and Concurrency Control in Distributed AI Systems">
+  <meta name="twitter:description" content="Managing concurrent agent execution with resource-aware scheduling — preventing bottlenecks in multi-agent orchestration.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Agent Scheduling and Concurrency Control in Distributed AI Systems",
+    "datePublished": "2025-11-20",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Managing concurrent agent execution with resource-aware scheduling — preventing bottlenecks in multi-agent orchestration.",
+    "url": "https://news.occp.ai/articles/agent-scheduling-concurrency.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2025-11-20</span>
+          <span class="card-tag tag-agent">Agents</span>
+          <span class="card-version">v0.1.0</span>
+        </div>
+        <h1>Agent Scheduling and Concurrency Control in Distributed AI Systems</h1>
+        <p class="lead">When multiple AI agents operate concurrently, they compete for shared resources: LLM API rate limits, compute capacity, and data access. OCCP's scheduler coordinates agent execution to prevent resource contention, enforce priority ordering, and maintain pipeline governance across concurrent workflows.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Concurrency Problem in AI Orchestration</h2>
+
+        <p>Single-agent systems are straightforward: one task enters the pipeline, passes through all five stages, and exits. Concurrency introduces complexity at every level. Two agents making simultaneous LLM API calls can exceed rate limits. Two agents writing to the same audit chain can create ordering conflicts. Two agents processing related tasks can produce inconsistent results if their execution interleaves incorrectly.</p>
+
+        <p>Traditional concurrency control (mutexes, semaphores, database locks) solves part of the problem. But AI workloads have unique characteristics that require specialized scheduling: LLM API calls have variable latency (200ms to 30s depending on output length), token consumption is unpredictable until execution completes, and rate limits are typically measured in requests-per-minute and tokens-per-minute simultaneously.</p>
+
+        <blockquote>The hardest concurrency problem in AI orchestration is not thread safety. It is resource contention against external APIs with opaque rate limiting and variable response times.</blockquote>
+
+        <h2>Resource-Aware Scheduling</h2>
+
+        <p>OCCP's scheduler maintains a resource model that tracks available capacity across multiple dimensions. Each LLM provider has a capacity profile: maximum concurrent requests, maximum tokens per minute, and maximum requests per minute. The scheduler admits tasks to the Execute stage only when sufficient capacity is available across all dimensions.</p>
+
+        <pre><code># Resource capacity model
+@dataclass
+class ProviderCapacity:
+    provider: str
+    max_concurrent: int        # Max simultaneous requests
+    max_rpm: int               # Max requests per minute
+    max_tpm: int               # Max tokens per minute
+    current_concurrent: int = 0
+    requests_this_minute: int = 0
+    tokens_this_minute: int = 0
+
+    def can_admit(self, estimated_tokens: int) -> bool:
+        """Check if a new request can be admitted."""
+        if self.current_concurrent >= self.max_concurrent:
+            return False
+        if self.requests_this_minute >= self.max_rpm:
+            return False
+        if self.tokens_this_minute + estimated_tokens > self.max_tpm:
+            return False
+        return True</code></pre>
+
+        <h3>Token Estimation</h3>
+
+        <p>Accurate token estimation is critical for resource-aware scheduling. Over-estimating wastes capacity (the scheduler reserves more tokens than needed, reducing throughput). Under-estimating risks rate limit violations. OCCP uses a conservative estimation strategy: the task plan's token budget is used as the estimate, which is always an upper bound on actual consumption. After execution completes, actual token usage is recorded and the capacity model is updated.</p>
+
+        <h3>Sliding Window Rate Tracking</h3>
+
+        <p>Rate limits are tracked using a sliding window algorithm rather than fixed minute boundaries. A fixed boundary creates burst behavior: if all requests arrive in the last 5 seconds of a minute, the first 5 seconds of the next minute are also saturated, appearing as a double-burst to the provider. The sliding window smooths request distribution by tracking the exact timestamp of each request and counting only those within the trailing 60-second window.</p>
+
+        <pre><code>class SlidingWindowTracker:
+    def __init__(self, window_seconds: int = 60):
+        self.window = window_seconds
+        self.timestamps: list[float] = []
+
+    def count(self) -> int:
+        """Count requests within the current window."""
+        now = time.monotonic()
+        cutoff = now - self.window
+        # Remove expired entries
+        self.timestamps = [t for t in self.timestamps if t > cutoff]
+        return len(self.timestamps)
+
+    def record(self):
+        """Record a new request."""
+        self.timestamps.append(time.monotonic())</code></pre>
+
+        <h2>Task Queue Design</h2>
+
+        <p>Tasks waiting for execution are held in a priority queue. The queue is not a simple FIFO; it considers multiple factors when selecting the next task to execute.</p>
+
+        <h3>Priority Levels</h3>
+
+        <p>OCCP defines four priority levels: <code>critical</code> (system operations, security responses), <code>high</code> (user-initiated interactive tasks), <code>normal</code> (standard batch processing), and <code>low</code> (background tasks, maintenance). Higher-priority tasks are always dequeued before lower-priority tasks, regardless of arrival order. Within the same priority level, tasks are processed in FIFO order.</p>
+
+        <pre><code># Priority queue with multi-level ordering
+import heapq
+from enum import IntEnum
+
+class Priority(IntEnum):
+    CRITICAL = 0  # Lowest number = highest priority
+    HIGH = 1
+    NORMAL = 2
+    LOW = 3
+
+class TaskQueue:
+    def __init__(self):
+        self._queue: list[tuple[int, int, Task]] = []
+        self._counter = 0  # Tie-breaker for FIFO within priority
+
+    def enqueue(self, task: Task, priority: Priority = Priority.NORMAL):
+        heapq.heappush(self._queue, (priority.value, self._counter, task))
+        self._counter += 1
+
+    def dequeue(self) -> Task | None:
+        if self._queue:
+            _, _, task = heapq.heappop(self._queue)
+            return task
+        return None</code></pre>
+
+        <h3>Queue Backpressure</h3>
+
+        <p>When the queue exceeds a configurable depth threshold, the scheduler applies backpressure by rejecting new task submissions with a 429 (Too Many Requests) response. This prevents unbounded queue growth during sustained overload. The backpressure threshold is configurable per deployment: a high-throughput deployment might allow 10,000 queued tasks, while a resource-constrained deployment might limit to 100.</p>
+
+        <h2>Concurrency Limits Per Agent Type</h2>
+
+        <p>Different agent types have different resource requirements and operational characteristics. A code generation agent that produces long outputs consumes significantly more tokens per request than a classification agent that produces single-word responses. OCCP allows per-agent-type concurrency limits that restrict how many instances of a given agent type can execute simultaneously.</p>
+
+        <pre><code># Per-agent concurrency configuration
+agent_limits = {
+    "code_generator": {"max_concurrent": 3, "token_multiplier": 2.0},
+    "classifier": {"max_concurrent": 20, "token_multiplier": 0.5},
+    "summarizer": {"max_concurrent": 10, "token_multiplier": 1.0},
+    "researcher": {"max_concurrent": 5, "token_multiplier": 1.5},
+}</code></pre>
+
+        <p>The <code>token_multiplier</code> adjusts token budget estimates for scheduling purposes. A code generation agent with a 2.0 multiplier is treated as consuming twice the planned token budget for capacity calculations, providing a safety margin against underestimation for agents with variable output length.</p>
+
+        <h2>Coordinating Related Tasks</h2>
+
+        <p>When multiple agents work on related tasks, their execution order can affect result quality. For example, if Agent A summarizes a document and Agent B answers questions about the same document, running B before A wastes tokens (B cannot reference A's summary). If A and B are independent, they can run in parallel. If B depends on A's output, they must run sequentially.</p>
+
+        <h3>Task Dependencies</h3>
+
+        <p>OCCP supports explicit task dependencies through a directed acyclic graph (DAG) model. When submitting related tasks, the caller specifies which tasks depend on which. The scheduler uses the DAG to determine execution order, running independent tasks in parallel and dependent tasks sequentially.</p>
+
+        <pre><code># Task dependency specification
+tasks = [
+    Task(id="summarize", agent="summarizer", depends_on=[]),
+    Task(id="qa_1", agent="researcher", depends_on=["summarize"]),
+    Task(id="qa_2", agent="researcher", depends_on=["summarize"]),
+    Task(id="compile", agent="writer", depends_on=["qa_1", "qa_2"]),
+]
+
+# Execution order:
+# 1. "summarize" executes first (no dependencies)
+# 2. "qa_1" and "qa_2" execute in parallel (both depend only on "summarize")
+# 3. "compile" executes last (depends on qa_1 and qa_2)</code></pre>
+
+        <h3>Conflict Detection</h3>
+
+        <p>For tasks that access shared resources (the same database table, the same file, the same external API), the scheduler can detect potential conflicts and serialize access. Conflict detection uses a resource locking model: each task declares the resources it will access, and the scheduler ensures that conflicting tasks do not execute concurrently. This prevents race conditions where two agents modify the same resource simultaneously, producing inconsistent results.</p>
+
+        <h2>Scheduler Metrics</h2>
+
+        <p>The scheduler exposes metrics for monitoring and capacity planning:</p>
+
+        <ul>
+          <li><strong>Queue depth</strong> &mdash; Number of tasks waiting for execution, broken down by priority level</li>
+          <li><strong>Queue wait time</strong> &mdash; P50, P95, and P99 latency from task submission to execution start</li>
+          <li><strong>Provider utilization</strong> &mdash; Current capacity usage as a percentage of maximum, per provider and per dimension</li>
+          <li><strong>Agent concurrency</strong> &mdash; Current and maximum concurrent executions per agent type</li>
+          <li><strong>Rejection rate</strong> &mdash; Percentage of task submissions rejected due to backpressure</li>
+          <li><strong>Throughput</strong> &mdash; Tasks completed per minute, broken down by agent type and priority</li>
+        </ul>
+
+        <p>These metrics are essential for right-sizing deployments: if queue depth consistently grows during peak hours, more LLM API capacity is needed. If a specific agent type has high rejection rates, its concurrency limit may need adjustment. The scheduler's resource model provides the data needed for informed capacity decisions, preventing both over-provisioning (wasted cost) and under-provisioning (degraded performance).</p>
+
+        <h2>Design for Evolution</h2>
+
+        <p>The v0.1.0 scheduler is single-node: all scheduling decisions are made by one process. This is sufficient for development and small-scale deployments, but will not scale to multi-node production environments where tasks can be submitted to any node. The scheduler interface is designed for future evolution toward distributed scheduling, with the current single-node implementation serving as the reference behavior that distributed implementations must match.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Resource-aware scheduling tracks concurrent requests, RPM, and TPM per LLM provider simultaneously</li>
+          <li>Sliding window rate tracking prevents burst behavior at minute boundaries</li>
+          <li>Four-level priority queue (critical, high, normal, low) with FIFO ordering within each level</li>
+          <li>Per-agent-type concurrency limits with configurable token multipliers for conservative estimation</li>
+          <li>DAG-based task dependencies enable parallel execution of independent tasks and sequential ordering of dependent ones</li>
+          <li>Scheduler metrics provide data for capacity planning and deployment right-sizing</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="sha256-audit-trail.html">&larr; SHA-256 Hash Chains</a>
+        <a href="protocol-based-adapters.html">Protocol-Based Adapters &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>
