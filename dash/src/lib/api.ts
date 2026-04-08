@@ -352,4 +352,51 @@ export const api = {
       "/auth/register",
       { method: "POST", body: JSON.stringify({ username, password, display_name: displayName || "" }) },
     ),
+
+  // ── V0.9.0 L4 MCP Runtime Bridge ──
+  mcpBridgeTools: () =>
+    apiFetch<{
+      tools: string[];
+      stats: {
+        total: number;
+        ok: number;
+        error: number;
+        denied: number;
+        timeout: number;
+        tools_registered: number;
+        success_rate: number;
+      };
+    }>("/mcp-bridge/tools"),
+  mcpBridgeDispatch: (tool: string, params: Record<string, unknown>, agentId = "brain") =>
+    apiFetch<{
+      call_id: string;
+      tool: string;
+      status: string;
+      result: unknown;
+      error: string | null;
+      duration_ms: number;
+      timestamp: string;
+    }>("/mcp-bridge/dispatch", {
+      method: "POST",
+      body: JSON.stringify({ tool, params, agent_id: agentId }),
+    }),
+  dashboardOverview: () =>
+    apiFetch<{
+      brain: {
+        status: string;
+        active_conversations: number;
+        active_projects: number;
+        total_tasks_today: number;
+        total_tasks_completed: number;
+      };
+      agents: Array<{
+        id: string;
+        name: string;
+        status: string;
+        current_task: string;
+        tasks_today: number;
+        avg_quality_score: number;
+        last_active: string;
+      }>;
+    }>("/dashboard/overview"),
 };

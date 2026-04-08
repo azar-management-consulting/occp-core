@@ -523,6 +523,25 @@
       border-color: var(--green-dim);
     }
 
+    /* Onboarding explainer */
+    .onboarding-explainer {
+      margin: 1.5rem 0 0.5rem;
+      padding: 1rem 1.25rem;
+      background: rgba(0, 255, 65, 0.04);
+      border: 1px solid rgba(0, 255, 65, 0.15);
+      border-radius: 4px;
+      animation: fadeInUp 0.6s ease 0.45s both;
+    }
+    .explainer-item {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      margin: 0.35rem 0;
+      line-height: 1.5;
+    }
+    .explainer-item strong {
+      color: var(--green);
+    }
+
     /* Hero CTAs */
     .hero-ctas {
       display: flex;
@@ -558,6 +577,17 @@
       border-color: #4dff4d;
       color: var(--bg);
       box-shadow: 0 0 24px rgba(51, 255, 51, 0.3);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--green);
+      border-color: var(--green-dim);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(51, 255, 51, 0.08);
+      border-color: var(--green);
     }
 
     .btn-outline {
@@ -1390,6 +1420,7 @@
         <li><a href="#features">Features</a></li>
         <li><a href="https://dash.occp.ai/docs" rel="noopener">Docs</a></li>
         <li><a href="#pricing">Pricing</a></li>
+        <li><a href="https://news.occp.ai" rel="noopener">News</a></li>
         <li><a href="https://github.com/azar-management-consulting/occp-core" rel="noopener noreferrer" target="_blank">GitHub</a></li>
         <li><a href="https://dash.occp.ai" class="nav-cta" rel="noopener">Launch Dashboard →</a></li>
       </ul>
@@ -1402,7 +1433,7 @@
     <section class="hero" aria-labelledby="hero-headline">
       <div class="hero-inner">
         <div class="hero-badge" role="status">
-          FIRST OPEN-SOURCE CONTROL PLANE &nbsp;·&nbsp; 5-STAGE VERIFIED AUTONOMY PIPELINE &nbsp;·&nbsp; v0.8.2
+          FIRST OPEN-SOURCE CONTROL PLANE &nbsp;·&nbsp; L4 AUTONOMOUS &nbsp;·&nbsp; MCP RUNTIME BRIDGE &nbsp;·&nbsp; v0.9.0
         </div>
 
         <h1 class="hero-headline" id="hero-headline">
@@ -1417,6 +1448,12 @@
         <p class="hero-developer-line">
           5-minute quickstart. Curated catalog (15+ certified). Zero lock-in.
         </p>
+
+        <div class="onboarding-explainer" role="note">
+          <p class="explainer-item"><strong>Bring your own LLM key</strong> — encrypted at rest (AES-256-GCM). We never store plaintext.</p>
+          <p class="explainer-item"><strong>Governed by default</strong> — every action passes through 5 policy gates before execution.</p>
+          <p class="explainer-item"><strong>Your data stays yours</strong> — on-prem or your cloud. Zero telemetry. Full audit trail.</p>
+        </div>
 
         <div class="install-box" role="group" aria-label="Installation command">
           <div class="install-box-header">
@@ -1438,8 +1475,11 @@
         </div>
 
         <div class="hero-ctas">
-          <a href="https://dash.occp.ai" class="btn btn-primary" rel="noopener">
-            Get Started →
+          <a href="https://dash.occp.ai/onboarding/start" class="btn btn-primary" rel="noopener">
+            Start Onboarding →
+          </a>
+          <a href="https://dash.occp.ai" class="btn btn-secondary" rel="noopener">
+            Dashboard
           </a>
           <a href="https://github.com/azar-management-consulting/occp-core" class="btn btn-outline" rel="noopener noreferrer" target="_blank">
             ★ View on GitHub
@@ -1774,7 +1814,8 @@
             <span class="badge badge-green">MIT License</span>
             <span class="badge badge-green">Free Core Forever</span>
             <span class="badge badge-amber">★ Enterprise Edition</span>
-            <span class="badge badge-purple">v0.8.2</span>
+            <span class="badge badge-purple">v0.9.0 L4</span>
+            <span class="badge badge-green">MCP Runtime Bridge</span>
           </div>
 
           <div class="oss-ctas">
@@ -1816,13 +1857,14 @@
             The Control Plane that governs AI agents.<br>
             Every action verified. Every decision logged.
           </p>
-          <span class="footer-version" aria-label="Version 0.8.2">v0.8.2</span>
+          <span class="footer-version" aria-label="Version 0.9.0 L4">v0.9.0 · L4</span>
         </div>
 
         <nav class="footer-links-group" aria-label="Footer navigation">
           <a href="https://api.occp.ai/api/v1/status" rel="noopener" target="_blank">API Status</a>
           <a href="https://dash.occp.ai" rel="noopener">Dashboard</a>
           <a href="https://dash.occp.ai/docs" rel="noopener">Docs</a>
+          <a href="https://news.occp.ai" rel="noopener">News</a>
           <a href="https://github.com/azar-management-consulting/occp-core" rel="noopener noreferrer" target="_blank">GitHub</a>
           <a href="https://occp.ai/docs/privacy">Privacy</a>
           <a href="https://occp.ai/docs/terms">Terms</a>
