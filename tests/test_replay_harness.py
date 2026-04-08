@@ -1,6 +1,8 @@
-"""Tests for evaluation.replay_harness (L6 foundation skeleton)."""
+"""Tests for evaluation.replay_harness (L6 completion — real execution)."""
 
 from __future__ import annotations
+
+import asyncio
 
 import pytest
 
@@ -12,114 +14,206 @@ from evaluation.replay_harness import (
 )
 
 
-class TestReplayScenario:
-
-    def test_create_scenario(self):
-        s = ReplayScenario(
-            scenario_id="test-001",
-            source_execution_id="abc123",
-            workflow_definition={"nodes": []},
-            original_outcome="success",
-            original_duration_seconds=5.0,
-            original_stages=["plan", "gate", "execute", "validate", "ship"],
-        )
-        assert s.scenario_id == "test-001"
-        assert s.original_outcome == "success"
+@pytest.fixture
+def harness():
+    return ReplayHarness()
 
 
-class TestReplayHarness:
+@pytest.fixture
+def baseline_scenario():
+    return ReplayScenario(
+        scenario_id="bl-001",
+        source_execution_id="exec-001",
+        workflow_definition={"task": "hello"},
+        original_outcome="success",
+        original_duration_seconds=0.1,
+        original_stages=["plan", "gate", "execute", "validate", "ship"],
+        original_output={"message": "hello world", "stages": ["plan", "gate", "execute", "validate", "ship"], "outcome": "success"},
+    )
 
-    @pytest.fixture
-    def harness(self):
-        return ReplayHarness()
 
-    def test_register_and_get(self, harness):
-        s = ReplayScenario(
-            scenario_id="s1",
-            source_execution_id="e1",
-            workflow_definition={},
-            original_outcome="success",
-            original_duration_seconds=1.0,
-            original_stages=["plan"],
-        )
-        harness.register_scenario(s)
-        assert harness.get_scenario("s1") is s
+async def _stable_candidate(scenario: ReplayScenario) -> dict:
+    """Candidate that matches the baseline exactly."""
+    await asyncio.sleep(0.05)
+    return {
+        "message": "hello world",
+        "stages": ["plan", "gate", "execute", "validate", "ship"],
+        "outcome": "success",
+    }
+
+
+async def _slow_candidate(scenario: ReplayScenario) -> dict:
+    """Candidate that is much slower than baseline."""
+    await asyncio.sleep(0.5)  # 5x baseline
+    return {
+        "message": "hello world",
+        "stages": ["plan", "gate", "execute", "validate", "ship"],
+        "outcome": "success",
+    }
+
+
+async def _regressed_candidate(scenario: ReplayScenario) -> dict:
+    """Candidate that changes the outcome to failed."""
+    await asyncio.sleep(0.05)
+    return {
+        "message": "error",
+        "stages": ["plan", "gate", "execute"],  # missing stages
+        "outcome": "failed",
+    }
+
+
+async def _raising_candidate(scenario: ReplayScenario) -> dict:
+    raise RuntimeError("candidate crashed")
+
+
+# ── Basic scenario storage ────────────────────────────────────
+
+class TestScenarioStorage:
+
+    def test_register_and_get(self, harness, baseline_scenario):
+        harness.register_scenario(baseline_scenario)
+        assert harness.get_scenario("bl-001") is baseline_scenario
         assert harness.get_scenario("missing") is None
 
-    def test_list_scenarios(self, harness):
-        for i in range(3):
-            harness.register_scenario(ReplayScenario(
-                scenario_id=f"s{i}",
-                source_execution_id=f"e{i}",
-                workflow_definition={},
-                original_outcome="success",
-                original_duration_seconds=0.1,
-                original_stages=[],
-            ))
-        assert len(harness.list_scenarios()) == 3
+    def test_list_scenarios(self, harness, baseline_scenario):
+        harness.register_scenario(baseline_scenario)
+        assert len(harness.list_scenarios()) == 1
+
+    def test_reset(self, harness, baseline_scenario):
+        harness.register_scenario(baseline_scenario)
+        harness.reset()
+        assert harness.list_scenarios() == []
+
+
+# ── Execution — stable candidate ─────────────────────────────
+
+class TestStableCandidate:
 
     @pytest.mark.asyncio
-    async def test_run_is_stub_in_v0_10(self, harness):
-        s = ReplayScenario(
-            scenario_id="stub-test",
-            source_execution_id="e1",
-            workflow_definition={},
-            original_outcome="success",
-            original_duration_seconds=1.0,
-            original_stages=[],
+    async def test_stable_candidate_success(self, harness, baseline_scenario):
+        harness.register_scenario(baseline_scenario)
+        result = await harness.run(
+            baseline_scenario, _stable_candidate, candidate_ref="stable"
         )
-        harness.register_scenario(s)
-        result = await harness.run(s, candidate_ref="feat/test")
-        assert result.outcome == "skipped"
-        assert "stub" in result.improvements[0].lower()
+        assert result.outcome == "success"
+        assert result.stage_parity is True
+        assert result.output_equivalent is True
+        assert result.regressions == []
+        assert not result.is_regression
 
-    def test_record_and_get_results(self, harness):
-        s = ReplayScenario(
-            scenario_id="s1",
-            source_execution_id="e1",
-            workflow_definition={},
-            original_outcome="success",
-            original_duration_seconds=1.0,
-            original_stages=[],
-        )
-        harness.register_scenario(s)
-        r1 = ReplayResult(
-            scenario_id="s1",
-            candidate_ref="sha1",
-            outcome="success",
-            duration_seconds=1.1,
-            delta_seconds=0.1,
-            stage_parity=True,
-            output_equivalent=True,
-        )
-        harness.record_result(r1)
-        results = harness.get_results("s1")
+    @pytest.mark.asyncio
+    async def test_stable_candidate_result_recorded(self, harness, baseline_scenario):
+        harness.register_scenario(baseline_scenario)
+        await harness.run(baseline_scenario, _stable_candidate, candidate_ref="stable")
+        results = harness.get_results("bl-001")
         assert len(results) == 1
-        assert results[0].candidate_ref == "sha1"
 
-    def test_is_regression_property(self, harness):
-        r_ok = ReplayResult(
-            scenario_id="s1",
-            candidate_ref="ok",
-            outcome="success",
-            duration_seconds=1.0,
-            delta_seconds=0.0,
-            stage_parity=True,
-            output_equivalent=True,
-        )
-        r_bad = ReplayResult(
-            scenario_id="s1",
-            candidate_ref="bad",
-            outcome="regression",
-            duration_seconds=5.0,
-            delta_seconds=4.0,
-            stage_parity=False,
-            output_equivalent=False,
-            regressions=["stage parity broken"],
-        )
-        assert not r_ok.is_regression
-        assert r_bad.is_regression
 
+# ── Execution — slow candidate ───────────────────────────────
+
+class TestSlowCandidate:
+
+    @pytest.mark.asyncio
+    async def test_slow_candidate_flagged(self, harness, baseline_scenario):
+        harness.register_scenario(baseline_scenario)
+        result = await harness.run(
+            baseline_scenario, _slow_candidate, candidate_ref="slow"
+        )
+        assert result.outcome == "regression"
+        assert any("duration" in r for r in result.regressions)
+        assert result.is_regression
+
+
+# ── Execution — regressed candidate ──────────────────────────
+
+class TestRegressedCandidate:
+
+    @pytest.mark.asyncio
+    async def test_regressed_outcome_detected(self, harness, baseline_scenario):
+        harness.register_scenario(baseline_scenario)
+        result = await harness.run(
+            baseline_scenario, _regressed_candidate, candidate_ref="reg"
+        )
+        assert result.outcome == "regression"
+        assert result.stage_parity is False
+        assert result.output_equivalent is False
+
+
+# ── Execution — raising candidate ────────────────────────────
+
+class TestRaisingCandidate:
+
+    @pytest.mark.asyncio
+    async def test_raising_candidate_marks_failed(self, harness, baseline_scenario):
+        harness.register_scenario(baseline_scenario)
+        result = await harness.run(
+            baseline_scenario, _raising_candidate, candidate_ref="crash"
+        )
+        assert result.outcome == "failed"
+        assert result.is_regression
+        assert any("candidate crashed" in r for r in result.regressions)
+
+
+# ── Batch runs ───────────────────────────────────────────────
+
+class TestRunAll:
+
+    @pytest.mark.asyncio
+    async def test_run_all_runs_every_scenario(self, harness):
+        for i in range(3):
+            harness.register_scenario(
+                ReplayScenario(
+                    scenario_id=f"s{i}",
+                    source_execution_id=f"e{i}",
+                    workflow_definition={},
+                    original_outcome="success",
+                    original_duration_seconds=0.1,
+                    original_stages=["plan", "gate", "execute", "validate", "ship"],
+                    # Full output including message (what the candidate returns)
+                    original_output={
+                        "message": "hello world",
+                        "stages": ["plan", "gate", "execute", "validate", "ship"],
+                        "outcome": "success",
+                    },
+                )
+            )
+        results = await harness.run_all(_stable_candidate, candidate_ref="s")
+        assert len(results) == 3
+        assert all(r.outcome == "success" for r in results)
+
+
+# ── Stats ────────────────────────────────────────────────────
+
+class TestStats:
+
+    @pytest.mark.asyncio
+    async def test_stats(self, harness, baseline_scenario):
+        harness.register_scenario(baseline_scenario)
+        await harness.run(baseline_scenario, _stable_candidate, "stable")
+        await harness.run(baseline_scenario, _slow_candidate, "slow")
+        stats = harness.stats
+        assert stats["scenarios_registered"] == 1
+        assert stats["total_runs"] == 2
+        assert stats["total_regressions"] == 1
+        assert stats["regression_rate"] == 0.5
+
+
+# ── Output equivalence ───────────────────────────────────────
+
+class TestOutputEquivalence:
+
+    def test_ignores_volatile_fields(self, harness):
+        a = {"message": "hi", "timestamp": "2026-01-01"}
+        b = {"message": "hi", "timestamp": "2027-01-01"}
+        assert harness._outputs_equivalent(a, b)
+
+    def test_detects_real_differences(self, harness):
+        a = {"message": "hi"}
+        b = {"message": "bye"}
+        assert not harness._outputs_equivalent(a, b)
+
+
+# ── Singleton ────────────────────────────────────────────────
 
 class TestSingleton:
 

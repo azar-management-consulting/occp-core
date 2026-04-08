@@ -1,26 +1,47 @@
 """OCCP observability layer (L6 foundation).
 
-This package provides the telemetry foundation for OCCP's L6 self-observation
-capability. It is intentionally minimal — Prometheus-style counters and
-histograms in-process — to avoid introducing an external dependency chain
-before the foundation is validated.
+This package provides the telemetry, interpretation, and digest layers
+for OCCP's L6 self-observation capability.
 
-Future phases will add OpenTelemetry exporters, trace correlation, and
-anomaly detection hooks driven by this data.
+Layers:
+    metrics_collector  — raw metrics (Counter, Histogram, Gauge)
+    anomaly_detector   — interpretation layer producing Anomaly records
+    behavior_digest    — narrative summary layer combining metrics+anomalies
 """
 
+from observability.anomaly_detector import (
+    Anomaly,
+    AnomalyDetector,
+    AnomalyThresholds,
+    get_anomaly_detector,
+)
+from observability.behavior_digest import (
+    BehaviorDigest,
+    BehaviorDigestGenerator,
+    get_digest_generator,
+)
 from observability.metrics_collector import (
+    Counter,
+    Gauge,
+    Histogram,
     MetricsCollector,
     get_collector,
-    Counter,
-    Histogram,
-    Gauge,
 )
 
 __all__ = [
-    "MetricsCollector",
-    "get_collector",
+    # Metrics primitives
     "Counter",
     "Histogram",
     "Gauge",
+    "MetricsCollector",
+    "get_collector",
+    # Anomaly interpretation
+    "Anomaly",
+    "AnomalyDetector",
+    "AnomalyThresholds",
+    "get_anomaly_detector",
+    # Behavior digest
+    "BehaviorDigest",
+    "BehaviorDigestGenerator",
+    "get_digest_generator",
 ]

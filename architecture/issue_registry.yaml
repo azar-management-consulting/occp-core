@@ -1,0 +1,195 @@
+version: 1
+generated: 2026-04-08
+schema: occp.architecture.issue_registry.v1
+
+# Architectural Issue Registry — known concerns, technical debt, hotspots.
+# The proposal generator reads this file + metrics anomalies + critiques
+# to produce ranked redesign candidates.
+#
+# Each issue has:
+#   id:            stable identifier (e.g. "ISS-001")
+#   title:         short description
+#   category:      performance | reliability | security | maintainability | scalability | debt
+#   severity:      info | low | medium | high | critical
+#   status:        open | in_progress | resolved | wontfix
+#   affected_paths: list of files/modules
+#   evidence:      how we know this is an issue
+#   suggested_fix: minimum professional solution outline
+#   risk_of_fix:   low | medium | high
+#   introduced_in: version or commit where detected
+
+issues:
+
+  - id: ISS-001
+    title: brain_flow dispatch does not actually run pipeline.run()
+    category: reliability
+    severity: medium
+    status: open
+    affected_paths:
+      - orchestrator/brain_flow.py
+    evidence: |
+      Pipeline metrics counter stays at 0 after /brain/message reaches DISPATCH phase.
+      _dispatch_tasks() in brain_flow.py only generates task_ids and returns a
+      message — no pipeline.run() is awaited. Only voice_handler and explicit
+      /pipeline/run/{task_id} calls actually execute tasks.
+    suggested_fix: |
+      Add a proper dispatcher: for each task in plan.steps, create a Task,
+      persist, then await pipeline.run(task). Ensure chat_id is in task.metadata
+      so voice-style replies work.
+    risk_of_fix: medium  # touches the main conversation loop
+    introduced_in: v0.8.0
+    detected_in: v0.10.0
+
+  - id: ISS-002
+    title: No DB backing for feature flags
+    category: maintainability
+    severity: low
+    status: open
+    affected_paths:
+      - evaluation/feature_flags.py
+      - store/models.py
+    evidence: |
+      FeatureFlagStore is in-memory only. Flags reset on every API restart.
+    suggested_fix: |
+      Add FeatureFlagRow model + migration 009 + persist load/save.
+      Keep in-memory cache for read hot path.
+    risk_of_fix: low
+    introduced_in: v0.10.0
+    detected_in: v0.10.0
+
+  - id: ISS-003
+    title: replay_harness.run() is a stub
+    category: reliability
+    severity: medium
+    status: open
+    affected_paths:
+      - evaluation/replay_harness.py
+    evidence: |
+      run() returns a ReplayResult with outcome="skipped" and improvements
+      listing "stub". No real execution happens.
+    suggested_fix: |
+      Implement a minimal deterministic replay: given a workflow_definition,
+      re-run through the current in-process Pipeline with MockExecutor to
+      verify stage sequence + timing parity. Full sandbox integration deferred.
+    risk_of_fix: low
+    introduced_in: v0.10.0
+    detected_in: v0.10.0
+
+  - id: ISS-004
+    title: MCP bridge audit writes disabled (shared-session race)
+    category: maintainability
+    severity: low
+    status: resolved
+    affected_paths:
+      - adapters/mcp_bridge.py
+    evidence: |
+      Concurrent bridge dispatches to audit_store caused
+      sqlalchemy.exc.PendingRollbackError due to shared session. Fixed by
+      replacing background audit tasks with structured logger calls.
+    suggested_fix: |
+      Use a dedicated audit session per bridge write. Implement in v0.11.0
+      when DB-backed audit has a connection pool option.
+    risk_of_fix: medium
+    introduced_in: v0.9.0
+    detected_in: v0.9.0
+    resolved_in: v0.9.0
+
+  - id: ISS-005
+    title: Governance documented but not runtime-enforced
+    category: security
+    severity: medium
+    status: resolved
+    affected_paths:
+      - architecture/governance.yaml
+      - architecture/boundaries.yaml
+      - evaluation/self_modifier.py
+    evidence: |
+      Prior to v0.10.0 completion, governance.yaml defined boundaries but
+      no runtime component verified them before proposed edits.
+    suggested_fix: |
+      Implement evaluation/self_modifier.py that reads boundaries.yaml
+      and validates every proposed path with fail-secure defaults.
+    risk_of_fix: low  # pure validator, no edits
+    introduced_in: v0.10.0
+    detected_in: v0.10.0
+    resolved_in: v0.10.0
+
+  - id: ISS-006
+    title: Observability produces raw metrics but no interpretation
+    category: maintainability
+    severity: medium
+    status: resolved
+    affected_paths:
+      - observability/metrics_collector.py
+      - observability/anomaly_detector.py
+      - observability/behavior_digest.py
+    evidence: |
+      Prior to v0.10.0 completion, /observability/metrics returned Prometheus
+      text but no anomaly or digest endpoint existed — operators had to parse
+      raw data manually.
+    suggested_fix: |
+      Add AnomalyDetector + BehaviorDigestGenerator with /observability/anomalies
+      and /observability/digest endpoints.
+    risk_of_fix: low  # read-only interpretation
+    introduced_in: v0.10.0
+    detected_in: v0.10.0
+    resolved_in: v0.10.0
+
+  - id: ISS-007
+    title: No automated issue→proposal flow
+    category: maintainability
+    severity: low
+    status: resolved
+    affected_paths:
+      - architecture/issue_registry.yaml
+      - evaluation/proposal_generator.py
+      - .planning/rfc/
+    evidence: |
+      Issues were tracked only in prose. No mechanism to generate RFC
+      candidates from known architectural issues.
+    suggested_fix: |
+      Add issue_registry.yaml (this file) + proposal_generator.py that
+      reads issues + metrics + anomalies and generates RFC candidates.
+    risk_of_fix: low  # pure read + markdown write
+    introduced_in: v0.10.0
+    detected_in: v0.10.0
+    resolved_in: v0.10.0
+
+  - id: ISS-008
+    title: Telegram reply via brain_flow does not include OpenClaw final text
+    category: reliability
+    severity: low
+    status: open
+    affected_paths:
+      - adapters/event_bridge.py
+    evidence: |
+      EventBridge filters non-Telegram OpenClaw sessions (logs show
+      "skipping non-Telegram session"). Only the voice_handler path sends
+      replies. Text-based Brian: responses may not return OpenClaw text.
+    suggested_fix: |
+      Broaden EventBridge session prefix allowlist to include brain pipeline
+      sessions, and route chat.final through a correlation_id → chat_id map.
+    risk_of_fix: medium
+    introduced_in: v0.9.0
+    detected_in: v0.9.0
+
+
+# Ranking configuration — used by proposal_generator.py
+ranking:
+  severity_weight:
+    critical: 10
+    high: 5
+    medium: 3
+    low: 1
+    info: 0
+  risk_penalty:
+    low: 0
+    medium: -1
+    high: -3
+  category_boost:
+    security: 2
+    reliability: 2
+    performance: 1
+    maintainability: 0
+    scalability: 0
+    debt: 0
