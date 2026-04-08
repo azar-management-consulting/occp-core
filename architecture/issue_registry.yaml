@@ -41,39 +41,44 @@ issues:
     detected_in: v0.10.0
 
   - id: ISS-002
-    title: No DB backing for feature flags
+    title: No persistence for feature flags
     category: maintainability
     severity: low
-    status: open
+    status: resolved
     affected_paths:
       - evaluation/feature_flags.py
-      - store/models.py
     evidence: |
-      FeatureFlagStore is in-memory only. Flags reset on every API restart.
+      FeatureFlagStore was in-memory only. Flags reset on every API restart.
     suggested_fix: |
-      Add FeatureFlagRow model + migration 009 + persist load/save.
-      Keep in-memory cache for read hot path.
+      Atomic JSON write to data/feature_flags.json on every set/delete with
+      corrupt-file fallback to defaults. Env override OCCP_FEATURE_FLAG_STORE.
+      DB-backed store deferred to v0.11.0 if scale demands it.
     risk_of_fix: low
     introduced_in: v0.10.0
     detected_in: v0.10.0
+    resolved_in: v0.10.0-maxstate
+    resolution_commit: a13c24a
 
   - id: ISS-003
     title: replay_harness.run() is a stub
     category: reliability
     severity: medium
-    status: open
+    status: resolved
     affected_paths:
       - evaluation/replay_harness.py
     evidence: |
-      run() returns a ReplayResult with outcome="skipped" and improvements
-      listing "stub". No real execution happens.
+      run() returned a ReplayResult with outcome="skipped" and improvements
+      listing "stub". No real execution happened.
     suggested_fix: |
-      Implement a minimal deterministic replay: given a workflow_definition,
-      re-run through the current in-process Pipeline with MockExecutor to
-      verify stage sequence + timing parity. Full sandbox integration deferred.
+      Real deterministic run() implemented: takes async candidate (callable
+      or ReplayCandidate protocol), compares stages/outcome/output/duration
+      against baseline, produces regressions + improvements. 21 tests cover
+      stable/slow/regressed/raising candidates + run_all batch mode.
     risk_of_fix: low
     introduced_in: v0.10.0
     detected_in: v0.10.0
+    resolved_in: v0.10.0-l6-completion
+    resolution_commit: b1c6957
 
   - id: ISS-004
     title: MCP bridge audit writes disabled (shared-session race)
@@ -159,19 +164,84 @@ issues:
     title: Telegram reply via brain_flow does not include OpenClaw final text
     category: reliability
     severity: low
+    status: resolved
+    affected_paths:
+      - adapters/voice_handler.py
+    evidence: |
+      Text messages were routed through BrainFlow which produced a generic
+      stock plan template ("Terv kész! Indíthatom?") for every input,
+      regardless of content. Voice messages went through the rich pipeline.
+    suggested_fix: |
+      Bypass BrainFlow for text unless explicit trigger keywords present
+      ("tervezz", "feladat:", "<directive>", "brainflow:"). Default path is
+      intent_router → pipeline.run() → OpenClaw, same as voice. BrainFlow
+      reserved for explicit multi-phase planning requests.
+    risk_of_fix: low
+    introduced_in: v0.9.0
+    detected_in: v0.10.0-maxstate
+    resolved_in: v0.10.0-maxstate
+
+  - id: ISS-009
+    title: Telegram bot required Brian prefix in owner DM context
+    category: maintainability
+    severity: low
+    status: resolved
+    affected_paths:
+      - adapters/telegram_voice_bot.py
+    evidence: |
+      The text path required "Brian:" case-insensitive prefix; plain text
+      without prefix was silently ignored. In owner-DM context this is
+      redundant because owner_chat_id already authenticates sender.
+    suggested_fix: |
+      Owner DM bypass: if chat_id == owner_chat_id, accept any text and
+      still strip optional Brian:/Brain: prefix. Group chats keep the
+      strict prefix rule.
+    risk_of_fix: low
+    introduced_in: v0.9.0
+    detected_in: v0.10.0-maxstate
+    resolved_in: v0.10.0-maxstate
+
+  - id: ISS-010
+    title: Model routing not cost-optimized (single-tier Sonnet for everything)
+    category: performance
+    severity: low
     status: open
     affected_paths:
-      - adapters/event_bridge.py
+      - adapters/multi_llm_planner.py
+      - adapters/claude_planner.py
     evidence: |
-      EventBridge filters non-Telegram OpenClaw sessions (logs show
-      "skipping non-Telegram session"). Only the voice_handler path sends
-      replies. Text-based Brian: responses may not return OpenClaw text.
+      All tasks currently route to anthropic claude-sonnet-4-6. 2026 best
+      practice is 70/20/10 split (Haiku 4.5 / Sonnet 4.6 / Opus 4.6) which
+      cuts cost by 60%. Prompt caching provides additional 90% savings on
+      repeated system prompts.
     suggested_fix: |
-      Broaden EventBridge session prefix allowlist to include brain pipeline
-      sessions, and route chat.final through a correlation_id → chat_id map.
-    risk_of_fix: medium
+      Phase 1: enable prompt caching via feature flag l6.llm.prompt_caching
+      Phase 2: tier-based router (intent.risk_level → model)
+        low/status_check → Haiku 4.5
+        medium/general   → Sonnet 4.6 (current default)
+        high/critical    → Opus 4.6
+      Phase 3: Batch API for non-realtime (50% discount)
+    risk_of_fix: medium  # touches LLM planner path
     introduced_in: v0.9.0
-    detected_in: v0.9.0
+    detected_in: v0.10.0-maxstate
+
+  - id: ISS-011
+    title: Prompt caching not enabled despite large stable system prompts
+    category: performance
+    severity: info
+    status: open
+    affected_paths:
+      - adapters/claude_planner.py
+    evidence: |
+      ClaudePlanner generates 500-800 token plans per call. System prompt is
+      stable across calls. Prompt caching would give 90% savings on cached
+      tokens per 2026 Anthropic pricing.
+    suggested_fix: |
+      Add cache_control={"type": "ephemeral"} to stable prompt blocks in
+      ClaudePlanner. Gate via feature flag. Measure hit rate via metrics.
+    risk_of_fix: low
+    introduced_in: v0.9.0
+    detected_in: v0.10.0-maxstate
 
 
 # Ranking configuration — used by proposal_generator.py

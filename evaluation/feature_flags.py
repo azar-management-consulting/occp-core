@@ -99,6 +99,13 @@ class FeatureFlagStore:
              "Self-modifier runs in log-only mode (safe default)"),
             ("l6.evaluation.replay_harness", False,
              "Enable historical workflow replay testing"),
+            # ── Cost optimization flags (ISS-010, ISS-011) ──
+            ("l6.llm.prompt_caching", False,
+             "Enable Anthropic prompt caching on stable system prompts (90% savings)"),
+            ("l6.llm.tier_routing", False,
+             "Route by risk: low→Haiku, medium→Sonnet, high→Opus (60% cost cut)"),
+            ("l6.llm.batch_api", False,
+             "Use Batch API for non-realtime tasks (50% discount)"),
         ]
         for key, enabled, desc in defaults:
             self._flags[key] = FeatureFlag(

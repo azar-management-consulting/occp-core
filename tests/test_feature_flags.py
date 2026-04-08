@@ -28,6 +28,19 @@ class TestFeatureFlagStore:
         assert rfc_flag is not None
         assert rfc_flag.enabled is False
 
+    def test_llm_cost_optimization_flags_seeded(self, store):
+        """ISS-010, ISS-011: cost optimization flags must exist, default OFF."""
+        for key in (
+            "l6.llm.prompt_caching",
+            "l6.llm.tier_routing",
+            "l6.llm.batch_api",
+        ):
+            flag = store.get(key)
+            assert flag is not None, f"missing flag: {key}"
+            assert flag.enabled is False, (
+                f"{key} must default OFF until validated"
+            )
+
     def test_set_new_flag(self, store):
         flag = store.set("test.new.flag", True, description="test flag")
         assert flag.enabled is True

@@ -154,11 +154,13 @@ l6_readiness:
     rfc_template_exists: true                # .planning/rfc/TEMPLATE.md
     baseline_rfc_written: true               # .planning/rfc/0001-baseline.md
     issue_registry_live: true                # architecture/issue_registry.yaml
+    issue_registry_fresh: true               # resolved issues marked, new issues tracked
     evaluation_lane_functional: true         # replay_harness real execution
     canary_engine_ready: true                # evaluation/canary_engine.py + history
     proposal_engine_ready: true              # evaluation/proposal_generator.py
     feature_flags_active: true               # JSON-persisted store
     feature_flags_persistent: true           # data/feature_flags.json
+    cost_optimization_flags: true            # l6.llm.{prompt_caching,tier_routing,batch_api}
     governance_enforced: true                # self_modifier runtime validator
     governance_tested: true                  # 22 enforcement tests
     tests_cover_all_yaml: true               # tests/architecture/ passes
@@ -168,3 +170,5 @@ l6_readiness:
     kill_switch_tested: true                 # E2E drill verified prod 2026-04-08
     drift_detector_ready: true               # evaluation/drift_detector.py
     canary_history_persistent: true          # in-memory ring buffer
+    telegram_owner_bypass: true              # ISS-009 resolved — DM no prefix needed
+    text_uses_rich_pipeline: true            # ISS-008 resolved — text skips BrainFlow default

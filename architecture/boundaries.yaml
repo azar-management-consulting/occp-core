@@ -64,6 +64,18 @@ human_review_required:
     reason: Policy config changes alter behavior
     required_reviewers: 1
 
+  - path_glob: store/**/*.py
+    reason: Persistence layer changes affect data integrity and migrations
+    required_reviewers: 1
+
+  - path_glob: adapters/claude_planner.py
+    reason: LLM model routing affects cost + quality
+    required_reviewers: 1
+
+  - path_glob: adapters/multi_llm_planner.py
+    reason: Planner fallback chain affects reliability
+    required_reviewers: 1
+
 
 # ─── LEVEL 3: Immutable (never self-modifiable) ─────────────
 # These paths are PERMANENTLY off-limits to the self-modifier.

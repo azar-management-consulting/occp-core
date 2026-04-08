@@ -301,12 +301,28 @@ class VoiceCommandHandler:
         self._last_command_at = datetime.now(timezone.utc)
 
         try:
-            # BrainFlowEngine path — the new 7-phase conversation flow
+            # Heuristic: BrainFlow only for EXPLICIT multi-phase tasks.
+            # Everything else goes through the rich pipeline path (same as
+            # voice) to produce real LLM responses instead of stock plan
+            # templates.
+            use_brain_flow = False
             if self._brain_flow:
+                stripped = text.strip().lower()
+                # Trigger BrainFlow only when user explicitly asks for planning
+                plan_triggers = (
+                    "tervezz", "tervezd", "planold", "feladat:",
+                    "directive:", "directive>", "<directive",
+                    "brainflow:", "brain_flow:",
+                )
+                if any(trigger in stripped for trigger in plan_triggers):
+                    use_brain_flow = True
+
+            if use_brain_flow:
                 await self._handle_brain_flow(chat_id, text, log_entry)
                 return
 
-            # Legacy path — direct intent routing + pipeline
+            # Rich pipeline path — direct intent routing + pipeline (matches
+            # voice behavior). Produces real LLM responses via OpenClaw.
             intent_result = await self._intent_router.classify(text)
             log_entry.intent = intent_result.intent
             log_entry.agent_type = intent_result.agent_type

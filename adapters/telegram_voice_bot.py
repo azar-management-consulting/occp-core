@@ -248,13 +248,16 @@ class TelegramVoiceBot:
     async def _handle_update(self, update: dict[str, Any]) -> bool:
         """Process an incoming Telegram update.
 
-        Returns True if the message was processed, False if ignored.
+        Filtering rules (v2 — owner DM bypass):
+        1. /start, /help commands              -> always process
+        2. Voice messages                      -> always process
+        3. Owner DM (chat_id == owner_chat_id) -> ALL text processed (no prefix)
+        4. Group/other chat text with "Brian:" prefix (case-insensitive or
+           loose match "brain:"/"brian " etc.) -> strip prefix, process
+        5. All other text                      -> silently ignore
 
-        Filtering rules:
-        1. /start, /help commands -> always process
-        2. Voice messages -> always process
-        3. Text messages starting with "Brian:" (case insensitive) -> strip prefix, process
-        4. All other text messages -> silently ignore
+        Rationale: in strict owner-only mode (owner_chat_id set), the caller
+        is already authenticated; requiring a prefix is noise.
         """
         if not self._handler:
             logger.warning("No handler set — ignoring update")
@@ -281,20 +284,36 @@ class TelegramVoiceBot:
         if not text:
             return False
 
-        # 3. Commands — always process
         stripped = text.strip()
+
+        # 3. Commands — always process
         if stripped.split()[0].lower() in _ALWAYS_COMMANDS:
             await self._handler.handle_text(chat_id, stripped)
             return True
 
-        # 4. Brian: prefix filter (case insensitive)
+        # 4. Owner DM bypass — if owner_chat_id is set and this chat matches,
+        #    process every text without prefix. Auth is already enforced by
+        #    the owner filter in _poll_loop.
+        if self._owner_chat_id and chat_id == self._owner_chat_id:
+            # Still strip an optional "Brian:"/"Brain:" prefix so dictation
+            # habits keep working cleanly.
+            lowered = stripped.lower()
+            for prefix in ("brian:", "brain:"):
+                if lowered.startswith(prefix):
+                    stripped = stripped[len(prefix):].lstrip()
+                    break
+            if stripped:
+                await self._handler.handle_text(chat_id, stripped)
+                return True
+            return False
+
+        # 5. Non-owner chat: require "Brian:" prefix (case-insensitive).
         if stripped.lower().startswith(_BRIAN_PREFIX):
-            # Strip the prefix and leading whitespace after it
             content = stripped[len(_BRIAN_PREFIX):].lstrip()
             if content:
                 await self._handler.handle_text(chat_id, content)
                 return True
-            return False  # "Brian:" with no content
+            return False
 
-        # 5. No prefix match — silently ignore
+        # 6. No prefix match in non-owner chat — silently ignore.
         return False
