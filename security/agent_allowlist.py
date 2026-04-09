@@ -38,6 +38,7 @@ AGENT_TOOL_ALLOWLISTS: dict[str, set[str]] = {
         "http.get", "http.post",
         "wordpress.get_posts", "wordpress.get_pages",
         "wordpress.get_site_info", "wordpress.update_post",
+        "node.list", "node.status", "node.exec",
         "read", "write", "grep", "glob",
     },
     # Default seeded agents (api/app.py _DEFAULT_AGENTS) — pipeline execute path

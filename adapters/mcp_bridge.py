@@ -372,7 +372,145 @@ def build_default_bridge(
     bridge.register("wordpress.get_pages", _wp_get_pages)
     bridge.register("wordpress.get_site_info", _wp_get_site_info)
     bridge.register("wordpress.update_post", _wp_update_post)
+    # Node tools — execute commands on Tailscale mesh nodes via SSH
+    bridge.register("node.exec", _node_exec)
+    bridge.register("node.list", _node_list)
+    bridge.register("node.status", _node_status)
     return bridge
+
+
+# ── Node execution tool implementations (Tailscale mesh) ─────
+
+# Known nodes in the OCCP mesh
+_OCCP_NODES = {
+    "imac": {
+        "host": "100.88.122.102",
+        "user": "boss",
+        "name": "BOSS-iMac",
+        "role": "storage + secondary control",
+    },
+    "mbp": {
+        "host": "100.65.58.71",
+        "user": "aiallmacpro",
+        "name": "AI-MacBook-Pro",
+        "role": "secondary dev",
+    },
+    "hetzner-brain": {
+        "host": "195.201.238.144",
+        "user": "root",
+        "name": "Hetzner OCCP Brain",
+        "role": "API + dashboard + brain",
+    },
+    "hetzner-openclaw": {
+        "host": "95.216.212.174",
+        "user": "root",
+        "name": "Hetzner OpenClaw",
+        "role": "execution plane",
+        "ssh_key": "/ssh/openclaw_ed25519",
+    },
+}
+
+# Allowlisted safe commands (Brain can only run these)
+_SAFE_COMMANDS = {
+    "hostname", "uptime", "uname -a", "df -h", "free -h",
+    "docker ps", "docker compose ps", "ls", "cat", "head", "tail",
+    "curl", "python3 --version", "node --version",
+    "sw_vers",  # macOS version
+}
+
+
+async def _node_list(params: dict[str, Any]) -> dict[str, Any]:
+    """List all known OCCP mesh nodes and their roles."""
+    return {
+        "nodes": [
+            {"id": k, **v} for k, v in _OCCP_NODES.items()
+        ],
+        "total": len(_OCCP_NODES),
+    }
+
+
+async def _node_status(params: dict[str, Any]) -> dict[str, Any]:
+    """Check if a node is reachable via SSH (timeout 5s)."""
+    import asyncio
+
+    node_id = params.get("node_id", "")
+    node = _OCCP_NODES.get(node_id)
+    if not node:
+        return {"error": f"unknown node: {node_id}", "known_nodes": list(_OCCP_NODES.keys())}
+
+    try:
+        ssh_key = node.get("ssh_key", "/ssh/brain_ed25519")
+        proc = await asyncio.create_subprocess_exec(
+            "ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes",
+            "-o", "StrictHostKeyChecking=accept-new",
+            "-o", "UserKnownHostsFile=/ssh/known_hosts",
+            "-i", ssh_key,
+            f"{node['user']}@{node['host']}", "hostname && uptime",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=10)
+        return {
+            "node_id": node_id,
+            "reachable": proc.returncode == 0,
+            "output": stdout.decode()[:500] if stdout else "",
+            "error": stderr.decode()[:200] if proc.returncode != 0 else "",
+        }
+    except asyncio.TimeoutError:
+        return {"node_id": node_id, "reachable": False, "error": "timeout"}
+    except Exception as exc:
+        return {"node_id": node_id, "reachable": False, "error": str(exc)[:200]}
+
+
+async def _node_exec(params: dict[str, Any]) -> dict[str, Any]:
+    """Execute a safe command on a remote node via SSH.
+
+    Only allowlisted commands are permitted. Brain cannot run arbitrary
+    code on mesh nodes.
+    """
+    import asyncio
+
+    node_id = params.get("node_id", "")
+    command = params.get("command", "").strip()
+
+    node = _OCCP_NODES.get(node_id)
+    if not node:
+        return {"error": f"unknown node: {node_id}", "known_nodes": list(_OCCP_NODES.keys())}
+
+    if not command:
+        return {"error": "command required"}
+
+    # Safety: check if command starts with an allowlisted prefix
+    cmd_base = command.split()[0] if command else ""
+    if cmd_base not in {c.split()[0] for c in _SAFE_COMMANDS}:
+        return {
+            "error": f"command '{cmd_base}' not in safe allowlist",
+            "allowed": sorted({c.split()[0] for c in _SAFE_COMMANDS}),
+        }
+
+    try:
+        ssh_key = node.get("ssh_key", "/ssh/brain_ed25519")
+        proc = await asyncio.create_subprocess_exec(
+            "ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes",
+            "-o", "StrictHostKeyChecking=accept-new",
+            "-o", "UserKnownHostsFile=/ssh/known_hosts",
+            "-i", ssh_key,
+            f"{node['user']}@{node['host']}", command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=30)
+        return {
+            "node_id": node_id,
+            "command": command,
+            "exit_code": proc.returncode,
+            "stdout": stdout.decode()[:2000] if stdout else "",
+            "stderr": stderr.decode()[:500] if stderr else "",
+        }
+    except asyncio.TimeoutError:
+        return {"node_id": node_id, "command": command, "error": "timeout (30s)"}
+    except Exception as exc:
+        return {"node_id": node_id, "command": command, "error": str(exc)[:200]}
 
 
 # ── WordPress REST API tool implementations ───────────────────
