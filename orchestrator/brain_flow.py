@@ -450,15 +450,35 @@ class BrainFlowEngine:
                      "high": RiskLevel.HIGH, "critical": RiskLevel.CRITICAL}
         risk_level = risk_map.get(plan.get("risk_level", "low"), RiskLevel.LOW)
 
+        # ── PRE-EXECUTION: gather live data via MCP bridge tools ──
+        # For wp-web tasks, automatically call wordpress.* tools and embed
+        # results so agents get REAL DATA, not just a text directive.
+        tool_context = ""
+        try:
+            tool_context = await self._gather_tool_context(conv.original_message)
+        except Exception as exc:
+            logger.warning("Tool context gathering failed: %s", exc)
+
         for step in plan.get("steps", []):
             task_id = self._generate_task_id()
             task_ids.append(task_id)
             agent_type = step.get("agent", plan["primary_agent"])
-            description = step.get("description", conv.original_message[:200])
+            step_desc = step.get("description", "")
+
+            description = (
+                f"{step_desc}\n\n"
+                f"--- ORIGINAL DIRECTIVE ---\n"
+                f"{conv.original_message[:2000]}\n\n"
+            )
+            if tool_context:
+                description += (
+                    f"--- LIVE DATA (gathered by Brain) ---\n"
+                    f"{tool_context}\n"
+                )
 
             task = Task(
                 id=task_id,
-                name=description[:80],
+                name=step_desc[:80] or conv.original_message[:80],
                 description=description,
                 agent_type=agent_type,
                 risk_level=risk_level,
@@ -469,14 +489,12 @@ class BrainFlowEngine:
                 },
             )
 
-            # Persist task
             if self._task_store:
                 try:
                     await self._task_store.add(task)
                 except Exception as exc:
                     logger.warning("Failed to persist task %s: %s", task_id, exc)
 
-            # Run through pipeline
             try:
                 result = await self._pipeline.run(task)
                 results.append({
@@ -524,6 +542,81 @@ class BrainFlowEngine:
                 "total": total,
             },
         }
+
+    async def _gather_tool_context(self, message: str) -> str:
+        """Pre-execution: call MCP bridge tools to gather live data.
+
+        Detects URLs and keywords in the directive and calls appropriate
+        wordpress.* / http.get tools. Results are embedded into the task
+        description so OpenClaw agents get REAL DATA to work with.
+        """
+        from adapters.mcp_bridge import ToolCall, build_default_bridge
+
+        lines: list[str] = []
+        lowered = message.lower()
+
+        # Detect WordPress-related directives
+        wp_sites: list[str] = []
+        if "magyarorszag.ai" in lowered:
+            wp_sites.append("https://magyarorszag.ai")
+        if "azar.hu" in lowered:
+            wp_sites.append("https://azar.hu")
+        if "felnottkepzes.hu" in lowered:
+            wp_sites.append("https://felnottkepzes.hu")
+
+        if not wp_sites:
+            return ""
+
+        bridge = build_default_bridge()
+
+        for site in wp_sites:
+            # Site info
+            try:
+                r = await bridge.dispatch(ToolCall(
+                    tool="wordpress.get_site_info",
+                    params={"site_url": site},
+                    agent_id="brain",
+                ))
+                if r.status == "ok" and r.result:
+                    lines.append(f"[{site}] site_info: name={r.result.get('name')}, "
+                                 f"routes={r.result.get('routes_count')}, "
+                                 f"namespaces={r.result.get('namespaces', [])[:5]}")
+            except Exception as exc:
+                lines.append(f"[{site}] site_info: error {exc}")
+
+            # Pages
+            try:
+                r = await bridge.dispatch(ToolCall(
+                    tool="wordpress.get_pages",
+                    params={"site_url": site, "per_page": 20},
+                    agent_id="brain",
+                ))
+                if r.status == "ok" and r.result:
+                    pages = r.result.get("pages", [])
+                    lines.append(f"[{site}] pages ({len(pages)}):")
+                    for p in pages[:15]:
+                        lines.append(f"  - id={p['id']} title=\"{p['title']}\" slug={p['slug']} link={p['link']}")
+            except Exception as exc:
+                lines.append(f"[{site}] pages: error {exc}")
+
+            # Posts
+            try:
+                r = await bridge.dispatch(ToolCall(
+                    tool="wordpress.get_posts",
+                    params={"site_url": site, "per_page": 10},
+                    agent_id="brain",
+                ))
+                if r.status == "ok" and r.result:
+                    posts = r.result.get("posts", [])
+                    lines.append(f"[{site}] posts ({len(posts)}):")
+                    for p in posts[:10]:
+                        lines.append(f"  - id={p['id']} title=\"{p['title']}\" slug={p['slug']}")
+            except Exception as exc:
+                lines.append(f"[{site}] posts: error {exc}")
+
+        context = "\n".join(lines)
+        logger.info("brain_flow: gathered %d lines of tool context for %s", len(lines), wp_sites)
+        return context
 
     async def _handle_dispatch_phase(
         self, conv: BrainConversation, message: str
