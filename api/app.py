@@ -55,6 +55,7 @@ from api.routes import cloudcode, bridge, voice
 from api.routes import mcp_bridge as mcp_bridge_route
 from api.routes import observability as observability_route
 from api.routes import governance as governance_route
+from api.routes import autodev as autodev_route
 from config.settings import Settings
 
 logger = logging.getLogger(__name__)
@@ -498,6 +499,7 @@ def create_app() -> FastAPI:
     app.include_router(mcp_bridge_route.router, prefix=prefix)
     app.include_router(observability_route.router, prefix=prefix)
     app.include_router(governance_route.router, prefix=prefix)
+    app.include_router(autodev_route.router, prefix=prefix)
 
     return app
 

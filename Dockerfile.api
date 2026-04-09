@@ -24,6 +24,8 @@ COPY security/ security/
 COPY observability/ observability/
 COPY evaluation/ evaluation/
 COPY architecture/ architecture/
+# Auto-dev pipeline (v0.10.0)
+COPY autodev/ autodev/
 
 RUN /root/.local/bin/uv pip install --system --no-cache -e '.[llm]'
 
