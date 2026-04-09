@@ -384,13 +384,15 @@ def build_default_bridge(
 # Known nodes in the OCCP mesh
 _OCCP_NODES = {
     "imac": {
-        "host": "100.88.122.102",
+        "host": "172.18.0.1",  # Docker gateway → host reverse tunnel → iMac
+        "port": 2222,
         "user": "boss",
         "name": "BOSS-iMac",
         "role": "storage + secondary control",
     },
     "mbp": {
-        "host": "100.65.58.71",
+        "host": "172.18.0.1",  # Docker gateway → host reverse tunnel → MBP
+        "port": 2223,
         "user": "aiallmacpro",
         "name": "AI-MacBook-Pro",
         "role": "secondary dev",
@@ -440,10 +442,12 @@ async def _node_status(params: dict[str, Any]) -> dict[str, Any]:
 
     try:
         ssh_key = node.get("ssh_key", "/ssh/brain_ed25519")
+        port = str(node.get("port", 22))
         proc = await asyncio.create_subprocess_exec(
             "ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes",
             "-o", "StrictHostKeyChecking=accept-new",
             "-o", "UserKnownHostsFile=/ssh/known_hosts",
+            "-p", port,
             "-i", ssh_key,
             f"{node['user']}@{node['host']}", "hostname && uptime",
             stdout=asyncio.subprocess.PIPE,
@@ -490,10 +494,12 @@ async def _node_exec(params: dict[str, Any]) -> dict[str, Any]:
 
     try:
         ssh_key = node.get("ssh_key", "/ssh/brain_ed25519")
+        port = str(node.get("port", 22))
         proc = await asyncio.create_subprocess_exec(
             "ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes",
             "-o", "StrictHostKeyChecking=accept-new",
             "-o", "UserKnownHostsFile=/ssh/known_hosts",
+            "-p", port,
             "-i", ssh_key,
             f"{node['user']}@{node['host']}", command,
             stdout=asyncio.subprocess.PIPE,
