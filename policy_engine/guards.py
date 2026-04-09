@@ -109,9 +109,35 @@ class PromptInjectionGuard:
         re.compile(r"hex\s*:\s*[0-9a-fA-F]{20,}", re.I),
     ]
 
+    # Fields that contain Brain-dispatched context (already sanitized
+    # at INTAKE by voice_handler's InputSanitizer). Scanning these again
+    # at GATE causes false positives because owner directives naturally
+    # contain patterns like "SYSTEM OVERRIDE:" that are legitimate.
+    _BRAIN_TRUSTED_FIELDS = frozenset({"metadata", "plan", "capabilities"})
+
     def check(self, payload: dict[str, Any]) -> GuardResult:
-        """Scan *payload* for prompt injection indicators."""
-        text = _flatten_to_text(payload)
+        """Scan *payload* for prompt injection indicators.
+
+        Skips metadata/plan/capabilities for brain-dispatched tasks
+        (marked by metadata.brain_dispatched=True) because those fields
+        contain pre-sanitized owner directives that would false-positive.
+        """
+        is_brain_dispatched = (
+            isinstance(payload, dict)
+            and isinstance(payload.get("metadata"), dict)
+            and payload["metadata"].get("brain_dispatched") is True
+        )
+
+        if is_brain_dispatched:
+            # Only scan name + description + agent_type (guard-safe fields)
+            filtered = {
+                k: v for k, v in payload.items()
+                if k not in self._BRAIN_TRUSTED_FIELDS
+            }
+        else:
+            filtered = payload
+
+        text = _flatten_to_text(filtered)
         matches: list[str] = []
 
         for pat in self.SUSPICIOUS_PATTERNS:
