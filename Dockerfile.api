@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Install system dependencies for sandboxing
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends bubblewrap curl && \
+    apt-get install -y --no-install-recommends bubblewrap curl git && \
     rm -rf /var/lib/apt/lists/*
 
 # Install uv for faster dependency resolution

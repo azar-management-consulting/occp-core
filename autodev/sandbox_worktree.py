@@ -80,6 +80,87 @@ class SandboxWorktree:
         self._repo_root = repo_root.resolve()
         self._worktree_root = worktree_root or _DEFAULT_WORKTREE_ROOT
         self._active: dict[str, WorktreeHandle] = {}
+        self._ensure_git_repo()
+
+    def _ensure_git_repo(self) -> None:
+        """If repo_root has no .git/, create a shadow repo in tmpfs.
+
+        Containerized envs have read-only / and no .git/.
+        We create a writable clone in /tmp/occp-autodev-repo/ with the
+        source code copied in, so worktree ops have a proper git base.
+        This shadow repo is ephemeral (lost on restart) which is fine
+        because autodev branches are meant to be pushed or discarded.
+        """
+        git_dir = self._repo_root / ".git"
+        if git_dir.exists():
+            return
+
+        shadow = pathlib.Path("/tmp/occp-autodev-repo")
+        if (shadow / ".git").exists():
+            # Already initialized from a previous autodev call
+            self._repo_root = shadow
+            return
+
+        try:
+            shadow.mkdir(parents=True, exist_ok=True)
+            # Copy source into shadow (read-only / → writable tmpfs)
+            # Copy only essential source dirs. Use copy_function=shutil.copy
+            # and ignore_dangling_symlinks to handle permission issues in
+            # read-only container envs. Skip dirs that cause permission errors.
+            for subdir in (
+                "orchestrator", "adapters", "api", "store", "security",
+                "policy_engine", "evaluation", "observability", "autodev",
+                "architecture", "tests", "cli", "sdk",
+            ):
+                src = self._repo_root / subdir
+                if src.is_dir():
+                    try:
+                        shutil.copytree(
+                            src,
+                            shadow / subdir,
+                            dirs_exist_ok=True,
+                            ignore=shutil.ignore_patterns(
+                                "__pycache__", "*.pyc",
+                            ),
+                        )
+                    except (PermissionError, OSError):
+                        pass  # skip unreadable dirs — shadow repo is best-effort
+            # Copy top-level files
+            for f in ("pyproject.toml", "CLAUDE.md"):
+                src_f = self._repo_root / f
+                if src_f.is_file():
+                    try:
+                        shutil.copy2(src_f, shadow / f)
+                    except (PermissionError, OSError):
+                        pass
+            _git = lambda args: subprocess.run(
+                ["git"] + args,
+                cwd=shadow,
+                capture_output=True,
+                text=True,
+                check=True,
+                env={
+                    "GIT_TERMINAL_PROMPT": "0",
+                    "PATH": "/usr/bin:/bin:/usr/local/bin",
+                    "HOME": "/tmp",
+                },
+            )
+            _git(["init"])
+            _git(["config", "user.email", "autodev@occp.ai"])
+            _git(["config", "user.name", "OCCP AutoDev"])
+            _git(["add", "-A"])
+            _git(["commit", "-m", "autodev: shadow repo base"])
+            self._repo_root = shadow
+            logger.info(
+                "autodev.sandbox: created shadow repo at %s from %s",
+                shadow,
+                self._repo_root,
+            )
+        except (subprocess.CalledProcessError, FileNotFoundError, OSError) as exc:
+            logger.warning(
+                "autodev.sandbox: shadow repo init failed: %s (worktree ops may fail)",
+                exc,
+            )
 
     # ── Git command wrapper ────────────────────────────────
     def _run_git(

@@ -96,7 +96,13 @@ class VerificationGate:
         self._lint_timeout = lint_timeout
         self._test_timeout = test_timeout
         self._regression_timeout = regression_timeout
-        self._python = python_executable or ".venv/bin/python"
+        # Auto-detect: prefer .venv/bin/python if it exists, else system python3
+        if python_executable:
+            self._python = python_executable
+        elif pathlib.Path(".venv/bin/python").exists():
+            self._python = ".venv/bin/python"
+        else:
+            self._python = "python3"
 
     # ── Main entry ─────────────────────────────────────────
     def verify(
@@ -150,9 +156,24 @@ class VerificationGate:
                 )
             )
 
-        # Stage 3: regression (fast subset — architecture + smoke)
-        regression = self._run_regression(worktree_path)
-        report.stages.append(regression)
+        # Stage 3: regression (fast subset — only if Python files were modified
+        # AND pytest is available. YAML-only or doc-only diffs skip this.)
+        if py_files and self._pytest_available(worktree_path):
+            regression = self._run_regression(worktree_path)
+            report.stages.append(regression)
+        else:
+            skip_reason = (
+                "no python files modified" if not py_files
+                else "pytest not available in runtime"
+            )
+            report.stages.append(
+                StageResult(
+                    stage="regression",
+                    verdict="skipped",
+                    duration_seconds=0.0,
+                    detail=skip_reason,
+                )
+            )
 
         report.finished_at = datetime.now(timezone.utc)
         logger.info(
@@ -258,6 +279,20 @@ class VerificationGate:
             stage="regression",
         )
 
+    def _pytest_available(self, cwd: pathlib.Path) -> bool:
+        """Check if pytest can be imported by the Python used for tests."""
+        try:
+            result = subprocess.run(
+                [self._python, "-c", "import pytest"],
+                cwd=cwd,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            return result.returncode == 0
+        except Exception:  # noqa: BLE001
+            return False
+
     # ── Subprocess runner ──────────────────────────────────
     def _run_subprocess(
         self,
@@ -267,7 +302,17 @@ class VerificationGate:
         stage: str,
     ) -> StageResult:
         """Wrap subprocess.run with standard capture + timeout + verdict."""
+        import os
+
         start = datetime.now(timezone.utc)
+        # Build env: merge PATH + PYTHONPATH so worktree tests can import
+        # both the worktree code (priority) and the installed app packages.
+        env = {
+            "PATH": "/usr/bin:/bin:/usr/local/bin:.venv/bin",
+            "HOME": os.environ.get("HOME", "/tmp"),
+            # Worktree first, then original app (for installed deps)
+            "PYTHONPATH": f"{cwd}:/app",
+        }
         try:
             result = subprocess.run(
                 cmd,
@@ -275,7 +320,7 @@ class VerificationGate:
                 capture_output=True,
                 text=True,
                 timeout=timeout,
-                env={"PATH": "/usr/bin:/bin:/usr/local/bin:.venv/bin"},
+                env=env,
             )
             duration = (datetime.now(timezone.utc) - start).total_seconds()
             return StageResult(

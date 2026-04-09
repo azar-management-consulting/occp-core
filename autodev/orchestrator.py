@@ -452,7 +452,9 @@ class AutoDevOrchestrator:
 
     def _apply_diff(self, worktree_path: pathlib.Path, diff: str) -> None:
         """Apply a unified diff to the worktree via `git apply`."""
-        # Write diff to a temp file inside the worktree
+        # Ensure diff ends with newline (git apply requires it)
+        if diff and not diff.endswith("\n"):
+            diff = diff + "\n"
         diff_file = worktree_path / ".autodev.patch"
         diff_file.write_text(diff)
         try:
