@@ -232,6 +232,14 @@ class AutoDevOrchestrator:
 
         Transitions: PROPOSED → BUILDING → VERIFYING → AWAITING_APPROVAL|FAILED
         """
+        # Kill switch re-check at every action boundary (NVIDIA sandbox guide)
+        ks = get_kill_switch()
+        if ks.is_active():
+            run = self._require_run(run_id)
+            run.error = f"kill switch active: {ks.current_activation.reason if ks.current_activation else '?'}"
+            run.record_transition(RunState.CANCELLED, reason=run.error)
+            return run
+
         run = self._require_run(run_id)
         if run.state != RunState.PROPOSED:
             raise ValueError(
@@ -379,6 +387,14 @@ class AutoDevOrchestrator:
 
         In v0.11.0 this will automate: push branch → create PR → await CI.
         """
+        # Kill switch re-check at merge boundary
+        ks = get_kill_switch()
+        if ks.is_active():
+            run = self._require_run(run_id)
+            run.error = f"kill switch active at merge: {ks.current_activation.reason if ks.current_activation else '?'}"
+            run.record_transition(RunState.CANCELLED, reason=run.error)
+            return run
+
         run = self._require_run(run_id)
         if run.state != RunState.APPROVED:
             raise ValueError(f"cannot merge: state={run.state.value}")

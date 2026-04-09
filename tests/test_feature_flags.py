@@ -41,6 +41,12 @@ class TestFeatureFlagStore:
                 f"{key} must default OFF until validated"
             )
 
+    def test_autodev_flag_seeded_and_off(self, store):
+        """Auto-dev pipeline MUST default OFF per 2026 gated-deployment rule."""
+        flag = store.get("l6.autodev.enabled")
+        assert flag is not None, "missing l6.autodev.enabled flag"
+        assert flag.enabled is False, "autodev must default OFF"
+
     def test_set_new_flag(self, store):
         flag = store.set("test.new.flag", True, description="test flag")
         assert flag.enabled is True

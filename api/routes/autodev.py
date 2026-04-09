@@ -31,10 +31,35 @@ from autodev import (
     get_rate_budget_tracker,
     get_sandbox_worktree,
 )
+from evaluation import get_flag_store, get_kill_switch
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["autodev"])
+
+
+def _require_autodev_enabled() -> None:
+    """Pre-flight: reject ALL autodev requests if feature flag is OFF or
+    kill switch is active. This ensures autodev never runs unless
+    explicitly enabled by an admin AND system is not in emergency state.
+
+    Per 2026 best practice (Flagsmith, Vercel, NVIDIA):
+    every agent capability must be runtime-gated, not just RBAC-gated.
+    """
+    if not get_flag_store().is_enabled("l6.autodev.enabled"):
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "autodev pipeline disabled — enable via "
+                "PUT /governance/flags {key: 'l6.autodev.enabled', enabled: true}"
+            ),
+        )
+    ks = get_kill_switch()
+    if ks.is_active():
+        raise HTTPException(
+            status_code=503,
+            detail=f"autodev blocked: kill switch ACTIVE ({ks.current_activation.reason if ks.current_activation else '?'})",
+        )
 
 
 # ── Request models ────────────────────────────────────────────
@@ -65,6 +90,7 @@ async def propose(
     current_user: dict = Depends(get_current_user_payload),
 ) -> dict[str, Any]:
     """Submit a new auto-dev proposal. Admin only."""
+    _require_autodev_enabled()
     try:
         run = get_orchestrator().propose(
             title=body.title,
@@ -93,6 +119,7 @@ async def execute(
     State transitions: PROPOSED → BUILDING → VERIFYING → AWAITING_APPROVAL
     (or REJECTED / FAILED).
     """
+    _require_autodev_enabled()
     orch = get_orchestrator()
     if orch.get(run_id) is None:
         raise HTTPException(status_code=404, detail=f"run {run_id} not found")
@@ -115,6 +142,7 @@ async def approve(
     current_user: dict = Depends(get_current_user_payload),
 ) -> dict[str, Any]:
     """Approve an AWAITING_APPROVAL run. Admin only."""
+    _require_autodev_enabled()
     orch = get_orchestrator()
     try:
         run = orch.resolve_approval(run_id, approved=True, actor=body.actor, reason=body.reason)
@@ -132,6 +160,7 @@ async def reject(
     body: ApprovalDecisionRequest,
     current_user: dict = Depends(get_current_user_payload),
 ) -> dict[str, Any]:
+    _require_autodev_enabled()
     orch = get_orchestrator()
     try:
         run = orch.resolve_approval(run_id, approved=False, actor=body.actor, reason=body.reason)
@@ -153,6 +182,7 @@ async def merge(
     OCCP preservation contract: the orchestrator NEVER pushes to main.
     It only prepares the branch. Human creates the PR + merges manually.
     """
+    _require_autodev_enabled()
     orch = get_orchestrator()
     try:
         run = orch.finalize_merge(run_id)
@@ -170,6 +200,7 @@ async def cancel(
     body: CancelRequest,
     current_user: dict = Depends(get_current_user_payload),
 ) -> dict[str, Any]:
+    _require_autodev_enabled()
     orch = get_orchestrator()
     try:
         run = orch.cancel(run_id, reason=body.reason)

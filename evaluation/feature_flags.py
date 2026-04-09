@@ -106,6 +106,9 @@ class FeatureFlagStore:
              "Route by risk: low→Haiku, medium→Sonnet, high→Opus (60% cost cut)"),
             ("l6.llm.batch_api", False,
              "Use Batch API for non-realtime tasks (50% discount)"),
+            # ── Auto-dev pipeline gate ──
+            ("l6.autodev.enabled", False,
+             "Enable /autodev/* endpoints. OFF by default — must be explicitly enabled."),
         ]
         for key, enabled, desc in defaults:
             self._flags[key] = FeatureFlag(
