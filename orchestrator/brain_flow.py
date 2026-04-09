@@ -559,18 +559,70 @@ class BrainFlowEngine:
         }
 
     async def _gather_tool_context(self, message: str) -> str:
-        """Pre-execution: call MCP bridge tools to gather live data.
+        """Pre-execution: gather FULL system context via MCP bridge tools.
 
-        Detects URLs and keywords in the directive and calls appropriate
-        wordpress.* / http.get tools. Results are embedded into the task
-        description so OpenClaw agents get REAL DATA to work with.
+        Brain always knows:
+        1. INFRASTRUCTURE — which nodes are reachable (node.list + node.status)
+        2. WORDPRESS — site info + pages + posts for mentioned domains
+        3. BRAIN STATUS — self health check
+
+        This makes Brain the CENTRAL CONTROLLER that understands the entire
+        system structure before dispatching any work.
         """
         from adapters.mcp_bridge import ToolCall, build_default_bridge
 
         lines: list[str] = []
         lowered = message.lower()
+        bridge = build_default_bridge()
 
-        # Detect WordPress-related directives
+        # ── 1. ALWAYS: Infrastructure status ──────────────────────
+        lines.append("=== INFRASTRUCTURE STATUS ===")
+
+        # Node list
+        try:
+            r = await bridge.dispatch(ToolCall(
+                tool="node.list", params={}, agent_id="brain",
+            ))
+            if r.status == "ok" and r.result:
+                for node in r.result.get("nodes", []):
+                    lines.append(
+                        f"  node: {node['id']} | host={node['host']} | "
+                        f"user={node['user']} | role={node['role']}"
+                    )
+        except Exception as exc:
+            lines.append(f"  node.list error: {exc}")
+
+        # Node status (check which are reachable)
+        for node_id in ("hetzner-brain", "hetzner-openclaw", "imac", "mbp"):
+            try:
+                r = await bridge.dispatch(ToolCall(
+                    tool="node.status",
+                    params={"node_id": node_id},
+                    agent_id="brain",
+                ))
+                if r.status == "ok" and r.result:
+                    reach = r.result.get("reachable", False)
+                    out = r.result.get("output", "")[:60]
+                    icon = "ONLINE" if reach else "OFFLINE"
+                    lines.append(f"  {node_id}: {icon} {out}")
+            except Exception:
+                lines.append(f"  {node_id}: CHECK FAILED")
+
+        # Docker on brain server
+        try:
+            r = await bridge.dispatch(ToolCall(
+                tool="node.exec",
+                params={"node_id": "hetzner-brain", "command": "docker ps --format {{.Names}}:{{.Status}}"},
+                agent_id="brain",
+            ))
+            if r.status == "ok" and r.result and r.result.get("exit_code") == 0:
+                lines.append("  docker containers:")
+                for line in r.result["stdout"].strip().split("\n")[:10]:
+                    lines.append(f"    {line}")
+        except Exception:
+            pass
+
+        # ── 2. WordPress data for mentioned domains ───────────────
         wp_sites: list[str] = []
         if "magyarorszag.ai" in lowered:
             wp_sites.append("https://magyarorszag.ai")
@@ -579,13 +631,8 @@ class BrainFlowEngine:
         if "felnottkepzes.hu" in lowered:
             wp_sites.append("https://felnottkepzes.hu")
 
-        if not wp_sites:
-            return ""
-
-        bridge = build_default_bridge()
-
         for site in wp_sites:
-            # Site info
+            lines.append(f"\n=== WORDPRESS: {site} ===")
             try:
                 r = await bridge.dispatch(ToolCall(
                     tool="wordpress.get_site_info",
@@ -593,13 +640,12 @@ class BrainFlowEngine:
                     agent_id="brain",
                 ))
                 if r.status == "ok" and r.result:
-                    lines.append(f"[{site}] site_info: name={r.result.get('name')}, "
+                    lines.append(f"  name={r.result.get('name')}, "
                                  f"routes={r.result.get('routes_count')}, "
                                  f"namespaces={r.result.get('namespaces', [])[:5]}")
             except Exception as exc:
-                lines.append(f"[{site}] site_info: error {exc}")
+                lines.append(f"  site_info error: {exc}")
 
-            # Pages
             try:
                 r = await bridge.dispatch(ToolCall(
                     tool="wordpress.get_pages",
@@ -608,13 +654,12 @@ class BrainFlowEngine:
                 ))
                 if r.status == "ok" and r.result:
                     pages = r.result.get("pages", [])
-                    lines.append(f"[{site}] pages ({len(pages)}):")
+                    lines.append(f"  pages ({len(pages)}):")
                     for p in pages[:15]:
-                        lines.append(f"  - id={p['id']} title=\"{p['title']}\" slug={p['slug']} link={p['link']}")
+                        lines.append(f"    id={p['id']} title=\"{p['title']}\" slug={p['slug']} link={p['link']}")
             except Exception as exc:
-                lines.append(f"[{site}] pages: error {exc}")
+                lines.append(f"  pages error: {exc}")
 
-            # Posts
             try:
                 r = await bridge.dispatch(ToolCall(
                     tool="wordpress.get_posts",
@@ -623,14 +668,34 @@ class BrainFlowEngine:
                 ))
                 if r.status == "ok" and r.result:
                     posts = r.result.get("posts", [])
-                    lines.append(f"[{site}] posts ({len(posts)}):")
+                    lines.append(f"  posts ({len(posts)}):")
                     for p in posts[:10]:
-                        lines.append(f"  - id={p['id']} title=\"{p['title']}\" slug={p['slug']}")
+                        lines.append(f"    id={p['id']} title=\"{p['title']}\" slug={p['slug']}")
             except Exception as exc:
-                lines.append(f"[{site}] posts: error {exc}")
+                lines.append(f"  posts error: {exc}")
+
+        # ── 3. Brain self-status ──────────────────────────────────
+        lines.append("\n=== BRAIN STATUS ===")
+        try:
+            r = await bridge.dispatch(ToolCall(
+                tool="brain.status", params={}, agent_id="brain",
+            ))
+            if r.status == "ok" and r.result:
+                lines.append(f"  platform={r.result.get('platform')} "
+                             f"version={r.result.get('version')} "
+                             f"bridge={r.result.get('bridge')}")
+        except Exception:
+            lines.append("  brain.status: error")
+
+        # Available tools
+        lines.append(f"  tools_available: {len(bridge.list_tools())}")
+        lines.append(f"  tools: {', '.join(bridge.list_tools())}")
 
         context = "\n".join(lines)
-        logger.info("brain_flow: gathered %d lines of tool context for %s", len(lines), wp_sites)
+        logger.info(
+            "brain_flow: gathered %d lines of system context (nodes + wp + brain)",
+            len(lines),
+        )
         return context
 
     async def _handle_dispatch_phase(
