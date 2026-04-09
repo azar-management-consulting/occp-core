@@ -2,24 +2,56 @@
   <img src="assets/logo.png" alt="OCCP Logo" width="120">
 </p>
 
+<h1 align="center">OpenCloud Control Plane (OCCP)</h1>
+
 <p align="center">
-  <strong>OpenCloud Control Plane (OCCP)</strong><br>
-  <em>First open-source control plane with a 5-stage Verified Autonomy Pipeline</em>
+  <strong>Governance-first AI agent orchestration with Verified Autonomy Pipeline</strong><br>
+  <em>Policy-gated, audit-logged, kill-switch protected. Built for production AI agent systems.</em>
 </p>
 
 <p align="center">
   <a href="https://github.com/azar-management-consulting/occp-core/actions"><img src="https://github.com/azar-management-consulting/occp-core/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="Python 3.11+">
+  <img src="https://img.shields.io/badge/python-3.13-blue?logo=python" alt="Python 3.13">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT">
   <img src="https://img.shields.io/badge/docker-compose-blue?logo=docker" alt="Docker Compose">
-  <img src="https://img.shields.io/badge/version-0.8.2-orange" alt="Version 0.8.2">
-  <img src="https://img.shields.io/badge/llms.txt-available-green" alt="llms.txt">
-  <a href="https://occp.ai"><img src="https://occp.ai/badge.svg" alt="OCCP Verified"></a>
+  <img src="https://img.shields.io/badge/version-0.10.0-orange" alt="Version 0.10.0">
+  <img src="https://img.shields.io/badge/tests-2874%20passing-brightgreen" alt="Tests: 2874 passing">
+  <img src="https://img.shields.io/badge/L6-96%25%20ready-blueviolet" alt="L6 96% Ready">
+  <img src="https://img.shields.io/badge/MCP%20tools-14-informational" alt="14 MCP Tools">
+  <img src="https://img.shields.io/badge/agents-8%20specialists-informational" alt="8 Specialist Agents">
+  <a href="https://occp.ai"><img src="https://img.shields.io/badge/live-occp.ai-success" alt="Live: occp.ai"></a>
 </p>
 
 ---
 
-## 30-Second Quick Start
+## What is OCCP?
+
+OCCP is an open-source **AI Agent Control Plane** that ensures autonomous AI agents operate safely, auditably, and within policy boundaries. Every agent task flows through the **5-stage Verified Autonomy Pipeline**:
+
+```
+Plan → Gate → Execute → Validate → Ship
+```
+
+Unlike chatbot frameworks, OCCP is a **governance-first runtime** — it controls *what agents can do*, *who approves it*, *how it's audited*, and *how to stop it*.
+
+### Key Capabilities
+
+- **Verified Autonomy Pipeline (VAP)** — 5-stage immutable execution sequence with skip detection
+- **5 Policy Guards** — PII detection, prompt injection defense, resource limits, output sanitization, human oversight
+- **Kill Switch** — hard-stop with state capture, drill mode, and automatic pipeline refusal
+- **14 MCP Runtime Tools** — WordPress REST API, SSH node execution, filesystem sandbox, HTTP client
+- **8 Specialist Agents** — eng-core, wp-web, infra-ops, design-lab, content-forge, social-growth, intel-research, biz-strategy
+- **Telegram Integration** — bi-directional voice + text, owner DM bypass, real-time milestone reporting
+- **OpenClaw Bridge** — WebSocket connection to 94-method execution gateway
+- **Self-Improvement Pipeline** — autodev propose→build→verify→approve→merge with git worktree isolation
+- **Architecture Memory** — 8 YAML files describing the system to itself (services, agents, tools, dataflows, boundaries, governance)
+- **Observability** — Prometheus-compatible metrics, anomaly detection, behavior digest, readiness markers
+- **Feature Flags** — JSON-persistent, gated deployment for safe capability rollout
+- **Drift Detection** — architecture YAML vs code cross-reference validation
+
+---
+
+## Quick Start
 
 ```bash
 git clone https://github.com/azar-management-consulting/occp-core.git
@@ -28,175 +60,113 @@ pip install -e ".[dev]"
 occp demo
 ```
 
-**That's it.** You'll see the full Verified Autonomy Pipeline in action — planning, gating, executing, validating, and shipping a task in real time.
-
-Try prompt injection blocking:
-
-```bash
-occp demo --inject
-```
-
----
-
-## What is OCCP?
-
-OCCP is an open-source **Agent Control Plane** that ensures AI agents operate safely, auditably, and within policy. Every agent task flows through the **5-stage Verified Autonomy Pipeline (Plan → Gate → Execute → Validate → Ship)**:
-
-```mermaid
-graph LR
-    A["1. Plan"] --> B["2. Gate"]
-    B --> C["3. Execute"]
-    C --> D["4. Validate"]
-    D --> E["5. Ship"]
-
-    style A fill:#3b82f6,stroke:#1e40af,color:#fff
-    style B fill:#a855f7,stroke:#7e22ce,color:#fff
-    style C fill:#f59e0b,stroke:#d97706,color:#fff
-    style D fill:#22c55e,stroke:#16a34a,color:#fff
-    style E fill:#06b6d4,stroke:#0891b2,color:#fff
-```
-
-| Stage | What Happens |
-|-------|-------------|
-| **Plan** | Generate execution plan from task description |
-| **Gate** | Policy engine checks — PII detection, prompt injection, resource limits |
-| **Execute** | Sandboxed agent execution |
-| **Validate** | Verify outputs match plan and pass quality checks |
-| **Ship** | Deliver results with full audit trail |
-
----
-
-## Installation
-
-### CLI + API Server
-
-```bash
-pip install -e ".[dev]"
-occp start          # Launch API on :8000
-```
-
-### Docker Compose (Full Stack)
+### Docker Compose (Production)
 
 ```bash
 docker compose up -d
-# API: http://localhost:8000
+# API:       http://localhost:8000
 # Dashboard: http://localhost:3000
-```
-
-### Development Mode
-
-```bash
-docker compose --profile dev up
-# Uses hot-reload for both API and dashboard
 ```
 
 ---
 
 ## Architecture
 
+```
+┌─────────────────────────────────────────────────┐
+│                    OCCP Brain                    │
+│           (Brian the Brain orchestrator)          │
+├─────────────┬───────────────┬───────────────────┤
+│  Telegram   │   REST API    │   CloudCode CLI   │
+│  (voice+text)│  (103 endpoints)│                  │
+├─────────────┴───────────────┴───────────────────┤
+│              Verified Autonomy Pipeline           │
+│         Plan → Gate → Execute → Validate → Ship   │
+├─────────────────────────────────────────────────┤
+│  PolicyEngine (5 guards)  │  AgentToolGuard (21) │
+├─────────────────────────────────────────────────┤
+│  OpenClaw Executor  │  MCP Bridge (14 tools)     │
+├─────────────────────────────────────────────────┤
+│  Observability │ Evaluation │ Governance │ AutoDev│
+├─────────────────────────────────────────────────┤
+│  SQLite (9 tables)  │  Audit Hash Chain (374+)   │
+└─────────────────────────────────────────────────┘
+```
+
 | Module | Description |
 |--------|-------------|
-| `orchestrator/` | Verified Autonomy Pipeline engine — Protocol-based DI, state machine, transitions |
-| `policy_engine/` | Policy-as-code, SHA-256 audit chain, PII/injection/resource guards |
-| `api/` | FastAPI REST API + WebSocket real-time pipeline events |
-| `adapters/` | Demo adapters — EchoPlanner, PolicyGate, MockExecutor, BasicValidator, LogShipper |
-| `dash/` | Next.js 14 dashboard — dark theme, live pipeline visualization |
-| `cli/` | Click CLI — `occp start`, `occp demo`, `occp run`, `occp status` |
-| `sdk/` | Python + TypeScript SDKs |
-| `config/` | YAML config templates (sandbox, channels, skills) |
-| `scripts/` | Install, onboarding wizard, security report |
-| `store/` | SQLAlchemy 2.0 ORM — TaskStore, AuditStore, AgentStore, UserStore |
-| `tests/` | 328+ tests, 85%+ coverage |
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/status` | Health check + version |
-| `POST` | `/api/v1/auth/login` | JWT login |
-| `POST` | `/api/v1/auth/refresh` | Token refresh |
-| `POST` | `/api/v1/auth/register` | Create user (admin-only) |
-| `POST` | `/api/v1/tasks` | Create a new task |
-| `GET` | `/api/v1/tasks` | List all tasks |
-| `GET` | `/api/v1/tasks/{id}` | Get task details |
-| `POST` | `/api/v1/pipeline/run/{id}` | Run Verified Autonomy Pipeline on task |
-| `POST` | `/api/v1/policy/evaluate` | Test content against policy guards |
-| `GET` | `/api/v1/agents` | List registered agents |
-| `POST` | `/api/v1/agents` | Register agent (admin/operator) |
-| `DELETE`| `/api/v1/agents/{type}` | Unregister agent (admin) |
-| `GET` | `/api/v1/audit` | Audit log with hash chain |
-| `WS` | `/api/v1/ws/pipeline/{id}` | Real-time pipeline events |
-
-## Policy Engine
-
-- **PII Detection** — email, phone, SSN, credit card patterns
-- **Prompt Injection Detection** — common attack patterns
-- **Resource Limits** — configurable constraints
-- **YAML/JSON Policies** — ALLOW / DENY / REQUIRE_APPROVAL actions
-- **Tamper-Evident Audit** — SHA-256 hash chain, verifiable integrity
+| `orchestrator/` | VAP engine, BrainFlow 7-phase conversation, multi-agent DAG workflows |
+| `policy_engine/` | 5 guards, ABAC rules, SHA-256 audit chain, policy-as-code |
+| `api/` | FastAPI — 95 paths, 103 endpoints, JWT + RBAC |
+| `adapters/` | 24 modules — planners (Claude/OpenAI/Ollama), executors (OpenClaw/sandbox), Telegram, Whisper |
+| `security/` | 18 modules — agent allowlist, break-glass, vault, signing, SBOM, provenance |
+| `observability/` | Prometheus metrics, anomaly detector, behavior digest, readiness markers |
+| `evaluation/` | Feature flags, replay harness, canary engine, kill switch, self-modifier, proposal generator, drift detector |
+| `autodev/` | Safe self-improvement — sandbox worktree, verification gate, approval queue, budget tracker |
+| `architecture/` | 8 YAML self-model files (services, agents, tools, dataflows, boundaries, governance) |
+| `dash/` | Next.js 15 + React 19 dashboard |
+| `store/` | SQLAlchemy 2.0 async — 9 tables, 15 store modules |
+| `tests/` | 2874 tests passing |
 
 ---
 
-## CLI Commands
+## Infrastructure
 
-```
-occp start              # Launch API server (uvicorn)
-occp demo               # Run full Verified Autonomy Pipeline demo
-occp demo --inject      # Demo prompt injection blocking
-occp status             # Check API health
-occp run TASK_ID        # Run pipeline on existing task
-occp export --format json  # Export audit log
-```
+| Node | Role | Status |
+|------|------|--------|
+| Hetzner Brain (195.201.238.144) | API + Dashboard + DB + Telegram | Production |
+| Hetzner OpenClaw (95.216.212.174) | 94-method execution gateway | Production |
+| iMac (Tailscale mesh) | Storage + secondary control | Connected |
+| MacBook Pro (Tailscale mesh) | Secondary dev | Connected |
+| MacBook Air | Claude Code host + primary control | Active |
 
 ---
 
-## RBAC (Role-Based Access Control)
+## L6 Readiness (Self-Improving AI)
 
-| Role | Permissions |
-|------|------------|
-| `system_admin` | Full access — user management, agent CRUD, pipeline, audit |
-| `org_admin` | Agent management, pipeline execution, audit read |
-| `operator` | Task & pipeline execution, agent read |
-| `viewer` | Read-only access to tasks, agents, audit |
+OCCP implements bounded architectural self-redesign at **96% readiness**:
 
-Enforced via Casbin on every protected endpoint. WebSocket connections require `?token=` query param.
+| Marker | Status |
+|--------|--------|
+| Architecture memory complete | ✅ |
+| Telemetry active | ✅ |
+| Observability interpretation | ✅ |
+| Kill switch tested (E2E drill) | ✅ |
+| Governance runtime enforced | ✅ |
+| Self-modifier runtime | ✅ |
+| Feature flags persistent | ✅ |
+| Proposal engine ready | ✅ |
+| Canary engine ready | ✅ |
+| Drift detector ready | ✅ |
+| AutoDev pipeline (safe self-improvement) | ✅ |
 
-## Sandbox Executor
+---
 
-Code execution uses isolated sandboxing with automatic fallback:
+## Monitoring
 
-1. **nsjail** — Linux namespace jail (preferred, requires `SYS_ADMIN`)
-2. **bwrap** — Bubblewrap (user-namespace, no caps needed)
-3. **process** — subprocess with resource limits (fallback)
+Single-call daily health check:
 
-Auto-detected at startup based on available binaries and kernel capabilities.
+```bash
+curl -H "Authorization: Bearer $TOKEN" https://api.occp.ai/api/v1/daily-check
+```
+
+Returns: `healthy`, `score` (0-10), `alerts`, autodev state, budget, anomalies, governance, kill switch.
 
 ---
 
 ## Security
 
-- Default-deny policy with allowlist overrides
-- Channels bind `127.0.0.1` by default
-- Secret scanning on every push (TruffleHog)
-- No secrets in source control
-- See [Secrets Policy](security/SECRETS_POLICY.md)
-
-## Documentation
-
-- [QuickStart](docs/QuickStart.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [API Reference](docs/API.md)
-- [Competitor Comparison](docs/COMPARISON.md)
-- [Secret Management](docs/SECRETS.md)
-
-## Contributing
-
-See [CONTRIBUTING.md](.github/CONTRIBUTING.md). Critical modules protected by [CODEOWNERS](.github/CODEOWNERS).
-
-## License
-
-Community Edition — **MIT**. See [LICENSE](LICENSE).
+- **Immutable zones**: `security/`, `policy_engine/`, `api/auth.py` — cannot be modified by autonomous agents
+- **Kill switch**: hard-stop at pipeline entry, tested via E2E drill
+- **Agent allowlist**: 21 agents with per-tool permissions
+- **Prompt injection guard**: 20+ regex patterns, brain-dispatched trust bypass
+- **Audit trail**: hash-chained, tamper-evident, 374+ entries
+- **RBAC**: 4-tier role hierarchy (viewer → operator → org_admin → system_admin)
 
 ---
 
-*Built by [Azar Management Consulting](https://azar.hu)*
+## License
+
+MIT License — see [LICENSE](LICENSE) for details.
+
+**Built by [Azar Management Consulting](https://azar.hu)** | [occp.ai](https://occp.ai) | [dash.occp.ai](https://dash.occp.ai)
