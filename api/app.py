@@ -341,10 +341,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
             "OCCP_VOICE_TELEGRAM_OWNER_CHAT_ID not set — Telegram strict auth "
             "will reject all messages. Set it to Henry's chat_id."
         )
+    allowed_ids = set(settings.voice_allowed_ids or [])
     channel_auth = ChannelAuthenticator(
         jwt_secret=settings.jwt_secret,
         webhook_secret=getattr(settings, "webhook_secret", ""),
         owner_telegram_id=owner_tg_id,
+        allowed_telegram_ids=allowed_ids,
     )
     state.channel_auth = channel_auth
 
@@ -365,6 +367,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         confirmation_gate=confirmation_gate,
         conversation_store=conversation_store,
         approval_store=approval_store,
+        pipeline=state.pipeline,
+        task_store=task_store,
     )
     # Also set state.brain_flow so /brain/message endpoint can find it
     state.brain_flow = brain_flow

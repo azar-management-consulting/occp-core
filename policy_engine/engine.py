@@ -22,6 +22,7 @@ from policy_engine.abac import (
 from policy_engine.exceptions import PolicyLoadError
 from policy_engine.guards import (
     GuardResult,
+    HumanOversightGuard,
     OutputSanitizationGuard,
     PIIGuard,
     PromptInjectionGuard,
@@ -94,6 +95,7 @@ class PolicyEngine:
             PromptInjectionGuard(),
             ResourceLimitGuard(),
             OutputSanitizationGuard(),
+            HumanOversightGuard(),
         ]
         self._audit_chain: list[AuditEntry] = []
         self._audit_store = audit_store  # Optional AuditStore for persistence

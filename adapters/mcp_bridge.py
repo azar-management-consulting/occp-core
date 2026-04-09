@@ -367,4 +367,129 @@ def build_default_bridge(
     bridge.register("http.post", _http_post)
     bridge.register("brain.status", _brain_status)
     bridge.register("brain.health", _brain_health)
+    # WordPress REST API tools — use WP REST endpoints via http
+    bridge.register("wordpress.get_posts", _wp_get_posts)
+    bridge.register("wordpress.get_pages", _wp_get_pages)
+    bridge.register("wordpress.get_site_info", _wp_get_site_info)
+    bridge.register("wordpress.update_post", _wp_update_post)
     return bridge
+
+
+# ── WordPress REST API tool implementations ───────────────────
+
+async def _wp_get_site_info(params: dict[str, Any]) -> dict[str, Any]:
+    """Fetch WordPress site info via public REST API."""
+    import httpx
+    site_url = params.get("site_url", "https://magyarorszag.ai")
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        r = await client.get(f"{site_url}/wp-json/")
+        r.raise_for_status()
+        data = r.json()
+        return {
+            "name": data.get("name"),
+            "description": data.get("description"),
+            "url": data.get("url"),
+            "home": data.get("home"),
+            "namespaces": data.get("namespaces", []),
+            "routes_count": len(data.get("routes", {})),
+        }
+
+
+async def _wp_get_posts(params: dict[str, Any]) -> dict[str, Any]:
+    """Fetch posts from WordPress REST API (public)."""
+    import httpx
+    site_url = params.get("site_url", "https://magyarorszag.ai")
+    per_page = min(int(params.get("per_page", 10)), 50)
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        r = await client.get(
+            f"{site_url}/wp-json/wp/v2/posts",
+            params={"per_page": per_page, "status": "publish"},
+        )
+        r.raise_for_status()
+        posts = r.json()
+        return {
+            "count": len(posts),
+            "posts": [
+                {
+                    "id": p["id"],
+                    "title": p.get("title", {}).get("rendered", ""),
+                    "slug": p.get("slug", ""),
+                    "date": p.get("date", ""),
+                    "link": p.get("link", ""),
+                    "excerpt": p.get("excerpt", {}).get("rendered", "")[:200],
+                }
+                for p in posts
+            ],
+        }
+
+
+async def _wp_get_pages(params: dict[str, Any]) -> dict[str, Any]:
+    """Fetch pages from WordPress REST API (public)."""
+    import httpx
+    site_url = params.get("site_url", "https://magyarorszag.ai")
+    per_page = min(int(params.get("per_page", 20)), 50)
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        r = await client.get(
+            f"{site_url}/wp-json/wp/v2/pages",
+            params={"per_page": per_page, "status": "publish"},
+        )
+        r.raise_for_status()
+        pages = r.json()
+        return {
+            "count": len(pages),
+            "pages": [
+                {
+                    "id": p["id"],
+                    "title": p.get("title", {}).get("rendered", ""),
+                    "slug": p.get("slug", ""),
+                    "link": p.get("link", ""),
+                    "template": p.get("template", ""),
+                }
+                for p in pages
+            ],
+        }
+
+
+async def _wp_update_post(params: dict[str, Any]) -> dict[str, Any]:
+    """Update a WordPress post/page via authenticated REST API.
+
+    Requires: site_url, post_id, wp_user, wp_app_password
+    Optional: title, content, status, excerpt
+    """
+    import httpx
+    import base64
+    site_url = params.get("site_url", "https://magyarorszag.ai")
+    post_id = params.get("post_id")
+    wp_user = params.get("wp_user", "")
+    wp_app_password = params.get("wp_app_password", "")
+
+    if not post_id:
+        return {"error": "post_id required"}
+    if not wp_user or not wp_app_password:
+        return {"error": "wp_user and wp_app_password required for write operations"}
+
+    # Build update payload (only send fields that were provided)
+    payload: dict[str, Any] = {}
+    for field in ("title", "content", "status", "excerpt"):
+        if field in params:
+            payload[field] = params[field]
+
+    if not payload:
+        return {"error": "no fields to update (provide title, content, status, or excerpt)"}
+
+    auth_str = base64.b64encode(f"{wp_user}:{wp_app_password}".encode()).decode()
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        r = await client.post(
+            f"{site_url}/wp-json/wp/v2/posts/{post_id}",
+            json=payload,
+            headers={"Authorization": f"Basic {auth_str}"},
+        )
+        r.raise_for_status()
+        data = r.json()
+        return {
+            "id": data["id"],
+            "title": data.get("title", {}).get("rendered", ""),
+            "status": data.get("status", ""),
+            "link": data.get("link", ""),
+            "modified": data.get("modified", ""),
+        }

@@ -106,6 +106,8 @@ class BrainFlowEngine:
         confirmation_gate: ConfirmationGate,
         conversation_store: ConversationStore | None = None,
         approval_store: Any = None,
+        pipeline: Any = None,
+        task_store: Any = None,
     ) -> None:
         self._conversations: dict[str, BrainConversation] = {}
         # user_id -> list of conversation_ids (most recent last)
@@ -116,6 +118,8 @@ class BrainFlowEngine:
         self._confirmation_gate = confirmation_gate
         self._conversation_store = conversation_store
         self._approval_store = approval_store
+        self._pipeline = pipeline
+        self._task_store = task_store
 
     # ------------------------------------------------------------------
     # Public API
@@ -391,7 +395,17 @@ class BrainFlowEngine:
     async def _dispatch_tasks(
         self, conv: BrainConversation
     ) -> dict[str, Any]:
-        """Phase 5: Send tasks to OpenClaw agents."""
+        """Phase 5: Dispatch tasks to agents via Pipeline.run().
+
+        ISS-001 FIX: Previously this method only generated task_ids and
+        returned a text message. Now it actually creates Task objects and
+        runs them through the Verified Autonomy Pipeline (Plan→Gate→
+        Execute→Validate→Ship), collecting real results.
+
+        If no pipeline is wired, falls back to the old text-only behavior.
+        """
+        from orchestrator.models import Task, RiskLevel
+
         plan = conv.execution_plan
         if not plan:
             conv.phase = FlowPhase.CANCELLED
@@ -405,31 +419,110 @@ class BrainFlowEngine:
                 "metadata": {},
             }
 
-        task_ids = []
-        for step in plan.get("steps", []):
-            task_id = self._generate_task_id()
-            task_ids.append(task_id)
-
-        conv.dispatched_tasks = task_ids
-        conv.phase = FlowPhase.MONITOR
-
         agents_working = plan["primary_agent"]
         support = plan.get("support_agents", [])
         if support:
             agents_working += ", " + ", ".join(support)
 
+        # If no pipeline wired, fall back to text-only (old behavior)
+        if self._pipeline is None:
+            task_ids = [self._generate_task_id() for _ in plan.get("steps", [])]
+            conv.dispatched_tasks = task_ids
+            conv.phase = FlowPhase.MONITOR
+            return {
+                "text": (
+                    "\U0001f9e0 Brian the Brain\n\n"
+                    "\U0001f680 **Elinditva!**\n\n"
+                    f"\U0001f916 Dolgoznak: {agents_working}\n"
+                    f"\U0001f4cb Feladatok: {len(task_ids)}\n"
+                    f"\u23f1 Becsult ido: {plan['estimated_duration']}\n\n"
+                    "Szolok ha kesz, vagy kerdezz ra barmikor!"
+                ),
+                "phase": "dispatch",
+                "actions": ["statusz", "leallitas"],
+                "metadata": {"task_ids": task_ids},
+            }
+
+        # ── REAL DISPATCH via Pipeline.run() ──────────────────────
+        task_ids = []
+        results = []
+        risk_map = {"low": RiskLevel.LOW, "medium": RiskLevel.MEDIUM,
+                     "high": RiskLevel.HIGH, "critical": RiskLevel.CRITICAL}
+        risk_level = risk_map.get(plan.get("risk_level", "low"), RiskLevel.LOW)
+
+        for step in plan.get("steps", []):
+            task_id = self._generate_task_id()
+            task_ids.append(task_id)
+            agent_type = step.get("agent", plan["primary_agent"])
+            description = step.get("description", conv.original_message[:200])
+
+            task = Task(
+                id=task_id,
+                name=description[:80],
+                description=description,
+                agent_type=agent_type,
+                risk_level=risk_level,
+                metadata={
+                    "conversation_id": conv.conversation_id,
+                    "chat_id": int(conv.user_id) if conv.user_id.isdigit() else 0,
+                    "brain_dispatched": True,
+                },
+            )
+
+            # Persist task
+            if self._task_store:
+                try:
+                    await self._task_store.add(task)
+                except Exception as exc:
+                    logger.warning("Failed to persist task %s: %s", task_id, exc)
+
+            # Run through pipeline
+            try:
+                result = await self._pipeline.run(task)
+                results.append({
+                    "task_id": task_id,
+                    "agent": agent_type,
+                    "success": result.success,
+                    "output": str(result.evidence.get("execution", ""))[:500] if result.evidence else "",
+                })
+            except Exception as exc:
+                logger.error("Pipeline run failed for task %s: %s", task_id, exc)
+                results.append({
+                    "task_id": task_id,
+                    "agent": agent_type,
+                    "success": False,
+                    "output": f"error: {exc}",
+                })
+
+        conv.dispatched_tasks = task_ids
+        conv.phase = FlowPhase.DELIVER
+
+        # Build result summary
+        succeeded = sum(1 for r in results if r["success"])
+        total = len(results)
+
+        result_lines = []
+        for r in results:
+            icon = "\u2705" if r["success"] else "\u274c"
+            output_preview = r["output"][:200] if r["output"] else ""
+            result_lines.append(f"{icon} {r['agent']}: {output_preview}")
+
+        conv.phase = FlowPhase.COMPLETED
+
         return {
             "text": (
                 "\U0001f9e0 Brian the Brain\n\n"
-                "\U0001f680 **Elinditva!**\n\n"
-                f"\U0001f916 Dolgoznak: {agents_working}\n"
-                f"\U0001f4cb Feladatok: {len(task_ids)}\n"
-                f"\u23f1 Becsult ido: {plan['estimated_duration']}\n\n"
-                "Szolok ha kesz, vagy kerdezz ra barmikor!"
+                f"\U0001f3c1 **Kesz!** {succeeded}/{total} feladat sikeres.\n\n"
+                + "\n".join(result_lines[:10])
             ),
-            "phase": "dispatch",
-            "actions": ["statusz", "leallitas"],
-            "metadata": {"task_ids": task_ids},
+            "phase": "completed",
+            "actions": ["uj feladat", "reszletek"],
+            "metadata": {
+                "task_ids": task_ids,
+                "results": results,
+                "succeeded": succeeded,
+                "total": total,
+            },
         }
 
     async def _handle_dispatch_phase(
