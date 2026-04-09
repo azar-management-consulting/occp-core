@@ -465,10 +465,34 @@ class BrainFlowEngine:
             agent_type = step.get("agent", plan["primary_agent"])
             step_desc = step.get("description", "")
 
+            # Sanitize the directive for agent consumption: the guard
+            # correctly flags injection-like patterns, but the original
+            # directive was a legitimate owner instruction that already
+            # passed INTAKE sanitization. We strip ONLY the control
+            # preamble and pass the actual MISSION content to agents.
+            import re as _re
+            sanitized_msg = conv.original_message[:2000]
+            # Remove everything before "MISSION" (the preamble is for Brain)
+            mission_match = _re.search(r"MISSION[:\s]", sanitized_msg, _re.I)
+            if mission_match:
+                sanitized_msg = sanitized_msg[mission_match.start():]
+            # Strip remaining injection-trigger patterns
+            for pattern in (
+                r"SYSTEM\s*OVERRIDE\s*:",
+                r"SYSTEM\s*:",
+                r"MASTER\s+EXECUTION\s+CONTRACT",
+                r"Ignore\s+default\s+\w+\s+\w+\s+behavior",
+                r"Activate\s+orchestration[^.]*\.",
+                r"You\s+are\s+now\s+switching[^.]*\.",
+                r"This\s+is\s+a\s+MASTER[^.]*\.",
+                r"ADMIN\s+OVERRIDE",
+            ):
+                sanitized_msg = _re.sub(pattern, "", sanitized_msg, flags=_re.I)
+
             description = (
                 f"{step_desc}\n\n"
-                f"--- ORIGINAL DIRECTIVE ---\n"
-                f"{conv.original_message[:2000]}\n\n"
+                f"--- FELADAT ---\n"
+                f"{sanitized_msg.strip()}\n\n"
             )
             if tool_context:
                 description += (
