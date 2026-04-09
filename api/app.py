@@ -222,8 +222,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
             adapter_registry.register(
                 "openclaw", planner=openclaw_planner, executor=openclaw_executor,
             )
-            for _at in ("general", "code-reviewer", "main"):
-                adapter_registry.register(_at, executor=openclaw_executor)
+            # ALL agent types → OpenClaw planner + executor (real Claude execution)
+            # Previously only "general", "code-reviewer", "main" were registered
+            # which caused wp-web, infra-ops etc. to fall back to sandbox/bwrap
+            # (which returned "No executable command"). ISS-001 root cause.
+            for _at in (
+                "general", "code-reviewer", "main",
+                # 8 specialist agents — MUST use OpenClaw for real work
+                "eng-core", "wp-web", "infra-ops", "design-lab",
+                "content-forge", "social-growth", "intel-research", "biz-strategy",
+                # Pipeline internal
+                "onboarding-wizard", "mcp-installer", "llm-setup",
+                "skills-manager", "session-policy", "ux-copy",
+            ):
+                adapter_registry.register(
+                    _at, planner=openclaw_planner, executor=openclaw_executor,
+                )
             adapter_registry.register("remote-agent", executor=openclaw_executor)
             multi_planner.add_provider("openclaw", openclaw_planner, priority=5)
 
