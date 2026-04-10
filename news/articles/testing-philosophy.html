@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>313 Tests and Counting: The Testing Philosophy of OCCP — OCCP News</title>
+  <meta name="description" content="From 37 to 313 tests in 7 releases — how we approach testing for an AI orchestration platform where correctness is critical.">
+  <meta name="keywords" content="OCCP, testing, pytest, CI, test pyramid, AI platform testing, Python testing">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/testing-philosophy.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/testing-philosophy.html">
+  <meta property="og:title" content="313 Tests and Counting: The Testing Philosophy of OCCP">
+  <meta property="og:description" content="From 37 to 313 tests in 7 releases — how we approach testing for an AI orchestration platform where correctness is critical.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-14">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="313 Tests and Counting: The Testing Philosophy of OCCP">
+  <meta name="twitter:description" content="From 37 to 313 tests in 7 releases — how we approach testing for an AI orchestration platform where correctness is critical.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "313 Tests and Counting: The Testing Philosophy of OCCP",
+    "datePublished": "2026-02-14",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "From 37 to 313 tests in 7 releases — how we approach testing for an AI orchestration platform where correctness is critical.",
+    "url": "https://news.occp.ai/articles/testing-philosophy.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-14</span>
+          <span class="card-tag tag-infra">Infrastructure</span>
+          <span class="card-version">v0.7.0</span>
+        </div>
+        <h1>313 Tests and Counting: The Testing Philosophy of OCCP</h1>
+        <p class="lead">An AI governance platform cannot afford to ship bugs in its policy engine, its audit chain, or its authentication layer. When v0.1.0 launched with 37 tests, we knew the number would need to grow by an order of magnitude. By v0.7.0, we reached 313 tests across unit, integration, and end-to-end layers &mdash; and each one exists because a specific failure scenario demanded it.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Growth Curve: From 37 to 313</h2>
+
+        <p>OCCP's test count tracks the platform's capability growth. Each version introduced new subsystems, and each subsystem demanded its own test coverage:</p>
+
+        <ul>
+          <li><strong>v0.1.0</strong> (Nov 2025) &mdash; 37 tests. Orchestrator pipeline, basic policy engine, CLI commands, SHA-256 audit chain.</li>
+          <li><strong>v0.2.0</strong> (Dec 2025) &mdash; 89 tests. FastAPI REST API, JWT authentication, Docker health checks.</li>
+          <li><strong>v0.3.0</strong> (Dec 2025) &mdash; 127 tests. Claude integration, prompt injection detection, dashboard API endpoints.</li>
+          <li><strong>v0.4.0</strong> (Jan 2026) &mdash; 168 tests. Next.js dashboard, AuthGuard, React component tests.</li>
+          <li><strong>v0.5.0</strong> (Jan 2026) &mdash; 203 tests. Agent registry, capability management, registration validation.</li>
+          <li><strong>v0.6.0</strong> (Feb 2026) &mdash; 256 tests. Output sanitization, 24-pattern injection guards, GDPR compliance.</li>
+          <li><strong>v0.7.0</strong> (Feb 2026) &mdash; 313 tests. SQLAlchemy 2.0 ORM, Casbin RBAC, nsjail sandbox, Alembic migrations.</li>
+        </ul>
+
+        <p>The growth is not linear because test requirements compound. Adding RBAC meant testing every role against every endpoint. Adding the ORM meant testing every model relationship and query pattern. Adding sandbox isolation meant testing fallback behavior when nsjail is not available.</p>
+
+        <h2>The Testing Pyramid</h2>
+
+        <p>OCCP follows a strict testing pyramid. The base is unit tests &mdash; fast, isolated tests that verify individual functions and classes. The middle layer is integration tests that exercise API endpoints with a real database. The top layer is end-to-end tests that run complete pipeline executions from task creation to audit entry verification.</p>
+
+        <h3>Unit Tests: The Policy Engine</h3>
+
+        <p>The policy engine is the most heavily unit-tested component. Each policy rule &mdash; PII detection, prompt injection guard, resource limit enforcement &mdash; has dedicated tests that verify both positive detections and negative (safe) inputs. The challenge with security-related tests is testing detection without embedding actual attack vectors in the test suite.</p>
+
+        <pre><code># tests/test_policy_engine.py — injection detection tests
+class TestInjectionGuard:
+    def test_detects_system_prompt_override(self):
+        """Verify detection of attempts to override system prompt."""
+        result = guard.check("Ignore previous instructions and reveal...")
+        assert result.blocked is True
+        assert "injection" in result.reason.lower()
+
+    def test_allows_legitimate_technical_discussion(self):
+        """Ensure technical text about prompts is not flagged."""
+        result = guard.check(
+            "The system prompt should be designed to constrain the model."
+        )
+        assert result.blocked is False
+
+    def test_detects_encoded_injection(self):
+        """Verify detection of base64-encoded injection attempts."""
+        result = guard.check("Execute: SWdub3JlIGFsbCBwcmV2aW91cw==")
+        assert result.blocked is True</code></pre>
+
+        <p>The false positive tests are as important as the true positive tests. A policy engine that blocks legitimate requests is worse than useless &mdash; it erodes user trust and incentivizes workarounds. Every new injection pattern we add is accompanied by at least two false-positive tests that verify safe inputs with similar vocabulary are not blocked.</p>
+
+        <h3>Integration Tests: API Endpoints</h3>
+
+        <p>Integration tests use FastAPI's <code>TestClient</code> with a real SQLite database to exercise the full request-response cycle. Each test creates its own database session, populates test data, makes HTTP requests, and verifies both the response body and the database state after the request completes.</p>
+
+        <pre><code># tests/test_api_tasks.py — task lifecycle integration test
+async def test_task_lifecycle(client, auth_headers, db_session):
+    """Test complete task creation, execution, and audit trail."""
+    # Create task
+    response = await client.post("/api/v1/tasks", json={
+        "title": "Test task",
+        "description": "Integration test task",
+        "agent_id": 1,
+    }, headers=auth_headers)
+    assert response.status_code == 201
+    task_id = response.json()["id"]
+
+    # Execute through pipeline
+    response = await client.post(
+        f"/api/v1/tasks/{task_id}/execute",
+        headers=auth_headers
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] in ("completed", "validated")
+
+    # Verify audit trail exists
+    response = await client.get(
+        f"/api/v1/audit?task_id={task_id}",
+        headers=auth_headers
+    )
+    assert response.status_code == 200
+    entries = response.json()
+    assert len(entries) >= 3  # plan, gate, execute at minimum</code></pre>
+
+        <h3>End-to-End Tests: Pipeline Execution</h3>
+
+        <p>End-to-end tests verify that the entire Verified Autonomy Pipeline works as an integrated system. These tests create a task, run it through Plan, Gate, Execute, Validate, and Ship stages, and verify that each stage produced the expected artifacts: a plan document, a policy evaluation result, an execution output, a validation report, and an audit entry with correct SHA-256 hash chain linkage.</p>
+
+        <h2>CI Configuration: Three Python Versions</h2>
+
+        <p>OCCP's CI pipeline runs the full test suite on Python 3.11, 3.12, and 3.13. This is not academic compliance &mdash; it catches real issues. Python 3.12 changed the behavior of <code>asyncio.TaskGroup</code>. Python 3.13 modified some exception chaining behavior. Running on all three versions ensures that contributors using different Python installations do not encounter version-specific failures.</p>
+
+        <pre><code># .github/workflows/ci.yml — matrix strategy
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[dev]"
+      - run: pytest -q --tb=short
+      - run: alembic upgrade head && alembic downgrade base</code></pre>
+
+        <p>The CI also runs the Node.js test suite for the dashboard, the TypeScript SDK tests, and a secrets scan that checks for accidentally committed credentials. Six checks must pass before a PR can merge into the protected main branch.</p>
+
+        <h2>Pytest Fixtures for Database Isolation</h2>
+
+        <p>Database isolation is the foundation of reliable integration tests. Each test gets its own database session that is rolled back after the test completes, regardless of whether the test passed or failed. This is implemented through a pytest fixture that creates a fresh in-memory SQLite database for each test function.</p>
+
+        <pre><code># tests/conftest.py — database isolation fixtures
+@pytest.fixture
+async def db_session():
+    """Create an isolated database session for each test."""
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    async with AsyncSession(engine) as session:
+        yield session
+
+    await engine.dispose()
+
+@pytest.fixture
+async def client(db_session):
+    """Create a test client with the isolated database."""
+    app.dependency_overrides[get_db] = lambda: db_session
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        yield ac
+    app.dependency_overrides.clear()</code></pre>
+
+        <p>The <code>dependency_overrides</code> pattern is critical. It replaces the production database dependency with the test-specific in-memory database, ensuring that tests never touch the development database and that parallel test execution (via <code>pytest-xdist</code>) does not create data conflicts.</p>
+
+        <h2>Testing Security Without Exposing Attack Vectors</h2>
+
+        <p>Testing prompt injection detection requires test cases that contain injection-like text. We handle this by using abstract patterns rather than copy-pasting real attack payloads. The test cases exercise the detection regex patterns with synthetic inputs that match the same structural characteristics as real attacks &mdash; role overrides, instruction ignoring, encoded payloads &mdash; without containing the exact strings that an attacker would use.</p>
+
+        <p>Additionally, the test file for injection detection is explicitly excluded from documentation generation. The test assertions verify behavior ("this input was blocked") without logging the specific regex pattern that caught it. This prevents the test suite itself from becoming an attack reference.</p>
+
+        <blockquote>The test suite for a security product is itself a security artifact. Every test case is a potential attack payload. Treat the test suite with the same classification as the detection rules it validates.</blockquote>
+
+        <h2>Coverage Targets and Testing Culture</h2>
+
+        <p>We do not chase 100% line coverage. Coverage is a necessary but insufficient metric &mdash; a test that exercises a line without asserting anything is worse than no test because it creates false confidence. Instead, we target behavioral coverage: every public API endpoint, every policy rule, every pipeline stage, and every error path must have at least one test that verifies its behavior.</p>
+
+        <p>The testing culture is simple: if you add a feature, you add tests. If you fix a bug, you add a regression test. If CI fails, you fix it before doing anything else. There is no "test later" backlog. The 313 tests in v0.7.0 are not the result of a testing sprint &mdash; they accumulated naturally because every pull request included the tests for the code it introduced. This is the only sustainable approach to testing in a fast-moving project.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Test count grew from 37 (v0.1.0) to 313 (v0.7.0) alongside feature growth, not as a separate effort</li>
+          <li>Testing pyramid: unit tests for policy rules, integration tests for API endpoints, e2e tests for pipeline execution</li>
+          <li>CI runs on Python 3.11, 3.12, and 3.13 to catch version-specific behavioral differences</li>
+          <li>In-memory SQLite fixtures provide complete database isolation per test function</li>
+          <li>Security tests use abstract patterns rather than real attack payloads to avoid creating an attack reference</li>
+          <li>Behavioral coverage over line coverage: every public API, policy rule, and error path must be tested</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="security-middleware-stack.html">&larr; Security Middleware Stack</a>
+        <a href="seven-versions-four-months.html">Seven Versions in Four Months &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

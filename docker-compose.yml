@@ -15,6 +15,10 @@ services:
       - OCCP_ADMIN_PASSWORD=${OCCP_ADMIN_PASSWORD:-changeme}
       - OCCP_ANTHROPIC_API_KEY=${OCCP_ANTHROPIC_API_KEY:-}
       - OCCP_CORS_ORIGINS=${OCCP_CORS_ORIGINS:-["https://dash.occp.ai","http://localhost:3000"]}
+      # Brain / OpenClaw integration
+      - OCCP_WEBHOOK_SECRET=${OCCP_WEBHOOK_SECRET:-}
+      - OCCP_OPENCLAW_BASE_URL=${OCCP_OPENCLAW_BASE_URL:-http://localhost:8080}
+      - OCCP_CONFIRMATION_GATE_TIMEOUT=${OCCP_CONFIRMATION_GATE_TIMEOUT:-300}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
       interval: 15s

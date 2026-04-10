@@ -12,7 +12,7 @@
 |---|---------|----------|--------|
 | F1 | `PermissionChecker` not wired to ANY route — RBAC not enforced | **P0** | `api/routes/*.py` — zero imports of `PermissionChecker` |
 | F2 | Default admin password `changeme` in production | **P0** | `config/settings.py:48`, server `.env` missing `OCCP_ADMIN_PASSWORD` |
-| F3 | No `/auth/register` endpoint — users cannot be created via API | **P1** | `api/routes/auth.py` — only `/login` and `/refresh` |
+| F3 | ~~No `/auth/register` endpoint~~ — **RESOLVED v0.8.2** — `POST /auth/register` (public, viewer-only) + `POST /auth/register/admin` (admin, any role) | ✅ | `api/routes/auth.py` |
 | F4 | Production runs SQLite — no PostgreSQL deployed | **P0** | `sqlite+aiosqlite:///data/occp.db` |
 | F5 | Sandbox fallback to `process` (rlimit only) despite kernel support | **P0** | `detect_backend()` → `process`; nsjail/bwrap not installed |
 | F6 | CSP header missing on `dash.occp.ai` | **P1** | `curl -sI` — no `Content-Security-Policy` |
@@ -692,7 +692,7 @@ Parallel tracks: B1+B2 simultaneously. B5 anytime.
 
 | Competitor | Key Strength | OCCP Differentiator |
 |------------|-------------|---------------------|
-| **EV** (eevee.build) | K8s-native, declarative YAML governance, MIT | VAP 5-stage pipeline, hash-chain audit |
+| **EV** (eevee.build) | K8s-native, declarative YAML governance, MIT | 5-stage Verified Autonomy Pipeline, hash-chain audit |
 | **Gravitee 4.10** | Unified AI Gateway + MCP proxy + agentic IAM | Multi-LLM failover, policy-as-code |
 | **Cordum** | Policy enforcement + human approval gates | Sandbox isolation, open-core model |
 

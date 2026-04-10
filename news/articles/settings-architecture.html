@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings Architecture: LLM Provider Configuration at Scale — OCCP News</title>
+  <meta name="description" content="Designing a settings system that handles multiple LLM providers, API keys, and configuration hierarchies cleanly.">
+  <meta name="keywords" content="OCCP, settings architecture, LLM configuration, API key management, hierarchical settings, provider configuration">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/settings-architecture.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/settings-architecture.html">
+  <meta property="og:title" content="Settings Architecture: LLM Provider Configuration at Scale">
+  <meta property="og:description" content="Designing a settings system that handles multiple LLM providers, API keys, and configuration hierarchies cleanly.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-21">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Settings Architecture: LLM Provider Configuration at Scale">
+  <meta name="twitter:description" content="Designing a settings system that handles multiple LLM providers, API keys, and configuration hierarchies cleanly.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Settings Architecture: LLM Provider Configuration at Scale",
+    "datePublished": "2026-02-21",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Designing a settings system that handles multiple LLM providers, API keys, and configuration hierarchies cleanly.",
+    "url": "https://news.occp.ai/articles/settings-architecture.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-21</span>
+          <span class="card-tag tag-ux">UX</span>
+          <span class="card-version">v0.8.0</span>
+        </div>
+        <h1>Settings Architecture: LLM Provider Configuration at Scale</h1>
+        <p class="lead">Before v0.8.0, configuring OCCP meant editing environment variables and restarting the server. The settings architecture replaces that with a hierarchical configuration system: system defaults, organization overrides, and user preferences &mdash; all manageable through the dashboard, all enforcing security boundaries that individual users cannot weaken.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Configuration Problem</h2>
+
+        <p>OCCP needs to configure multiple concerns across multiple scopes. LLM provider selection, API key storage, model parameters, MCP server connections, policy engine sensitivity, rate limiting thresholds, audit retention periods &mdash; each of these has a default value, may need organization-level customization, and might have user-level preferences. The pre-v0.8.0 approach of environment variables handled the system default level but offered no mechanism for per-organization or per-user overrides.</p>
+
+        <p>The additional challenge is security boundaries. An organization administrator should be able to set a minimum password length that individual users cannot lower. A platform operator should be able to restrict which LLM providers are available, preventing users from routing data through unapproved providers. The settings system must support both customization (users can change things) and enforcement (administrators can prevent users from changing things).</p>
+
+        <h2>Hierarchical Settings Model</h2>
+
+        <p>The settings system uses a three-tier hierarchy with cascading overrides:</p>
+
+        <pre><code># Settings resolution order (highest priority last)
+SYSTEM_DEFAULTS      # Compiled into the application
+    |
+    v
+ORGANIZATION_SETTINGS  # Set by org admin, stored in DB
+    |
+    v
+USER_PREFERENCES       # Set by individual user, stored in DB</code></pre>
+
+        <p>Each setting has a resolution strategy. Most settings use "last wins" &mdash; the most specific scope (user) overrides the less specific scope (organization), which overrides the default. Security-critical settings use "most restrictive wins" &mdash; the user cannot set a value less restrictive than the organization's setting, and the organization cannot set a value less restrictive than the system default.</p>
+
+        <pre><code># occp/settings/resolver.py — hierarchical setting resolution
+class SettingsResolver:
+    def resolve(self, key: str, user_id: int, org_id: int) -> SettingValue:
+        definition = self.definitions[key]
+        system_val = definition.default
+        org_val = self.org_store.get(org_id, key)
+        user_val = self.user_store.get(user_id, key)
+
+        if definition.enforcement == "most_restrictive":
+            return self._most_restrictive(system_val, org_val, user_val, definition)
+        else:
+            # Last-wins cascade
+            return user_val or org_val or system_val
+
+    def _most_restrictive(self, system, org, user, definition):
+        """For security settings, always use the most restrictive value."""
+        values = [v for v in [system, org, user] if v is not None]
+        if definition.type == "integer":
+            return max(values) if definition.restrict_direction == "higher" else min(values)
+        if definition.type == "boolean":
+            # If any level enforces True, result is True
+            return any(values) if definition.restrict_direction == "enabled" else all(values)</code></pre>
+
+        <h3>Setting Definitions</h3>
+
+        <p>Every setting is defined in a central registry with its key, type, default value, validation rules, enforcement strategy, and which scopes can modify it. This registry serves as both the source of truth for the API and the schema for the settings UI.</p>
+
+        <pre><code>SETTING_DEFINITIONS = {
+    "llm.provider": {
+        "type": "enum",
+        "options": ["anthropic", "openai", "google", "local"],
+        "default": "anthropic",
+        "scopes": ["system", "organization", "user"],
+        "enforcement": "last_wins",
+    },
+    "llm.max_tokens": {
+        "type": "integer",
+        "default": 4096,
+        "min": 256,
+        "max": 128000,
+        "scopes": ["system", "organization", "user"],
+        "enforcement": "most_restrictive",
+        "restrict_direction": "lower",
+    },
+    "security.min_password_length": {
+        "type": "integer",
+        "default": 12,
+        "min": 8,
+        "max": 128,
+        "scopes": ["system", "organization"],  # users cannot modify
+        "enforcement": "most_restrictive",
+        "restrict_direction": "higher",
+    },
+    "security.rate_limit_per_minute": {
+        "type": "integer",
+        "default": 100,
+        "min": 10,
+        "max": 10000,
+        "scopes": ["system", "organization"],
+        "enforcement": "most_restrictive",
+        "restrict_direction": "lower",
+    },
+}</code></pre>
+
+        <h2>LLM Provider Configuration</h2>
+
+        <p>The LLM provider settings tab handles provider selection, model configuration, and API key management. OCCP supports four provider categories, each with its own configuration requirements:</p>
+
+        <ul>
+          <li><strong>Anthropic</strong> &mdash; Models: Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku. API key format: <code>sk-ant-api03-*</code>. Endpoint: <code>https://api.anthropic.com</code>. Custom headers: <code>anthropic-version</code>.</li>
+          <li><strong>OpenAI</strong> &mdash; Models: GPT-4 Turbo, GPT-4o, GPT-4o-mini. API key format: <code>sk-*</code>. Endpoint: <code>https://api.openai.com/v1</code>. Organization ID optional.</li>
+          <li><strong>Google</strong> &mdash; Models: Gemini 1.5 Pro, Gemini 1.5 Flash. API key format: Google API key. Endpoint: <code>https://generativelanguage.googleapis.com</code>.</li>
+          <li><strong>Local Models</strong> &mdash; Ollama, vLLM, or custom OpenAI-compatible endpoints. Base URL configurable. No API key required for local deployments.</li>
+        </ul>
+
+        <p>Provider-specific validation runs when an API key is entered. The validation makes a lightweight, zero-cost API call to the provider &mdash; listing available models for Anthropic and OpenAI, a simple ping for Google &mdash; to confirm the key is valid and has the necessary permissions. The validation result is displayed immediately, and the key is encrypted with AES-256-GCM before being stored in the database.</p>
+
+        <blockquote>API keys are write-once secrets. After storage, the settings UI displays only the last four characters. The full key is never transmitted back to the client, never logged, and never included in audit entries. The only way to verify a stored key is to use it for a provider API call.</blockquote>
+
+        <h2>Tool Configuration Tab</h2>
+
+        <p>The tool configuration tab presents connected MCP servers as a list of toggleable cards. Each card shows the server name, transport type (stdio or HTTP+SSE), connection status (connected, disconnected, error), the number of available tools, and a health indicator. Enabling a server connects it and discovers its tools. Disabling a server disconnects it and suspends all skills that depend on its tools.</p>
+
+        <p>Configuration parameters vary by server type. Stdio servers require a command path and optional arguments. HTTP+SSE servers require a URL, optional authentication token, and TLS settings. All connection parameters are validated before saving &mdash; the system attempts a test connection and reports success or failure immediately.</p>
+
+        <h2>Security Settings Tab</h2>
+
+        <p>The security tab provides controls for policy engine configuration without exposing implementation details. Instead of asking users to write regex patterns, the tab presents security concerns as toggleable options with sensitivity sliders:</p>
+
+        <ul>
+          <li><strong>PII Detection</strong> &mdash; Enable/disable, sensitivity level (low/medium/high), which PII types to detect (email, phone, SSN, credit card).</li>
+          <li><strong>Injection Detection</strong> &mdash; Enable/disable, sensitivity level, false positive reporting mechanism.</li>
+          <li><strong>Output Sanitization</strong> &mdash; Enable/disable, which patterns to strip (API keys, passwords, tokens, file paths).</li>
+          <li><strong>Rate Limiting</strong> &mdash; Requests per minute, burst allowance, per-user versus per-IP enforcement.</li>
+          <li><strong>Audit Retention</strong> &mdash; Retention period in days, automatic cleanup schedule.</li>
+        </ul>
+
+        <p>Security settings follow the "most restrictive wins" enforcement model. If the organization sets injection detection to high sensitivity, individual users cannot lower it. If the system default enforces output sanitization, no scope can disable it. This ensures that security baselines are maintained regardless of user preferences.</p>
+
+        <h2>General Settings Tab</h2>
+
+        <p>The general tab handles non-security, non-LLM configuration: organization name, default agent settings (max concurrent tasks, default capability set), notification preferences, and UI customization (theme, language, timezone). These settings use the "last wins" enforcement model &mdash; user preferences override organization defaults for all general settings.</p>
+
+        <h2>API Design</h2>
+
+        <p>The settings API exposes three endpoints that mirror the hierarchical model:</p>
+
+        <pre><code>GET  /api/v1/settings                    # Resolved settings for current user
+GET  /api/v1/settings/organization       # Organization-level settings (admin only)
+PUT  /api/v1/settings                    # Update user preferences
+PUT  /api/v1/settings/organization       # Update org settings (admin only)
+
+# Response includes resolution metadata
+{
+  "llm.provider": {
+    "value": "anthropic",
+    "source": "organization",   // where this value came from
+    "locked": false,            // can the current user change it?
+    "default": "anthropic"      // system default for reference
+  },
+  "security.rate_limit_per_minute": {
+    "value": 60,
+    "source": "organization",
+    "locked": true,             // most_restrictive enforcement
+    "default": 100
+  }
+}</code></pre>
+
+        <p>The <code>source</code> field tells the UI where the current value originated. The <code>locked</code> field indicates whether the user can modify it. The UI disables input controls for locked settings and displays a tooltip explaining which scope enforced the restriction. This transparency prevents user frustration &mdash; a user who cannot change the rate limit understands that it is an organizational policy, not a bug.</p>
+
+        <h2>Migration from Environment Variables</h2>
+
+        <p>Existing deployments that use environment variables for configuration are not broken by the settings system. Environment variables serve as the system default tier. Dashboard settings override environment variables at the organization and user tiers. If an administrator has not configured any dashboard settings, the platform behaves identically to pre-v0.8.0: environment variables drive all configuration. This backward compatibility ensures that upgrades from v0.7.0 require no configuration changes.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Three-tier hierarchy: system defaults, organization overrides, user preferences</li>
+          <li>Security settings use "most restrictive wins" enforcement &mdash; users cannot weaken organizational baselines</li>
+          <li>API keys are encrypted with AES-256-GCM and never returned to the client after storage</li>
+          <li>Settings API includes resolution metadata (<code>source</code>, <code>locked</code>) for transparent UI behavior</li>
+          <li>Environment variables serve as the system default tier &mdash; backward compatible with pre-v0.8.0 deployments</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="skills-system-architecture.html">&larr; Skills System Architecture</a>
+        <a href="deployment-challenges.html">Deployment Challenges &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

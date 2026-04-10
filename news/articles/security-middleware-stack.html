@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security Middleware Stack: HSTS, Rate Limiting, and Request Logging — OCCP News</title>
+  <meta name="description" content="Building defense-in-depth through composable middleware: structured logging, rate limiting, and transport security.">
+  <meta name="keywords" content="OCCP, security middleware, HSTS, rate limiting, request logging, FastAPI, defense in depth">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/security-middleware-stack.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/security-middleware-stack.html">
+  <meta property="og:title" content="Security Middleware Stack: HSTS, Rate Limiting, and Request Logging">
+  <meta property="og:description" content="Building defense-in-depth through composable middleware: structured logging, rate limiting, and transport security.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-13">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Security Middleware Stack: HSTS, Rate Limiting, and Request Logging">
+  <meta name="twitter:description" content="Building defense-in-depth through composable middleware: structured logging, rate limiting, and transport security.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Security Middleware Stack: HSTS, Rate Limiting, and Request Logging",
+    "datePublished": "2026-02-13",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Building defense-in-depth through composable middleware: structured logging, rate limiting, and transport security.",
+    "url": "https://news.occp.ai/articles/security-middleware-stack.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-13</span>
+          <span class="card-tag tag-security">Security</span>
+          <span class="card-version">v0.7.0</span>
+        </div>
+        <h1>Security Middleware Stack: HSTS, Rate Limiting, and Request Logging</h1>
+        <p class="lead">Security in a web application is not a single feature &mdash; it is a composition of independent layers, each addressing a specific threat vector. OCCP's FastAPI middleware stack implements HSTS enforcement, sliding-window rate limiting, structured request logging with correlation IDs, and strict CORS policies. Together, these layers create defense-in-depth for an AI orchestration API.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>Middleware Composition in FastAPI</h2>
+
+        <p>FastAPI inherits Starlette's middleware architecture: each middleware wraps the next in a chain, receiving the request before the route handler and the response after it. The order of middleware registration determines the execution order. In OCCP, the stack is registered from outermost to innermost: CORS first, then security headers, then rate limiting, then request logging, and finally the route handler itself.</p>
+
+        <pre><code># occp/middleware/__init__.py — middleware registration order
+from fastapi import FastAPI
+from .cors import configure_cors
+from .security_headers import SecurityHeadersMiddleware
+from .rate_limiter import RateLimitMiddleware
+from .request_logger import RequestLoggerMiddleware
+
+def register_middleware(app: FastAPI):
+    """Register middleware in correct order (outermost first)."""
+    configure_cors(app)
+    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(RateLimitMiddleware, max_requests=100, window_seconds=60)
+    app.add_middleware(RequestLoggerMiddleware)</code></pre>
+
+        <p>This ordering is deliberate. CORS headers must be set before any other processing to ensure preflight requests receive correct headers. Security headers apply to every response regardless of whether the request is rate-limited or rejected. Rate limiting runs before request logging to prevent denial-of-service attacks from flooding the log pipeline.</p>
+
+        <h2>HSTS Enforcement</h2>
+
+        <p>HTTP Strict Transport Security (HSTS) instructs browsers to only communicate with the server over HTTPS. Without HSTS, a user who types <code>http://api.occp.ai</code> into their browser sends the first request in plaintext, vulnerable to man-in-the-middle interception. The HSTS header eliminates this window by telling the browser to upgrade all future requests to HTTPS automatically.</p>
+
+        <pre><code>class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+
+        # HSTS: enforce HTTPS for 1 year, include subdomains
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains; preload"
+        )
+        # Prevent MIME type sniffing
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        # Prevent clickjacking
+        response.headers["X-Frame-Options"] = "DENY"
+        # Restrict referrer information
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        # Content Security Policy
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'"
+        )
+        # Disable browser features we don't use
+        response.headers["Permissions-Policy"] = (
+            "camera=(), microphone=(), geolocation=(), payment=()"
+        )
+
+        return response</code></pre>
+
+        <p>The <code>includeSubDomains</code> directive is critical for OCCP because the platform operates across three subdomains: <code>api.occp.ai</code> for the FastAPI backend, <code>dash.occp.ai</code> for the Next.js dashboard, and <code>occp.ai</code> for the landing page. Without subdomain inclusion, an attacker could intercept dashboard traffic even if the API enforces HTTPS.</p>
+
+        <h3>Additional Security Headers</h3>
+
+        <p>Beyond HSTS, the middleware applies six additional headers to every response. <code>X-Content-Type-Options: nosniff</code> prevents browsers from interpreting responses as a different MIME type than declared. <code>X-Frame-Options: DENY</code> blocks the API from being embedded in iframes, preventing clickjacking attacks. <code>Referrer-Policy</code> limits how much URL information is leaked in the <code>Referer</code> header when navigating away from the application. <code>Permissions-Policy</code> explicitly disables browser APIs that the platform does not use, reducing the attack surface available to injected scripts.</p>
+
+        <h2>Rate Limiting: Sliding Window per IP</h2>
+
+        <p>Rate limiting protects the API from both malicious abuse and accidental overuse. OCCP implements a sliding window algorithm that tracks request counts per client IP address. Unlike fixed windows that reset on minute boundaries, sliding windows provide smoother rate enforcement without the thundering herd problem at window boundaries.</p>
+
+        <pre><code>class RateLimitMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app, max_requests: int = 100, window_seconds: int = 60):
+        super().__init__(app)
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.requests: dict[str, list[float]] = {}
+
+    async def dispatch(self, request: Request, call_next):
+        client_ip = request.client.host
+        now = time.time()
+        window_start = now - self.window_seconds
+
+        # Clean expired entries and count current window
+        self.requests.setdefault(client_ip, [])
+        self.requests[client_ip] = [
+            t for t in self.requests[client_ip] if t > window_start
+        ]
+
+        if len(self.requests[client_ip]) >= self.max_requests:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Rate limit exceeded"},
+                headers={"Retry-After": str(self.window_seconds)},
+            )
+
+        self.requests[client_ip].append(now)
+        response = await call_next(request)
+        response.headers["X-RateLimit-Limit"] = str(self.max_requests)
+        response.headers["X-RateLimit-Remaining"] = str(
+            self.max_requests - len(self.requests[client_ip])
+        )
+        return response</code></pre>
+
+        <p>The implementation stores timestamps in an in-memory dictionary. For a single-instance deployment, this is efficient and requires no external dependencies. For multi-instance production deployments behind a load balancer, the rate limiter would be backed by Redis &mdash; a planned enhancement for the multi-tenancy release. The rate limit headers (<code>X-RateLimit-Limit</code>, <code>X-RateLimit-Remaining</code>) are included in every response so clients can implement backoff logic proactively.</p>
+
+        <h2>Structured Request Logging</h2>
+
+        <p>Every API request generates a structured JSON log entry with a correlation ID. The correlation ID is a UUID that follows the request through every layer of the system &mdash; from middleware through the policy engine to the database and back. When debugging a failed pipeline execution, the correlation ID links the initial HTTP request to the specific policy evaluation, LLM call, and audit entry that participated in that execution.</p>
+
+        <pre><code>class RequestLoggerMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        correlation_id = request.headers.get(
+            "X-Correlation-ID", str(uuid.uuid4())
+        )
+        start_time = time.perf_counter()
+
+        # Inject correlation ID into request state
+        request.state.correlation_id = correlation_id
+
+        response = await call_next(request)
+
+        duration_ms = (time.perf_counter() - start_time) * 1000
+        log_entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "correlation_id": correlation_id,
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": response.status_code,
+            "duration_ms": round(duration_ms, 2),
+            "client_ip": request.client.host,
+            "user_agent": request.headers.get("user-agent", ""),
+        }
+        logger.info(json.dumps(log_entry))
+
+        response.headers["X-Correlation-ID"] = correlation_id
+        return response</code></pre>
+
+        <p>The log format is JSON for machine parseability. Each entry includes the HTTP method, path, status code, response time in milliseconds, client IP, and user agent. Sensitive data &mdash; request bodies, authentication tokens, query parameters &mdash; is explicitly excluded from the log. The correlation ID is returned in the response header so the client can reference it in support requests or debugging sessions.</p>
+
+        <h2>CORS Configuration for Dashboard Communication</h2>
+
+        <p>The OCCP dashboard at <code>dash.occp.ai</code> communicates with the API at <code>api.occp.ai</code> via cross-origin requests. CORS must be configured to allow this specific origin while rejecting all others. The configuration is not a wildcard &mdash; only the dashboard origin is permitted to make authenticated cross-origin requests.</p>
+
+        <pre><code>def configure_cors(app: FastAPI):
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "https://dash.occp.ai",
+            "http://localhost:3000",  # development
+        ],
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+        allow_headers=["Authorization", "Content-Type", "X-Correlation-ID"],
+        expose_headers=["X-Correlation-ID", "X-RateLimit-Remaining"],
+    )</code></pre>
+
+        <p>The <code>allow_credentials=True</code> setting enables the dashboard to send JWT tokens in the <code>Authorization</code> header. The <code>expose_headers</code> list makes the correlation ID and rate limit headers visible to the dashboard's JavaScript code, enabling client-side monitoring of API usage and request tracing.</p>
+
+        <blockquote>CORS is not a security feature for the server. It is a browser enforcement mechanism. The real security is the JWT validation that happens after CORS allows the request through. CORS without authentication is decoration; authentication without CORS breaks the dashboard.</blockquote>
+
+        <h2>How Middleware Composition Creates Defense-in-Depth</h2>
+
+        <p>No single middleware layer protects the application. HSTS prevents transport interception but does not stop application-layer attacks. Rate limiting prevents abuse but does not authenticate users. Request logging provides forensic capability but does not prevent incidents. The security value emerges from the composition: each layer addresses a specific threat, and the combination covers the OWASP Top 10 categories relevant to API security.</p>
+
+        <p>The middleware stack is also the first code that executes for every request, before routing, before authentication, and before any business logic. This means security controls cannot be bypassed by misconfigured routes or missing decorators. A new endpoint added by any developer automatically inherits HSTS, rate limiting, CORS enforcement, and structured logging without any additional configuration. This is the core principle of security as infrastructure: it is not a feature you add to endpoints, it is a property of the platform itself.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Middleware registration order matters: CORS first, security headers, rate limiting, then logging</li>
+          <li>HSTS with <code>includeSubDomains</code> protects all three OCCP subdomains from transport interception</li>
+          <li>Sliding-window rate limiting avoids the thundering herd problem of fixed-window approaches</li>
+          <li>Correlation IDs link HTTP requests to policy evaluations, LLM calls, and audit entries</li>
+          <li>CORS is restricted to the dashboard origin only &mdash; no wildcard origins in production</li>
+          <li>Security middleware runs before routing, ensuring every endpoint inherits protections automatically</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="alembic-migrations.html">&larr; Alembic Migrations</a>
+        <a href="testing-philosophy.html">313 Tests and Counting &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,228 @@
+version: 1
+generated: 2026-04-07
+scope: Henry's Claude Code MBA environment
+
+# CRITICAL TRUTH:
+# All MCP servers below are CLIENT-SIDE — they run inside Henry's
+# Claude Code CLI on the MacBook Air. The OCCP server runtime
+# (/opt/occp/) does NOT import any mcp__* namespace.
+#
+# OCCP runtime ↔ MCP integration: ZERO direct connection.
+# OCCP <-> OpenClaw: WebSocket bridge (not MCP).
+# Claude Code (MBA) <-> MCP: stdio/HTTP per-server.
+#
+# Implication: when Brian "uses" an MCP, it is actually Henry's
+# Claude Code orchestrating it locally on behalf of the agent loop,
+# NOT the OCCP backend executing it.
+
+mcp_servers:
+
+  # ── Tier 1: Used regularly in this audit and confirmed working ──
+  - name: hetzner
+    status: ACTIVE
+    integration: client-only
+    real_purpose: Hetzner Cloud server inventory + power control
+    used_in_session: yes
+    occp_runtime_integrated: false
+    note: Sees only AZAR project — OpenClaw server not in same Hetzner project
+
+  - name: hostinger-mcp
+    status: ACTIVE
+    integration: client-only
+    real_purpose: DNS records + domain management
+    used_in_session: yes
+    occp_runtime_integrated: false
+
+  - name: memory
+    status: ACTIVE
+    integration: client-only
+    real_purpose: Knowledge graph (60+ entities, project metadata)
+    used_in_session: yes
+    occp_runtime_integrated: false
+    note: Critical operator knowledge store — sole "system memory" for Henry's projects
+
+  - name: filesystem
+    status: ACTIVE
+    integration: client-only
+    real_purpose: Read /Users/air/Studio scope
+    occp_runtime_integrated: false
+
+  - name: github
+    status: ACTIVE
+    integration: client-only
+    real_purpose: Repo metadata, PR/issue ops
+    occp_runtime_integrated: false
+
+  # ── Tier 2: Configured, periodically used by Henry ──
+  - name: playwright
+    status: ACTIVE
+    integration: client-only
+    real_purpose: Browser automation (last used: hPanel Hostinger login)
+    occp_runtime_integrated: false
+
+  - name: wordpress-azar
+    status: ACTIVE
+    integration: client-only
+    real_purpose: azar.hu WordPress REST control
+    occp_runtime_integrated: false
+
+  - name: wordpress-magyarorszag
+    status: ACTIVE
+    integration: client-only
+    real_purpose: magyarorszag.ai WordPress REST control
+    occp_runtime_integrated: false
+
+  - name: wordpress-felnottkepzes
+    status: ACTIVE
+    integration: client-only
+    real_purpose: felnottkepzes.hu WordPress REST control
+    occp_runtime_integrated: false
+
+  - name: notion
+    status: ACTIVE
+    integration: client-only
+    occp_runtime_integrated: false
+
+  - name: cloudflare
+    status: ACTIVE
+    integration: client-only
+    real_purpose: DNS, Workers, R2, KV — currently UNUSED for OCCP itself
+    occp_runtime_integrated: false
+
+  - name: postgres
+    status: ACTIVE
+    integration: client-only
+    occp_runtime_integrated: false
+    note: OCCP currently uses SQLite — postgres MCP not yet pointed at OCCP DB
+
+  - name: sqlite
+    status: ACTIVE
+    integration: client-only
+    occp_runtime_integrated: false
+
+  - name: mysql-azar
+    status: PARTIAL
+    integration: client-only
+    note: Required tunneling — last sessions show passive FTP/MySQL difficulty
+
+  - name: firecrawl
+    status: ACTIVE
+    integration: client-only
+    real_purpose: Web scraping
+    occp_runtime_integrated: false
+
+  - name: exa
+    status: ACTIVE
+    integration: client-only
+    real_purpose: Semantic web search
+    occp_runtime_integrated: false
+
+  - name: context7
+    status: ACTIVE
+    integration: client-only
+    real_purpose: Library docs lookup
+
+  - name: ref
+    status: ACTIVE
+    integration: client-only
+    real_purpose: Documentation search
+
+  - name: n8n
+    status: CONFIGURED-NOT-ACTIVE
+    integration: client-only
+    real_purpose: Workflow automation — installed but no active OCCP integration
+    occp_runtime_integrated: false
+
+  - name: scheduled-tasks
+    status: CONFIGURED-NOT-ACTIVE
+    integration: client-only
+
+  - name: sequential-thinking
+    status: ACTIVE
+    integration: client-only
+    real_purpose: Multi-step reasoning helper
+
+  - name: semgrep
+    status: CONFIGURED-NOT-ACTIVE
+    integration: client-only
+
+  - name: snyk
+    status: CONFIGURED-NOT-ACTIVE
+    integration: client-only
+
+  - name: GitGuardianDeveloper
+    status: CONFIGURED-NOT-ACTIVE
+    integration: client-only
+
+  - name: Claude_Preview
+    status: ACTIVE
+    integration: client-only
+
+  - name: Claude_in_Chrome
+    status: PARTIAL
+    integration: client-only
+    note: Extension connectivity intermittent
+
+  - name: mcp-registry
+    status: ACTIVE
+    integration: client-only
+
+  - name: c1fc4002-...-google_drive
+    status: ACTIVE
+    integration: client-only
+    real_purpose: Google Drive search/fetch
+
+# ──────────────────────────────────────────────────────────────
+# OCCP RUNTIME-SIDE INTEGRATIONS (server, NOT MCP)
+# ──────────────────────────────────────────────────────────────
+occp_runtime_integrations:
+  - name: openclaw_executor
+    type: websocket-bridge
+    target: wss://claw.occp.ai (95.216.212.174:18789)
+    status: ACTIVE
+    purpose: Bridge OCCP pipeline → OpenClaw 8 specialist agents
+
+  - name: telegram_voice_bot
+    type: long-poll
+    target: api.telegram.org
+    status: ACTIVE
+    bot: "@OccpBrainBot"
+    purpose: Voice + text input from Henry
+
+  - name: whisper_client
+    type: openai-api
+    target: api.openai.com/v1/audio/transcriptions
+    status: ACTIVE
+
+  - name: multi_llm_planner
+    type: api
+    targets:
+      - anthropic-api (priority 1)
+      - openai-api (priority 2)
+      - openclaw-bridge (priority 5)
+      - echo-fallback (priority 99)
+    status: ACTIVE
+
+# ──────────────────────────────────────────────────────────────
+# THE GAP
+# ──────────────────────────────────────────────────────────────
+gap_analysis:
+  problem: |
+    Henry has 28 MCP servers configured in Claude Code (MBA),
+    but the OCCP server runtime cannot use them — they are
+    client-side only. The OCCP "control plane" is therefore
+    actually split:
+      - Brian (server) can dispatch to 8 OpenClaw specialists
+      - Henry's Claude Code (client) can use 28 MCPs
+      - These two execution surfaces are NOT connected.
+
+  consequence: |
+    "Brian use the WordPress MCP" is impossible from Telegram/voice
+    today. Only Henry's Claude Code session can. This blocks the
+    "AI operating system" goal.
+
+  required_to_close:
+    - OCCP needs an MCP client of its own, OR
+    - OpenClaw specialist agents need their own MCP server bindings, OR
+    - A dispatcher in OCCP Brain that delegates MCP-bound tasks back
+      to Henry's Claude Code via a callback channel.

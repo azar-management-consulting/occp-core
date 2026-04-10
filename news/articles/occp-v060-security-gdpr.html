@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OCCP v0.6.0: Security Hardening and GDPR Compliance — OCCP News</title>
+  <meta name="description" content="Structured validation, output sanitization, 24-pattern injection detection, and GDPR-compliant legal pages.">
+  <meta name="keywords" content="OCCP, v0.6.0, security hardening, GDPR, Pydantic validation, output sanitization, prompt injection detection">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/occp-v060-security-gdpr.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/occp-v060-security-gdpr.html">
+  <meta property="og:title" content="OCCP v0.6.0: Security Hardening and GDPR Compliance">
+  <meta property="og:description" content="Structured validation, output sanitization, 24-pattern injection detection, and GDPR-compliant legal pages.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-01-28">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="OCCP v0.6.0: Security Hardening and GDPR Compliance">
+  <meta name="twitter:description" content="Structured validation, output sanitization, 24-pattern injection detection, and GDPR-compliant legal pages.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "OCCP v0.6.0: Security Hardening and GDPR Compliance",
+    "datePublished": "2026-01-28",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Structured validation, output sanitization, 24-pattern injection detection, and GDPR-compliant legal pages.",
+    "url": "https://news.occp.ai/articles/occp-v060-security-gdpr.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-01-28</span>
+          <span class="card-tag tag-milestone">Milestone</span>
+          <span class="card-version">v0.6.0</span>
+        </div>
+        <h1>OCCP v0.6.0: Security Hardening and GDPR Compliance</h1>
+        <p class="lead">Version 0.6.0 represents a philosophical shift in how OCCP treats security. Instead of patching vulnerabilities as they surface, this release embeds security into every data path &mdash; from API input validation to LLM output sanitization to regulatory compliance infrastructure.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>Release Overview</h2>
+
+        <p>OCCP v0.6.0 ships four interconnected security improvements that together create a comprehensive defensive posture. Structured Pydantic validation for all API inputs eliminates an entire class of injection and type confusion attacks. A 7-pattern output sanitization guard strips credentials and tokens from LLM responses before they reach the user. The prompt injection detection system expands from 12 to 24 patterns, covering multi-language attacks and indirect injection vectors. And GDPR-compliant legal infrastructure provides the regulatory foundation that European enterprise deployments require.</p>
+
+        <p>These are not independent features. They form a security pipeline where every data path &mdash; input, processing, and output &mdash; passes through at least one defensive layer.</p>
+
+        <h2>Structured Input Validation</h2>
+
+        <p>Prior to v0.6.0, API input validation was handled by a mix of manual type checks and FastAPI's basic query parameter parsing. This worked for the simple cases but left gaps. A malformed JSON body with extra fields would be silently accepted. A string field containing embedded control characters would pass through unexamined. Every gap was a potential attack surface.</p>
+
+        <p>The v0.6.0 approach replaces all manual validation with Pydantic v2 models that define the exact shape of every API request.</p>
+
+        <pre><code>from pydantic import BaseModel, Field, field_validator
+
+class TaskCreateRequest(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    description: str = Field(..., max_length=5000)
+    agent_id: str = Field(..., pattern=r'^[a-zA-Z0-9_-]+$')
+    priority: int = Field(default=5, ge=1, le=10)
+
+    @field_validator('title')
+    @classmethod
+    def sanitize_title(cls, v: str) -> str:
+        # Strip control characters and normalize whitespace
+        return ' '.join(v.split())
+
+    model_config = ConfigDict(extra='forbid')</code></pre>
+
+        <p>The <code>extra='forbid'</code> setting is critical. It means any request containing fields not defined in the model is rejected outright. This prevents parameter pollution attacks where an attacker adds unexpected fields hoping they will be processed by downstream code. Combined with <code>field_validator</code> decorators that sanitize individual fields, the validation layer ensures that only clean, well-typed data enters the application.</p>
+
+        <h3>Validation Coverage</h3>
+
+        <p>Every API endpoint in OCCP v0.6.0 has a corresponding Pydantic request model. This includes task creation, agent registration, policy updates, authentication requests, and audit queries. The total coverage is 100% of mutable endpoints &mdash; no POST, PUT, or PATCH request bypasses structured validation.</p>
+
+        <h2>Output Sanitization Guard</h2>
+
+        <p>LLMs are trained on vast datasets that include code repositories, documentation, and configuration files. When an LLM generates a response, it may inadvertently include patterns that resemble real credentials. An API key format, a database connection string, a JWT token &mdash; these patterns appear in the LLM's training data and can surface in its output.</p>
+
+        <p>The output sanitization guard scans every LLM response for 7 credential patterns and replaces matches with redaction markers before the response is delivered to the user. The detailed implementation is covered in a dedicated article, but the key design principle is that the guard operates on the response text after the LLM has generated it and before it enters the audit log or reaches the user.</p>
+
+        <pre><code># Output guard in the pipeline
+async def execute_with_guard(task: Task) -> TaskResult:
+    raw_output = await llm_provider.complete(task.prompt)
+
+    # Sanitize before anything else sees the output
+    sanitized_output = output_guard.sanitize(raw_output)
+
+    # Audit log receives sanitized version
+    await audit_log.record(task_id=task.id, output=sanitized_output)
+
+    return TaskResult(output=sanitized_output)</code></pre>
+
+        <p>The guard never modifies the original prompt or the LLM's behavior. It operates purely as a post-processing filter. This separation of concerns means the guard can be updated with new patterns without any changes to the LLM integration layer.</p>
+
+        <h2>24-Pattern Injection Detection</h2>
+
+        <p>The prompt injection detection system in OCCP has evolved through three phases. Version 0.1.0 shipped with 5 basic patterns that caught obvious attacks like "ignore all previous instructions." Version 0.3.0 expanded to 12 patterns, adding detection for role-play manipulation and encoding tricks. Version 0.6.0 reaches 24 patterns, covering a significantly broader attack surface.</p>
+
+        <p>The new patterns in v0.6.0 address three categories of attack that previous versions did not cover:</p>
+
+        <ul>
+          <li><strong>Multi-language attacks</strong> &mdash; Injection attempts in languages other than English that exploit models' multilingual capabilities to bypass English-only pattern matching</li>
+          <li><strong>Indirect injection</strong> &mdash; Attempts to embed instructions in data that the LLM will process, rather than in the direct prompt (e.g., hiding instructions in document metadata or URL parameters)</li>
+          <li><strong>Data exfiltration prompts</strong> &mdash; Instructions that attempt to make the LLM include system information, environment variables, or internal configuration in its response</li>
+        </ul>
+
+        <blockquote>Prompt injection detection is an arms race. The goal is not to catch every possible attack &mdash; that is impossible with pattern matching alone. The goal is to raise the cost of attack high enough that unsophisticated attempts fail consistently, while logging sophisticated attempts for human review.</blockquote>
+
+        <h2>GDPR Compliance Infrastructure</h2>
+
+        <p>The European Union's General Data Protection Regulation imposes specific requirements on any system that processes personal data. AI orchestration platforms process user prompts, which frequently contain personal data. This makes GDPR compliance not optional but mandatory for any European deployment.</p>
+
+        <p>OCCP v0.6.0 introduces three GDPR-focused components:</p>
+
+        <h3>Privacy Policy and Terms of Service</h3>
+
+        <p>GDPR Articles 13 and 14 require that data subjects be informed about how their data is processed. OCCP now ships with comprehensive legal pages that describe data collection, processing purposes, retention periods, and data subject rights. These pages are served directly from the platform, ensuring they are always accessible and always current.</p>
+
+        <h3>Data Processing Transparency</h3>
+
+        <p>The platform now logs exactly what data is processed at each pipeline stage. When a task enters the Verified Autonomy Pipeline, the audit entry records which data fields were examined by the policy engine, which fields were passed to the LLM, and which fields were included in the output. This creates the processing transparency that GDPR Article 30 requires.</p>
+
+        <h3>Consent Management Foundation</h3>
+
+        <p>While full consent management is an ongoing effort, v0.6.0 establishes the data model and API endpoints for consent records. Each user can have multiple consent entries with specific scopes, timestamps, and revocation capabilities. This foundation enables deployments to implement consent flows appropriate to their use case.</p>
+
+        <h2>The Security Mindset Shift</h2>
+
+        <p>The most significant change in v0.6.0 is not any single feature but the architectural principle it establishes: <strong>security is not a feature to be added; it is a property of the architecture</strong>. Every data path has a defensive layer. Every input is validated. Every output is sanitized. Every action is logged.</p>
+
+        <p>This principle will guide all future OCCP development. Features that cannot be built securely will not be built at all. Security review is a prerequisite for merging, not a follow-up task. And the test suite now includes dedicated security test cases that verify each defensive layer independently.</p>
+
+        <h3>Migration Notes</h3>
+
+        <p>For users upgrading from v0.5.0, the structured validation may reject requests that were previously accepted. Any API client sending extra fields in request bodies will need to be updated. The output sanitization guard is enabled by default and cannot be disabled in the Community Edition. The injection detection expansion is transparent &mdash; it may flag prompts that were not flagged in previous versions, but the detection behavior is additive and non-breaking.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Pydantic v2 models provide 100% validation coverage on all mutable API endpoints with extra='forbid' policy</li>
+          <li>7-pattern output sanitization guard strips credentials from LLM responses before delivery and audit logging</li>
+          <li>Injection detection expanded from 12 to 24 patterns covering multi-language, indirect, and data exfiltration attacks</li>
+          <li>GDPR infrastructure includes legal pages, data processing transparency, and consent management foundation</li>
+          <li>Security is architectural &mdash; every data path passes through at least one defensive layer</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="capability-badges.html">&larr; Capability Badges</a>
+        <a href="output-sanitization.html">Output Sanitization &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

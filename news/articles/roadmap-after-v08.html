@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OCCP Roadmap: What Comes After v0.8 — OCCP News</title>
+  <meta name="description" content="Looking ahead at PostgreSQL cutover, multi-tenancy, observability, agent marketplace, and the features that will define the OCCP platform from v0.9 through v1.0 and beyond.">
+  <meta name="keywords" content="OCCP, roadmap, v0.9, v1.0, PostgreSQL, multi-tenancy, observability, Prometheus, Grafana, agent marketplace, federated governance">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/roadmap-after-v08.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/roadmap-after-v08.html">
+  <meta property="og:title" content="OCCP Roadmap: What Comes After v0.8">
+  <meta property="og:description" content="PostgreSQL cutover, multi-tenancy, observability, and the features that will define the next chapter of the OCCP platform.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-27">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="OCCP Roadmap: What Comes After v0.8">
+  <meta name="twitter:description" content="PostgreSQL cutover, multi-tenancy, observability, and the features that will define the next chapter of the OCCP platform.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "OCCP Roadmap: What Comes After v0.8",
+    "datePublished": "2026-02-27",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "PostgreSQL cutover, multi-tenancy, observability, and the features that will define the next chapter of the OCCP platform.",
+    "url": "https://news.occp.ai/articles/roadmap-after-v08.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-27</span>
+          <span class="card-tag tag-vision">Vision</span>
+        </div>
+        <h1>OCCP Roadmap: What Comes After v0.8</h1>
+        <p class="lead">Eight releases in five months have established the core: the Verified Autonomy Pipeline, the policy engine, the audit chain, RBAC, sandbox isolation, encryption, and the dashboard. The foundation is solid. The next releases shift focus from building governance primitives to building a production-grade platform that enterprises can deploy, scale, and operate with confidence.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>Where We Are: v0.8.x</h2>
+
+        <p>The v0.8 series represents the completion of the core governance stack. The current state includes: a five-stage Verified Autonomy Pipeline with policy-as-code enforcement, AES-256-GCM envelope encryption for API tokens, Casbin RBAC with a four-role hierarchy, SHA-256 hash-chained audit logging with automated retention enforcement, sandbox isolation with nsjail and bubblewrap, 24-pattern prompt injection detection, PII scanning with configurable sensitivity levels, output sanitization, supply chain verification for MCP packages, agent boundary enforcement at three levels, EU AI Act Article 12/14/19 compliance, a Next.js 15 dashboard with React 19, dual SDKs (Python and TypeScript), and a comprehensive test suite covering 313+ test cases across Python 3.11, 3.12, and 3.13.</p>
+
+        <p>The test infrastructure validates the entire stack on every pull request through six CI checks: three Python version matrices, Node.js dashboard tests, TypeScript SDK tests, and secrets scanning. The codebase is production-audited and documented.</p>
+
+        <h2>v0.9.0: Production Database and Multi-Tenancy Foundations</h2>
+
+        <h3>PostgreSQL Cutover</h3>
+
+        <p>OCCP currently supports SQLite for development and testing, with PostgreSQL support through SQLAlchemy's dual-backend abstraction. The v0.9.0 release makes PostgreSQL the primary production backend. This is not a simple configuration change &mdash; it involves migration path verification (ensuring all Alembic migrations apply cleanly to PostgreSQL), performance optimization (query plans, connection pooling with asyncpg, prepared statements), and operational tooling (backup scripts, replication configuration, health checks that verify PostgreSQL-specific properties).</p>
+
+        <pre><code># v0.9.0 PostgreSQL configuration
+database:
+  backend: postgresql
+  url: "postgresql+asyncpg://occp:***@db:5432/occp"
+  pool_size: 20
+  max_overflow: 10
+  pool_recycle: 3600
+  echo: false
+
+  # Production-specific settings
+  ssl_mode: "verify-full"
+  ssl_ca: "/certs/ca.pem"
+  statement_timeout: "30s"
+  lock_timeout: "10s"</code></pre>
+
+        <h3>Multi-Tenancy Data Layer</h3>
+
+        <p>The v0.9.0 release introduces the data isolation layer for multi-tenancy: schema-per-tenant with automated provisioning. When a new tenant is created, the system creates a tenant-specific database schema, applies all current migrations to that schema, initializes the tenant's audit chain genesis entry, and provisions the tenant's encryption keys. The orchestrator routes all database operations through tenant-scoped sessions, ensuring that queries never cross tenant boundaries.</p>
+
+        <h3>Connection Pool Management</h3>
+
+        <p>Multi-tenancy introduces connection pool complexity. A naive implementation creates a separate pool per tenant, which does not scale (1,000 tenants times 20 connections per pool equals 20,000 database connections). OCCP's approach uses a shared connection pool with per-request schema switching: connections are allocated from a single pool, and the tenant's schema is set at the session level before executing queries. This bounds the total connection count to the pool size, regardless of tenant count.</p>
+
+        <h2>v1.0.0: Production-Stable Release</h2>
+
+        <h3>Stability Guarantees</h3>
+
+        <p>The v1.0.0 release marks the transition from "working" to "stable." Stable means: the API surface is frozen (no breaking changes without a major version bump), the database schema migration path is guaranteed (upgrades from any v0.x to v1.0 are supported), configuration format is documented and versioned, and the CLI interface is locked. Enterprises that deploy v1.0.0 can plan their integrations with confidence that the API contract will not change unexpectedly.</p>
+
+        <h3>Observability: Prometheus Metrics</h3>
+
+        <p>Production operation requires observability. v1.0.0 exposes Prometheus-compatible metrics from every component of the platform. The orchestrator reports task throughput, latency percentiles, error rates, and queue depth. The policy engine reports evaluation counts, denial rates, and per-policy evaluation latency. The audit system reports chain write latency, retention status, and archive throughput. The encryption layer reports decryption latency and key version distribution.</p>
+
+        <pre><code># Prometheus metrics exposed by OCCP v1.0.0
+# Pipeline metrics
+occp_tasks_total{stage="plan",status="success"} 4521
+occp_tasks_total{stage="gate",status="denied"} 89
+occp_task_duration_seconds{stage="execute",quantile="0.99"} 2.4
+
+# Policy engine metrics
+occp_policy_evaluations_total{policy="pii_detection"} 9042
+occp_policy_denials_total{policy="injection_guard"} 23
+occp_policy_evaluation_seconds{quantile="0.95"} 0.012
+
+# Audit metrics
+occp_audit_entries_total 45230
+occp_audit_chain_verified{status="valid"} 1
+occp_audit_retention_days_remaining 287
+
+# Security metrics
+occp_token_decryptions_total{kek_version="kek-2026-02"} 8901
+occp_key_rotation_events_total 3</code></pre>
+
+        <h3>Grafana Dashboards</h3>
+
+        <p>Alongside Prometheus metrics, v1.0.0 ships with pre-built Grafana dashboards that visualize the platform's operational state. The Pipeline Overview dashboard shows task flow through each stage with real-time error rates and latencies. The Security Dashboard shows injection detection rates, PII detection events, and encryption operations. The Compliance Dashboard shows audit chain health, retention status, and policy evaluation statistics. These dashboards are JSON-exportable and customizable, not a hosted-only feature.</p>
+
+        <h3>Agent Marketplace</h3>
+
+        <p>The agent marketplace is a registry of verified agent templates that organizations can deploy within their OCCP instance. Each template includes the agent configuration, declared task types and capabilities, recommended policy sets, and sample integration code. Templates are community-contributed and OCCP-verified: they pass the supply chain verification process (allowlist, static analysis, signature verification) before being listed in the marketplace.</p>
+
+        <h2>Beyond v1.0: The Long-Term Vision</h2>
+
+        <h3>Federated Governance Across Organizations</h3>
+
+        <p>Today, each OCCP deployment governs agents within a single organization. The long-term vision is federated governance: organizations that collaborate on multi-org AI workflows can share governance policies, audit evidence, and compliance status across organizational boundaries. A supply chain AI that spans manufacturer, logistics provider, and retailer needs governance that spans all three organizations. Federated governance provides a standardized protocol for cross-org policy sharing and audit verification.</p>
+
+        <pre><code># Federated governance concept
+federation:
+  org_id: "manufacturer-corp"
+  peers:
+    - org_id: "logistics-inc"
+      trust_level: "verified"
+      shared_policies: ["data_classification", "pii_handling"]
+      audit_sync: "bidirectional"
+
+    - org_id: "retailer-group"
+      trust_level: "verified"
+      shared_policies: ["data_classification"]
+      audit_sync: "outbound_only"</code></pre>
+
+        <h3>Agent Mesh for Cross-Org Collaboration</h3>
+
+        <p>Building on federated governance, the agent mesh enables agents from different organizations to collaborate on shared tasks while respecting each organization's governance policies. An agent from Organization A can request assistance from an agent in Organization B, with both agents subject to their respective governance pipelines. The mesh handles cross-org authentication, policy reconciliation (when two organizations have conflicting policies, the stricter policy wins), and audit trail synchronization.</p>
+
+        <h3>Compliance Certification Program</h3>
+
+        <p>As OCCP adoption grows, a formal compliance certification program will validate that specific deployment configurations meet regulatory requirements. A "EU AI Act Compliant" certification would verify that the deployment has Article 12 record-keeping active, Article 14 human oversight configured for high-risk tasks, and Article 19 retention enforcement enabled with a minimum 365-day period. Similar certifications for SOC 2, ISO 27001, and industry-specific regulations (HIPAA, PCI DSS) would follow.</p>
+
+        <h2>Release Timeline</h2>
+
+        <p>The roadmap is ambitious but grounded in the engineering velocity demonstrated through v0.1 to v0.8: eight major releases in five months, with each release building on tested, production-audited foundations.</p>
+
+        <ul>
+          <li><strong>v0.9.0 (Q1 2026)</strong>: PostgreSQL production backend, multi-tenancy data layer, connection pool management</li>
+          <li><strong>v0.9.x (Q1-Q2 2026)</strong>: Multi-tenancy execution isolation, tenant-scoped audit chains, tenant management API</li>
+          <li><strong>v1.0.0 (Q2 2026)</strong>: API freeze, Prometheus metrics, Grafana dashboards, agent marketplace, stability guarantees</li>
+          <li><strong>v1.x (Q3-Q4 2026)</strong>: Federated governance protocol, agent mesh foundations, compliance certification framework</li>
+          <li><strong>v2.0 (2027)</strong>: Full federation, cross-org agent mesh, certified compliance packages</li>
+        </ul>
+
+        <h2>The Guiding Principle</h2>
+
+        <p>Every feature on this roadmap follows the same principle that guided the first eight releases: governance is not a feature to be added to an orchestration tool. Governance is the infrastructure layer that makes orchestration trustworthy. PostgreSQL cutover makes governance durable. Multi-tenancy makes governance scalable. Observability makes governance visible. Federation makes governance composable. Each milestone strengthens the same foundation: the governed deployment of AI agents at any scale.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>v0.9.0: PostgreSQL becomes the production backend with multi-tenancy data isolation via schema-per-tenant</li>
+          <li>v1.0.0: API stability guarantees, Prometheus metrics, Grafana dashboards, and an agent marketplace</li>
+          <li>Beyond v1.0: federated governance across organizations, agent mesh for cross-org collaboration</li>
+          <li>Compliance certification program will validate deployments against EU AI Act, SOC 2, and ISO 27001</li>
+          <li>Shared connection pools with per-request schema switching solve multi-tenancy scaling without connection explosion</li>
+          <li>Every roadmap item strengthens the core principle: governance as infrastructure, not as a feature</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="open-source-governance.html">&larr; Open Source AI Governance</a>
+        <span style="color:var(--text-muted);">Latest Article</span>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

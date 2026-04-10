@@ -1,0 +1,83 @@
+# REQ-TSF-05: Automated Scan Pipeline
+# Pre-publish pipeline: all 4 checks must pass.
+#   (1) Static analysis (Semgrep)
+#   (2) Dependency audit (Snyk)
+#   (3) Secret scan (GitGuardian)
+#   (4) Capability declaration validation
+
+name: Skill Scan Pipeline
+
+on:
+  pull_request:
+    paths:
+      - 'skills/**'
+  workflow_dispatch:
+    inputs:
+      skill_path:
+        description: 'Path to skill directory'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  scan-pipeline:
+    name: Skill Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev]"
+
+      # Gate 1: Static Analysis (Semgrep)
+      - name: "Gate 1/4: Static Analysis (Semgrep)"
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/python
+            p/security-audit
+            p/owasp-top-ten
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      # Gate 2: Dependency Audit (Snyk)
+      - name: "Gate 2/4: Dependency Audit (Snyk)"
+        uses: snyk/actions/python@master
+        with:
+          args: --severity-threshold=high
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      # Gate 3: Secret Scan (GitGuardian)
+      - name: "Gate 3/4: Secret Scan (GitGuardian)"
+        uses: GitGuardian/ggshield-action@v1
+        env:
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+
+      # Gate 4: Capability Declaration Validation
+      - name: "Gate 4/4: Capability Validation"
+        run: |
+          python -m security.scan_pipeline validate-manifests \
+            --path="${{ github.event.inputs.skill_path || 'skills/' }}"
+
+      - name: Generate scan report
+        if: always()
+        run: |
+          python -m security.scan_pipeline report \
+            --output=scan-report.json
+
+      - name: Upload scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: skill-scan-report
+          path: scan-report.json

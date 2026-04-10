@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Registry Architecture: Capability-Based Access Control — OCCP News</title>
+  <meta name="description" content="Designing a registration system where agents declare capabilities and the platform enforces boundaries at runtime.">
+  <meta name="keywords" content="OCCP, agent registry, capability-based access control, AI agents, agent management, runtime enforcement">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/agent-registry-architecture.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/agent-registry-architecture.html">
+  <meta property="og:title" content="Agent Registry Architecture: Capability-Based Access Control">
+  <meta property="og:description" content="Designing a registration system where agents declare capabilities and the platform enforces boundaries at runtime.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-01-22">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Agent Registry Architecture: Capability-Based Access Control">
+  <meta name="twitter:description" content="Designing a registration system where agents declare capabilities and the platform enforces boundaries at runtime.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Agent Registry Architecture: Capability-Based Access Control",
+    "datePublished": "2026-01-22",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Designing a registration system where agents declare capabilities and the platform enforces boundaries at runtime.",
+    "url": "https://news.occp.ai/articles/agent-registry-architecture.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-01-22</span>
+          <span class="card-tag tag-agent">Agents</span>
+          <span class="card-version">v0.5.0</span>
+        </div>
+        <h1>Agent Registry Architecture: Capability-Based Access Control</h1>
+        <p class="lead">In a multi-agent platform, the central question is not what agents can do, but what agents are <strong>allowed</strong> to do. The OCCP agent registry answers this by requiring agents to declare their capabilities at registration and enforcing those declarations at runtime through policy-backed validation.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>Why a Registry Matters</h2>
+
+        <p>Most AI orchestration frameworks treat agents as opaque callable units. You instantiate an agent, hand it a tool list, and hope for the best. There is no central inventory of what agents exist, what tools they have access to, what data they can read, or what actions they can perform. In a development environment, this is inconvenient. In production, it is a liability.</p>
+
+        <p>The OCCP agent registry was introduced in v0.5.0 to solve this problem. Every agent that operates within the platform must be registered before it can execute any task. Registration is not merely a bookkeeping exercise &mdash; it is a security boundary. The registration process captures the agent's declared capabilities, validates them against platform policies, and creates an immutable record that the runtime enforcement layer uses for every subsequent action.</p>
+
+        <blockquote>An unregistered agent in OCCP is a non-entity. It cannot receive tasks, cannot access tools, cannot produce output. The registry is the gatekeeper, and registration is the price of admission.</blockquote>
+
+        <h2>Registration Data Model</h2>
+
+        <p>When an agent registers with the platform, it submits a structured capability declaration. This declaration is a contract between the agent and the platform &mdash; a statement of intent that the platform will enforce.</p>
+
+        <pre><code>{
+  "agent_id": "data-analyst-01",
+  "name": "Financial Data Analyst",
+  "description": "Analyzes financial datasets and generates reports",
+  "capabilities": {
+    "tools": ["sql_query", "chart_generator", "csv_export"],
+    "data_access": ["financial_reports", "market_data"],
+    "actions": ["read", "analyze", "export"],
+    "network": false,
+    "filesystem_write": false
+  },
+  "resource_limits": {
+    "max_tokens_per_task": 8000,
+    "max_concurrent_tasks": 3,
+    "timeout_seconds": 120
+  },
+  "metadata": {
+    "version": "1.2.0",
+    "owner": "finance-team",
+    "created_at": "2026-01-20T14:30:00Z"
+  }
+}</code></pre>
+
+        <p>The <code>capabilities</code> block is the core of the declaration. It specifies exactly which tools the agent can invoke, which data sources it can access, what actions it can perform, and whether it has network or filesystem write access. The <code>resource_limits</code> block sets hard boundaries on token consumption, concurrency, and execution time.</p>
+
+        <h2>Registration Validation</h2>
+
+        <p>Submitting a capability declaration does not guarantee registration. The platform validates every declaration against the current policy configuration before accepting it. This validation has three phases.</p>
+
+        <h3>Phase 1: Schema Validation</h3>
+
+        <p>The declaration must conform to the agent registration schema. Missing required fields, invalid data types, or malformed capability entries cause immediate rejection. This uses Pydantic model validation that was strengthened in v0.6.0 but was present in basic form from the beginning of the registry.</p>
+
+        <h3>Phase 2: Policy Compliance</h3>
+
+        <p>The declared capabilities are checked against the platform's policy engine. If the policy forbids filesystem write access for agents in the <code>finance-team</code> group, and the declaration requests <code>filesystem_write: true</code>, the registration is rejected with a specific policy violation error. This check ensures that no agent can register capabilities that violate organizational constraints.</p>
+
+        <pre><code># Policy evaluation during registration
+def validate_agent_registration(declaration: AgentDeclaration) -> ValidationResult:
+    violations = []
+
+    # Check each capability against active policies
+    for tool in declaration.capabilities.tools:
+        if not policy_engine.is_tool_allowed(tool, declaration.metadata.owner):
+            violations.append(
+                PolicyViolation(f"Tool '{tool}' not permitted for group '{declaration.metadata.owner}'")
+            )
+
+    # Check resource limits against maximums
+    if declaration.resource_limits.max_tokens_per_task > platform_config.max_tokens:
+        violations.append(
+            PolicyViolation(f"Token limit exceeds platform maximum of {platform_config.max_tokens}")
+        )
+
+    if violations:
+        return ValidationResult(approved=False, violations=violations)
+
+    return ValidationResult(approved=True)</code></pre>
+
+        <h3>Phase 3: Conflict Detection</h3>
+
+        <p>The registry checks for conflicts with existing agents. Duplicate agent IDs are rejected. Agents requesting the same exclusive resources (such as singleton database connections) trigger a conflict warning. This phase prevents resource contention before it occurs in production.</p>
+
+        <h2>Runtime Enforcement</h2>
+
+        <p>Registration creates the capability contract. Runtime enforcement ensures the contract is honored. Every time a registered agent attempts an action during task execution, the enforcement layer checks the action against the agent's registered capabilities.</p>
+
+        <p>This is where capability-based access control differs fundamentally from traditional Access Control Lists (ACLs). In an ACL system, a central authority maintains a list of permissions for each subject. In a capability-based system, the subject carries its own capability tokens, and the enforcement layer validates those tokens at the point of access.</p>
+
+        <pre><code># Runtime enforcement check
+async def enforce_capability(agent_id: str, action: str, resource: str) -> bool:
+    registration = await registry.get_agent(agent_id)
+    if not registration:
+        raise UnregisteredAgentError(f"Agent '{agent_id}' is not registered")
+
+    # Check if the action is within declared capabilities
+    if action not in registration.capabilities.actions:
+        audit_log.record_violation(agent_id, action, resource, "action_not_declared")
+        return False
+
+    # Check resource access
+    if resource not in registration.capabilities.data_access:
+        audit_log.record_violation(agent_id, action, resource, "resource_not_declared")
+        return False
+
+    return True</code></pre>
+
+        <p>The enforcement check happens synchronously in the execution path. There is no async deferral, no eventual consistency. If an agent attempts an action it did not declare, the action is blocked immediately, a violation is recorded in the audit log, and the task receives an error response. The agent never touches the resource.</p>
+
+        <h2>Capability Revocation</h2>
+
+        <p>Capabilities are not permanent. The registry supports three revocation mechanisms.</p>
+
+        <ul>
+          <li><strong>Administrative revocation</strong> &mdash; A platform administrator can revoke specific capabilities from an agent through the dashboard or API. The revocation takes effect immediately; any in-flight tasks that attempt the revoked capability will fail at the next enforcement check.</li>
+          <li><strong>Policy-driven revocation</strong> &mdash; When platform policies change, the registry re-evaluates all registered agents against the new policies. Agents whose capabilities now violate the updated policies are flagged, and operators receive notifications to update or retire those agents.</li>
+          <li><strong>Time-based expiration</strong> &mdash; Capabilities can be registered with a TTL (time-to-live). When the TTL expires, the capability is automatically revoked. This is useful for temporary elevated access during incident response or maintenance windows.</li>
+        </ul>
+
+        <h2>Dynamic Capability Updates</h2>
+
+        <p>Agents are not static. Their requirements change as workflows evolve. The registry supports capability updates through a re-registration process that preserves the agent's identity and history while modifying its declared capabilities.</p>
+
+        <p>A capability update goes through the same three-phase validation as initial registration. The updated declaration replaces the previous one, and the audit log records the change with both the old and new capability sets. This creates a full history of every capability modification, which is essential for compliance auditing.</p>
+
+        <blockquote>Capability updates are not silent. Every change is a versioned event in the audit chain. If an agent that previously had read-only access suddenly gains write capabilities, that transition is recorded, timestamped, and attributable to a specific operator.</blockquote>
+
+        <h2>Capability-Based vs. Traditional ACL</h2>
+
+        <p>Traditional ACL systems maintain a central permission matrix: subject X can perform action Y on resource Z. This works for static environments with known subjects and stable permissions. AI agent systems are neither static nor stable. Agents are created, modified, and retired continuously. Their tool access evolves with each deployment. A centralized ACL becomes a bottleneck.</p>
+
+        <p>Capability-based access control inverts the model. The agent carries its capability declaration. The enforcement layer validates the declaration at the point of access. There is no central permission lookup for every action &mdash; just a comparison between what the agent declared and what it is attempting. This model scales better with agent count and eliminates the central ACL as a single point of failure.</p>
+
+        <h3>The Confused Deputy Problem</h3>
+
+        <p>A classic vulnerability in ACL systems is the confused deputy attack, where a privileged service is tricked into performing unauthorized actions on behalf of a lower-privileged entity. Capability-based systems resist this by tying permissions to the specific entity that holds them. In OCCP, an agent's capabilities are bound to its <code>agent_id</code> and cannot be transferred or inherited by other agents. When Agent A delegates work to Agent B, Agent B operates under its own registered capabilities, not Agent A's.</p>
+
+        <h2>Registry Observability</h2>
+
+        <p>The registry provides several observability endpoints that operators use to understand the agent landscape. The <code>/agents</code> endpoint returns all registered agents with their current capability sets. The <code>/agents/{id}/history</code> endpoint returns the full capability change history for a specific agent. The <code>/agents/violations</code> endpoint returns a feed of recent enforcement violations across all agents.</p>
+
+        <p>These observability features feed into the dashboard, which provides a real-time view of agent status, capability utilization, and violation trends. The capability badges feature, detailed in the next article, builds directly on the registry's data model to provide visual indicators of agent permissions.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Every agent must register with a structured capability declaration before it can execute tasks in OCCP</li>
+          <li>Registration validation includes schema checks, policy compliance evaluation, and conflict detection</li>
+          <li>Runtime enforcement checks every agent action against its declared capabilities synchronously in the execution path</li>
+          <li>Three revocation mechanisms: administrative, policy-driven, and time-based TTL expiration</li>
+          <li>Capability-based access control scales better than traditional ACLs and resists confused deputy attacks</li>
+          <li>Full capability change history is maintained in the audit chain for compliance auditing</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="occp-v050-agent-management.html">&larr; OCCP v0.5.0: Agent Management</a>
+        <a href="capability-badges.html">Capability Badges &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

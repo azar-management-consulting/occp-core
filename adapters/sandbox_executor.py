@@ -7,6 +7,9 @@ Provides defense-in-depth for task execution:
 
 The backend is auto-detected at construction time based on available binaries
 and kernel capabilities.  Override via ``SandboxConfig.backend``.
+
+Per-agent sandbox policies allow each agent type to have different isolation
+settings (backend, time_limit, memory_limit, network access).
 """
 
 from __future__ import annotations
@@ -26,6 +29,167 @@ from orchestrator.exceptions import ExecutionError
 from orchestrator.models import Task
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Per-Agent Sandbox Policy
+# ---------------------------------------------------------------------------
+
+# Default sandbox policies per agent type.  Keys match agent IDs from
+# config/openclaw/openclaw.json → agents.list[].id.
+_DEFAULT_AGENT_POLICIES: dict[str, dict[str, Any]] = {
+    "eng-core": {
+        "backend": "bwrap",
+        "time_limit": 120,
+        "memory_mb": 512,
+        "network": False,
+        "writable_paths": [],
+    },
+    "wp-web": {
+        "backend": "bwrap",
+        "time_limit": 60,
+        "memory_mb": 256,
+        "network": True,  # needs WP API access
+        "writable_paths": [],
+    },
+    "infra-ops": {
+        "backend": "nsjail",
+        "time_limit": 30,
+        "memory_mb": 128,
+        "network": True,  # needs SSH
+        "writable_paths": [],
+    },
+    "design-lab": {
+        "backend": "mock",
+        "time_limit": 60,
+        "memory_mb": 256,
+        "network": False,  # no code execution
+        "writable_paths": [],
+    },
+    "content-forge": {
+        "backend": "mock",
+        "time_limit": 30,
+        "memory_mb": 128,
+        "network": False,
+        "writable_paths": [],
+    },
+    "social-growth": {
+        "backend": "mock",
+        "time_limit": 30,
+        "memory_mb": 128,
+        "network": False,
+        "writable_paths": [],
+    },
+    "intel-research": {
+        "backend": "process",
+        "time_limit": 120,
+        "memory_mb": 512,
+        "network": True,  # web research
+        "writable_paths": [],
+    },
+    "biz-strategy": {
+        "backend": "mock",
+        "time_limit": 60,
+        "memory_mb": 128,
+        "network": False,
+        "writable_paths": [],
+    },
+}
+
+
+@dataclass
+class AgentSandboxPolicy:
+    """Per-agent sandbox configuration.
+
+    Each OpenClaw agent type can have different isolation settings
+    based on its operational requirements.
+
+    Attributes:
+        agent_id: The agent identifier (e.g. 'eng-core').
+        backend: Sandbox backend — nsjail | bwrap | process | mock.
+        time_limit: Maximum execution time in seconds.
+        memory_mb: Maximum memory allocation in megabytes.
+        network: Whether network access is permitted.
+        writable_paths: Filesystem paths the agent may write to.
+    """
+
+    agent_id: str
+    backend: str = "bwrap"
+    time_limit: int = 30
+    memory_mb: int = 256
+    network: bool = False
+    writable_paths: list[str] = field(default_factory=list)
+
+    def to_sandbox_config(self) -> "SandboxConfig":
+        """Convert this policy to a SandboxConfig for the executor."""
+        backend_map = {
+            "nsjail": SandboxBackend.NSJAIL,
+            "bwrap": SandboxBackend.BWRAP,
+            "process": SandboxBackend.PROCESS,
+            "mock": SandboxBackend.MOCK,
+        }
+        return SandboxConfig(
+            backend=backend_map.get(self.backend, SandboxBackend.PROCESS),
+            time_limit_seconds=self.time_limit,
+            memory_limit_mb=self.memory_mb,
+            enable_network=self.network,
+            allowed_paths=list(self.writable_paths),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to a plain dict."""
+        return {
+            "agent_id": self.agent_id,
+            "backend": self.backend,
+            "time_limit": self.time_limit,
+            "memory_mb": self.memory_mb,
+            "network": self.network,
+            "writable_paths": list(self.writable_paths),
+        }
+
+
+def get_sandbox_policy(
+    agent_id: str,
+    overrides: dict[str, Any] | None = None,
+) -> AgentSandboxPolicy:
+    """Return the sandbox policy for a given agent.
+
+    Looks up the default policy from ``_DEFAULT_AGENT_POLICIES``.
+    If the agent_id is unknown, returns a restrictive fallback policy
+    (process backend, 30s, 128MB, no network).
+
+    Args:
+        agent_id: OpenClaw agent identifier.
+        overrides: Optional dict of field overrides applied on top of defaults.
+
+    Returns:
+        An ``AgentSandboxPolicy`` instance.
+    """
+    defaults = _DEFAULT_AGENT_POLICIES.get(agent_id, {
+        "backend": "process",
+        "time_limit": 30,
+        "memory_mb": 128,
+        "network": False,
+        "writable_paths": [],
+    })
+
+    merged = {**defaults, **(overrides or {})}
+
+    return AgentSandboxPolicy(
+        agent_id=agent_id,
+        backend=merged.get("backend", "process"),
+        time_limit=merged.get("time_limit", 30),
+        memory_mb=merged.get("memory_mb", 128),
+        network=merged.get("network", False),
+        writable_paths=merged.get("writable_paths", []),
+    )
+
+
+def list_all_agent_policies() -> list[AgentSandboxPolicy]:
+    """Return default sandbox policies for all known agents."""
+    return [
+        get_sandbox_policy(agent_id)
+        for agent_id in _DEFAULT_AGENT_POLICIES
+    ]
 
 # Maximum output size before truncation (10 MB)
 _MAX_OUTPUT_BYTES = 10 * 1024 * 1024

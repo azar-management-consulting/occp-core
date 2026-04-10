@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supply Chain Security: Allowlists, Static Analysis, and Fail-Closed Verification — OCCP News</title>
+  <meta name="description" content="A multi-layered approach to verifying MCP packages and agent extensions before they enter the OCCP ecosystem.">
+  <meta name="keywords" content="OCCP, supply chain security, MCP packages, allowlist verification, static analysis, fail-closed, agent extensions">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/supply-chain-security.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/supply-chain-security.html">
+  <meta property="og:title" content="Supply Chain Security: Allowlists, Static Analysis, and Fail-Closed Verification">
+  <meta property="og:description" content="A multi-layered approach to verifying MCP packages and agent extensions before they enter the OCCP ecosystem.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-24">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Supply Chain Security: Allowlists, Static Analysis, and Fail-Closed Verification">
+  <meta name="twitter:description" content="A multi-layered approach to verifying MCP packages and agent extensions before they enter the OCCP ecosystem.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Supply Chain Security: Allowlists, Static Analysis, and Fail-Closed Verification",
+    "datePublished": "2026-02-24",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "A multi-layered approach to verifying MCP packages and agent extensions before they enter the OCCP ecosystem.",
+    "url": "https://news.occp.ai/articles/supply-chain-security.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-24</span>
+          <span class="card-tag tag-governance">Governance</span>
+          <span class="card-version">v0.8.2</span>
+        </div>
+        <h1>Supply Chain Security: Allowlists, Static Analysis, and Fail-Closed Verification</h1>
+        <p class="lead">The most dangerous attack vector in modern software is not the code you write &mdash; it is the code you import. In AI orchestration, the attack surface expands further: MCP packages, agent extensions, and tool connectors all execute with the privileges of the orchestrator. OCCP v0.8.2 implements a multi-layered verification system that ensures no unverified code enters the execution environment.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Supply Chain Threat in AI Orchestration</h2>
+
+        <p>Traditional software supply chain attacks target package registries: a malicious actor publishes a typosquatted package or compromises a maintainer's account to inject backdoors into a popular library. In AI orchestration, the attack surface is broader. MCP (Model Context Protocol) servers expose tools that agents can invoke. Agent extensions add capabilities to the execution environment. Custom connectors bridge the orchestrator to external services. Each of these is a code injection point.</p>
+
+        <p>The consequences are also more severe. A compromised MCP package does not just run in a build environment &mdash; it runs in the context of an AI agent that may have access to databases, APIs, and production systems. A malicious tool connector could exfiltrate every prompt and response passing through the orchestrator. A backdoored agent extension could override policy decisions, turning the governance layer into a rubber stamp.</p>
+
+        <blockquote>In agent orchestration, supply chain compromise does not just affect the build. It affects every decision the agent makes and every system the agent touches.</blockquote>
+
+        <h2>Layer 1: Allowlist-Based Verification</h2>
+
+        <h3>The Allowlist Model</h3>
+
+        <p>OCCP uses an explicit allowlist model for all loadable packages. Only packages that appear on the allowlist can be loaded into the execution environment. The allowlist is a configuration file that specifies the package name, the exact version (not a range), and the expected SHA-256 hash of the package contents.</p>
+
+        <pre><code># occp-allowlist.yaml
+packages:
+  - name: "mcp-filesystem"
+    version: "1.2.3"
+    sha256: "a1b2c3d4e5f6..."
+    publisher: "occp-verified"
+    approved_by: "security-team"
+    approved_at: "2026-02-20T14:00:00Z"
+
+  - name: "mcp-database"
+    version: "2.0.1"
+    sha256: "f6e5d4c3b2a1..."
+    publisher: "occp-verified"
+    approved_by: "security-team"
+    approved_at: "2026-02-18T09:30:00Z"</code></pre>
+
+        <h3>Version Pinning</h3>
+
+        <p>The allowlist requires exact version pinning. Version ranges (<code>>=1.2.0</code>, <code>^2.0.0</code>) are not permitted. This prevents a class of attacks where a malicious version is published within an allowed range. If <code>mcp-filesystem</code> version 1.2.3 is approved, version 1.2.4 &mdash; even if published by the same author &mdash; must go through the approval process independently. Each version is a distinct trust decision.</p>
+
+        <h3>Hash Verification</h3>
+
+        <p>The SHA-256 hash in the allowlist is computed over the complete package contents at approval time. At load time, OCCP recomputes the hash of the package being loaded and compares it to the allowlist entry. If the hashes do not match, the package is rejected. This protects against post-approval tampering: even if an attacker compromises the package registry and replaces the approved version with a modified one, the hash check detects the modification.</p>
+
+        <h2>Layer 2: Static Analysis</h2>
+
+        <h3>Pre-Execution Scanning</h3>
+
+        <p>Before a package is loaded into the execution environment, OCCP runs static analysis on its contents. The analysis checks for patterns that indicate potentially dangerous behavior: network calls to unexpected destinations, filesystem operations outside the declared scope, dynamic code execution (<code>eval</code>, <code>exec</code>, <code>importlib</code> usage), environment variable access, and subprocess invocation.</p>
+
+        <pre><code># Static analysis rules (simplified)
+DANGEROUS_PATTERNS = [
+    r"eval\s*\(",              # Dynamic code execution
+    r"exec\s*\(",              # Dynamic code execution
+    r"__import__\s*\(",        # Dynamic imports
+    r"subprocess\.",           # Subprocess invocation
+    r"os\.system\s*\(",        # System command execution
+    r"socket\.",               # Raw socket access
+    r"requests\.(get|post)",   # HTTP calls (must be declared)
+    r"open\s*\([^)]*['\"]w",  # File write operations
+]
+
+def scan_package(package_path: str) -> ScanResult:
+    violations = []
+    for file in walk_python_files(package_path):
+        content = read_file(file)
+        for pattern in DANGEROUS_PATTERNS:
+            matches = re.findall(pattern, content)
+            if matches:
+                violations.append(Violation(
+                    file=file, pattern=pattern,
+                    count=len(matches)
+                ))
+    return ScanResult(
+        passed=len(violations) == 0,
+        violations=violations
+    )</code></pre>
+
+        <h3>Capability Declaration</h3>
+
+        <p>Packages must declare their required capabilities in a manifest file. An MCP filesystem package must declare that it needs filesystem access. A database connector must declare that it needs network access to specific hosts. The static analysis verifies that the package only uses capabilities it has declared. If the filesystem package contains code that opens network sockets, the analysis flags a capability violation &mdash; the package claims to need only filesystem access but actually performs network operations.</p>
+
+        <h3>Limitations of Static Analysis</h3>
+
+        <p>Static analysis is not a complete defense. Obfuscated code can evade pattern matching. Dynamically constructed strings can hide dangerous operations. Runtime behavior can differ from static patterns. OCCP treats static analysis as one layer in a multi-layer defense, not as a standalone solution. Its primary value is catching accidental misuse and low-sophistication attacks. Sophisticated supply chain attacks require the other layers to provide defense.</p>
+
+        <h2>Layer 3: Fail-Closed Verification</h2>
+
+        <h3>The Fail-Closed Principle</h3>
+
+        <p>OCCP's package verification is fail-closed: if any verification step fails, the package is rejected. If the allowlist lookup fails (package not found, version mismatch, hash mismatch), the package is rejected. If static analysis cannot complete (corrupted package, timeout during analysis), the package is rejected. If signature verification fails (invalid signature, expired certificate), the package is rejected. There is no fallback to an unverified load path.</p>
+
+        <blockquote>A verification system that fails open is not a verification system. It is a logging system that sometimes blocks things.</blockquote>
+
+        <h3>Verification at Load Time, Not Install Time</h3>
+
+        <p>Verification runs every time a package is loaded, not just when it is first installed. This protects against time-of-check-to-time-of-use (TOCTOU) attacks where a package is modified on disk after passing initial verification. It also ensures that packages loaded from shared caches or network mounts are verified against the current allowlist, not the allowlist that was active when they were first installed.</p>
+
+        <h2>Signature Verification for Trusted Publishers</h2>
+
+        <h3>Publisher Identity</h3>
+
+        <p>OCCP supports cryptographic signature verification for packages from trusted publishers. Publishers sign their packages with Ed25519 keys, and the public keys are registered in the OCCP configuration. At verification time, the package signature is checked against the registered public key for the declared publisher.</p>
+
+        <pre><code># Signature verification flow
+def verify_publisher_signature(
+    package: bytes,
+    signature: bytes,
+    publisher: str
+) -> bool:
+    public_key = get_publisher_key(publisher)
+    if public_key is None:
+        return False  # Unknown publisher = fail closed
+    try:
+        public_key.verify(signature, package)
+        return True
+    except InvalidSignature:
+        audit_log("SIGNATURE_INVALID", publisher, package_hash)
+        return False</code></pre>
+
+        <h3>Trust Hierarchy</h3>
+
+        <p>The trust hierarchy has three levels. First-party packages (published by the OCCP project) are signed with the project's key and are implicitly allowlisted in the default configuration. Verified-publisher packages are signed by third-party publishers whose keys have been manually registered by the platform administrator. Unverified packages have no signature and must rely solely on allowlist hash verification for trust.</p>
+
+        <h2>Preventing Supply Chain Attacks in Practice</h2>
+
+        <h3>Attack Scenario: Typosquatting</h3>
+
+        <p>An attacker publishes <code>mcp-filesystm</code> (missing an 'e') with malicious code. The allowlist check stops this immediately: the typosquatted name is not on the allowlist. Even if an administrator accidentally references the wrong name, the hash will not match any approved entry.</p>
+
+        <h3>Attack Scenario: Compromised Registry</h3>
+
+        <p>An attacker gains write access to the package registry and replaces <code>mcp-filesystem@1.2.3</code> with a trojaned version. The SHA-256 hash of the trojaned version does not match the hash recorded in the allowlist at approval time. The package is rejected at load time.</p>
+
+        <h3>Attack Scenario: Maintainer Compromise</h3>
+
+        <p>A legitimate maintainer's account is compromised, and the attacker publishes a new version <code>mcp-filesystem@1.2.4</code> with a backdoor. Because the allowlist requires exact version pinning and each version requires independent approval, the new version is not on the allowlist. The package is rejected.</p>
+
+        <p>Each of these scenarios is stopped by a different layer of the verification system. The layers are complementary: allowlist verification catches unauthorized packages, static analysis catches dangerous code patterns, signature verification confirms publisher identity, and fail-closed design ensures that any verification failure results in rejection.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Allowlist verification with exact version pinning and SHA-256 hashes prevents unauthorized packages from loading</li>
+          <li>Static analysis scans for dangerous code patterns and verifies that packages only use declared capabilities</li>
+          <li>Fail-closed design ensures any verification failure results in package rejection, with no fallback to unverified loading</li>
+          <li>Verification runs at every load, not just at install time, preventing TOCTOU attacks</li>
+          <li>Publisher signature verification with Ed25519 keys establishes a three-tier trust hierarchy</li>
+          <li>Multiple defense layers work together: each stops a different class of supply chain attack</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="aes256-gcm-encryption.html">&larr; AES-256-GCM Envelope Encryption</a>
+        <a href="agent-boundary-enforcement.html">Agent Boundary Enforcement &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

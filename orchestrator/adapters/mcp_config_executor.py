@@ -1,7 +1,7 @@
 """MCP Config Executor — generates audited MCP configuration.
 
 This adapter produces MCP server configurations without requiring
-an LLM token. It works through the VAP pipeline as a deterministic
+an LLM token. It works through the Verified Autonomy Pipeline as a deterministic
 executor for MCP installation tasks.
 """
 

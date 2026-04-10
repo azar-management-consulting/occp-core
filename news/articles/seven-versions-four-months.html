@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>What We Learned Building 7 Versions in 4 Months — OCCP News</title>
+  <meta name="description" content="Reflections on rapid iteration, architectural pivots, and the engineering discipline required to build a production AI platform at startup speed.">
+  <meta name="keywords" content="OCCP, startup engineering, rapid iteration, AI platform development, lessons learned, open source">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/seven-versions-four-months.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/seven-versions-four-months.html">
+  <meta property="og:title" content="What We Learned Building 7 Versions in 4 Months">
+  <meta property="og:description" content="Reflections on rapid iteration, architectural pivots, and the engineering discipline required to build a production AI platform at startup speed.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-16">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="What We Learned Building 7 Versions in 4 Months">
+  <meta name="twitter:description" content="Reflections on rapid iteration, architectural pivots, and the engineering discipline required to build a production AI platform at startup speed.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "What We Learned Building 7 Versions in 4 Months",
+    "datePublished": "2026-02-16",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Reflections on rapid iteration, architectural pivots, and the engineering discipline required to build a production AI platform at startup speed.",
+    "url": "https://news.occp.ai/articles/seven-versions-four-months.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-16</span>
+          <span class="card-tag tag-vision">Vision</span>
+          <span class="card-version">v0.7.0</span>
+        </div>
+        <h1>What We Learned Building 7 Versions in 4 Months</h1>
+        <p class="lead">Between October 2025 and February 2026, OCCP went from an idea to a production-deployed AI orchestration platform with JWT authentication, a policy engine with 24 detection patterns, Casbin RBAC, sandboxed execution, a React 19 dashboard, dual SDKs, and 313 tests. Here is what that journey taught us about building infrastructure software at speed.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Timeline</h2>
+
+        <p>Looking back at the git history, each month had a clear architectural focus that built on the previous month's foundation.</p>
+
+        <h3>October 2025: The Idea and First Commit</h3>
+
+        <p>OCCP began with a straightforward observation: the AI ecosystem had powerful models and capable orchestration frameworks, but no governance layer between them and production. The first commit was a Python module with three files: an orchestrator implementing the five-stage Verified Autonomy Pipeline, a policy engine with basic PII detection, and a CLI that could submit tasks and view results. The entire system ran in a single process, used an in-memory dictionary for storage, and called no external APIs. But the pipeline worked: Plan, Gate, Execute, Validate, Ship. Every subsequent version is an elaboration on that initial five-stage loop.</p>
+
+        <h3>November 2025: v0.1.0 &mdash; The Working Pipeline</h3>
+
+        <p>The first release formalized what the prototype demonstrated. The orchestrator gained configurable stages with retry logic. The policy engine added prompt injection detection alongside PII scanning. The CLI expanded to support task creation, status checking, and audit trail export. The SHA-256 hash-chained audit trail was implemented, creating a tamper-evident record of every pipeline execution. And the Python SDK shipped &mdash; a stdlib-only HTTP client with zero external dependencies. The test suite had 37 tests.</p>
+
+        <h3>December 2025: v0.2.0 + v0.3.0 &mdash; API and Intelligence</h3>
+
+        <p>December was the month of external interfaces. v0.2.0 introduced the FastAPI REST API with JWT authentication, replacing the CLI-only interaction model. Docker Compose deployment landed, with health checks and security contexts. The TypeScript SDK was added for Node.js consumers. v0.3.0 followed two weeks later with real Claude integration through the Anthropic API, prompt injection detection upgraded to regex-based pattern matching, and the first dashboard screens implemented in Next.js. The test count jumped to 127.</p>
+
+        <h3>January 2026: v0.4.0 + v0.5.0 &mdash; Dashboard and Agents</h3>
+
+        <p>January focused on making the platform usable by people who are not the developers who built it. v0.4.0 delivered the full Next.js 15 dashboard with React 19, JWT-based AuthGuard route protection, and the retro-terminal visual identity that became OCCP's signature. v0.5.0 introduced the agent registry &mdash; the subsystem that manages agent lifecycle, capabilities, and runtime boundaries. Agents could now be registered with declared capabilities, and the platform would enforce those boundaries at execution time. Tests reached 203.</p>
+
+        <h3>February 2026: v0.6.0 + v0.7.0 &mdash; Security and Enterprise</h3>
+
+        <p>February was security month. v0.6.0 hardened the policy engine from 5 to 24 injection detection patterns, added output sanitization that strips credentials from LLM responses, and implemented GDPR-compliant legal pages. v0.7.0 was the maturity release: SQLAlchemy 2.0 async ORM replaced raw SQL queries, Casbin RBAC introduced a four-role hierarchy (viewer, operator, admin, super_admin), nsjail/bubblewrap sandboxing isolated code execution, and Alembic migrations provided schema evolution infrastructure. By the end of February, the test suite contained 313 tests across Python 3.11, 3.12, and 3.13.</p>
+
+        <h2>Lesson 1: Start With the Pipeline</h2>
+
+        <p>The single best architectural decision was implementing the five-stage pipeline first, before the API, before the dashboard, before authentication. The pipeline is the core abstraction: every feature is either a stage in the pipeline, a modifier of a stage, or a consumer of pipeline output. Authentication gates who can submit tasks to the pipeline. RBAC determines which stages a role can configure. The dashboard visualizes pipeline execution. The audit trail records pipeline results.</p>
+
+        <blockquote>If we had started with the API or the dashboard, we would have built a web application and then tried to attach a pipeline to it. By starting with the pipeline, we built an orchestration engine and then attached interfaces to it. The difference is architectural gravity: the pipeline pulls everything toward it.</blockquote>
+
+        <h2>Lesson 2: Security Is Architecture, Not a Feature</h2>
+
+        <p>The v0.6.0 security hardening sprint took three weeks. It would have taken three days if security had been integrated from v0.1.0. When you add injection detection as an afterthought, you have to retrofit it into every input path. When you add output sanitization late, you discover output paths you did not know existed. When you add RBAC to an existing API, you have to audit every endpoint to determine which roles should access it.</p>
+
+        <p>The correct approach &mdash; which we adopted starting in v0.6.0 &mdash; is to treat security as an architectural layer, not a feature toggle. The policy engine is not optional. The audit trail is not configurable. Output validation is not bypassable. These are properties of the infrastructure, enforced by the middleware stack, and no amount of misconfigured application code can circumvent them.</p>
+
+        <h2>Lesson 3: Testing Enables Speed</h2>
+
+        <p>The counterintuitive lesson is that writing tests did not slow us down. It accelerated us. When we refactored from raw SQL to SQLAlchemy 2.0 ORM in v0.7.0, the refactoring touched 40+ files and changed every database interaction in the system. Without the 256 tests from v0.6.0, this refactoring would have been terrifying and slow. With the tests, it was mechanical: change the code, run the tests, fix the failures, repeat. The ORM migration took four days. Without tests, it would have taken four weeks of careful manual verification.</p>
+
+        <p>The key insight is that tests are not about preventing bugs in the current version. They are about enabling changes in the next version. Every test is a safety net for a refactoring that has not happened yet. The 313 tests in v0.7.0 exist so that v0.8.0 can change anything without fear.</p>
+
+        <h2>Lesson 4: Open Source Builds Trust</h2>
+
+        <p>OCCP is open source not because of ideology but because of pragmatism. An AI governance platform asks its users to trust it with their LLM API keys, their policy configurations, and their audit data. That trust must be verifiable. When the source code is public, any organization can audit the policy engine to verify it does what it claims. They can inspect the encryption implementation to confirm their API keys are protected. They can review the audit chain to confirm it is genuinely tamper-evident.</p>
+
+        <p>Closed-source governance is a contradiction. You cannot govern AI systems with a black box. The governance layer itself must be transparent, auditable, and verifiable. Open source is not a business model decision &mdash; it is an architectural requirement for the category we are building.</p>
+
+        <h2>Lesson 5: Ship Versions, Not Features</h2>
+
+        <p>We did not maintain a feature backlog that we gradually depleted. We shipped versions with coherent themes. v0.2.0 was the API version. v0.4.0 was the dashboard version. v0.6.0 was the security version. v0.7.0 was the ORM version. Each version had a clear identity, a clear set of changes, and a clear upgrade path from the previous version.</p>
+
+        <p>This version-oriented approach forces prioritization. You cannot ship an incoherent version &mdash; it has to tell a story. The story of v0.7.0 is "enterprise readiness through proper data access, access control, and isolation." Every commit in that version supports that narrative. Features that did not fit the narrative were deferred to the next version, not shoehorned in.</p>
+
+        <h2>What Comes Next</h2>
+
+        <p>v0.8.0 shifts focus from "build features" to "make features accessible." The MCP connector framework, skills system, settings pages, and 10-step onboarding wizard are not new capabilities &mdash; they are new ways to access existing capabilities. The platform has authentication, policy enforcement, agent management, and pipeline execution. What it needs now is a path from "I just installed this" to "my first agent is running in production." That is the challenge of the next month, and it is a harder problem than any we have solved so far.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Start with the core abstraction (the pipeline), not the interface layer (the API or dashboard)</li>
+          <li>Security is an architectural layer, not a feature &mdash; retrofitting it costs 10x more than building it in</li>
+          <li>Tests enable speed by making large-scale refactoring mechanical instead of terrifying</li>
+          <li>Open source is an architectural requirement for AI governance, not a business model choice</li>
+          <li>Ship versions with coherent themes, not arbitrary feature batches</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="testing-philosophy.html">&larr; 313 Tests and Counting</a>
+        <a href="occp-v080-onboarding.html">OCCP v0.8.0: The Onboarding Revolution &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
@@ -107,10 +108,18 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center font-pixel text-[11px] text-[var(--text-muted)]/40 tracking-wider">
-          OCCP V0.6.0 &mdash; READY
-          <span className="inline-block w-1.5 h-2.5 bg-occp-primary ml-1 animate-blink align-middle" />
-        </p>
+        <div className="text-center space-y-2">
+          <p className="font-pixel text-[11px] text-[var(--text-muted)]/40 tracking-wider">
+            OCCP V0.8.2 &mdash; READY
+            <span className="inline-block w-1.5 h-2.5 bg-occp-primary ml-1 animate-blink align-middle" />
+          </p>
+          <p className="text-[10px] text-[var(--text-muted)]/30 font-mono">
+            New user?{" "}
+            <Link href="/register" className="text-occp-primary hover:text-glow transition-colors">
+              CREATE ACCOUNT
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

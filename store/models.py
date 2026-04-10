@@ -11,10 +11,12 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Index, Integer, String, Text, func
+from sqlalchemy import BigInteger, Boolean, DateTime, Index, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from store.base import Base, JSONBText
+
+from typing import Optional
 
 
 def _utcnow() -> datetime:
@@ -133,15 +135,82 @@ class OnboardingProgressRow(Base):
     __tablename__ = "onboarding_progress"
 
     user_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    org_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
     state: Mapped[str] = mapped_column(
-        String(32), nullable=False, default="token_missing"
+        String(32), nullable=False, default="landing"
     )
     current_step: Mapped[int] = mapped_column(Integer, default=0)
     completed_steps: Mapped[list] = mapped_column(JSONBText(), default=list)
+    completed_flag: Mapped[bool] = mapped_column(Boolean, default=False)
     run_id: Mapped[str] = mapped_column(String(32), default="")
+    audit_linkage: Mapped[str] = mapped_column(String(64), default="")
     metadata_: Mapped[dict] = mapped_column(
         "metadata", JSONBText(), default=dict
     )
     completed_at: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[str] = mapped_column(String(64), nullable=False)
     updated_at: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    __table_args__ = (
+        Index("idx_onboarding_org", "org_id"),
+    )
+
+
+# -- Encrypted Tokens -------------------------------------------------------
+
+
+class EncryptedTokenRow(Base):
+    """Encrypted LLM API token — maps to ``encrypted_tokens`` table.
+
+    Tokens are stored as AES-256-GCM encrypted blobs.  Only masked
+    values are ever returned via API; decryption happens server-side
+    only when the pipeline needs to call an LLM provider.
+    """
+
+    __tablename__ = "encrypted_tokens"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    org_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    provider: Mapped[str] = mapped_column(String(32), nullable=False)
+    encrypted_value: Mapped[str] = mapped_column(Text, nullable=False)
+    masked_value: Mapped[str] = mapped_column(String(32), default="***")
+    label: Mapped[str] = mapped_column(String(128), default="")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    updated_at: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    __table_args__ = (
+        Index("idx_tokens_user_provider", "user_id", "provider"),
+        Index("idx_tokens_user_active", "user_id", "is_active"),
+        Index("idx_tokens_org_provider", "org_id", "provider"),
+    )
+
+
+# ── Workflow Executions ──────────────────────────────────────────────
+
+
+class WorkflowExecutionRow(Base):
+    """Persisted workflow execution state — maps to ``workflow_executions`` table.
+
+    Stores DAG definition, per-node results, checkpoints, and wave progress
+    so that workflow state survives process restarts and can be resumed.
+    """
+
+    __tablename__ = "workflow_executions"
+
+    execution_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    workflow_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    dag_definition: Mapped[dict] = mapped_column(JSONBText(), default=dict)
+    node_results: Mapped[dict] = mapped_column(JSONBText(), default=dict)
+    checkpoints: Mapped[list] = mapped_column(JSONBText(), default=list)
+    current_wave: Mapped[int] = mapped_column(Integer, default=0)
+    started_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    finished_at: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    error_detail: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    __table_args__ = (
+        Index("idx_wfexec_workflow_id", "workflow_id"),
+        Index("idx_wfexec_status", "status"),
+    )

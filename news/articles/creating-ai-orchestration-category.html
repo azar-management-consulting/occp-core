@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Category We Are Creating: AI Orchestration as Infrastructure — OCCP News</title>
+  <meta name="description" content="OCCP is not a tool. It is a new infrastructure layer — the control plane that governs autonomous AI systems, positioned between agent frameworks and production deployment.">
+  <meta name="keywords" content="OCCP, AI orchestration, agent control plane, infrastructure, AI governance, LangChain, CrewAI, Kubernetes">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/creating-ai-orchestration-category.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/creating-ai-orchestration-category.html">
+  <meta property="og:title" content="The Category We Are Creating: AI Orchestration as Infrastructure">
+  <meta property="og:description" content="OCCP is not a tool. It is a new infrastructure layer — the control plane that governs autonomous AI systems.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-26">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Category We Are Creating: AI Orchestration as Infrastructure">
+  <meta name="twitter:description" content="OCCP is not a tool. It is a new infrastructure layer — the control plane that governs autonomous AI systems.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "The Category We Are Creating: AI Orchestration as Infrastructure",
+    "datePublished": "2026-02-26",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "OCCP is not a tool. It is a new infrastructure layer — the control plane that governs autonomous AI systems.",
+    "url": "https://news.occp.ai/articles/creating-ai-orchestration-category.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-26</span>
+          <span class="card-tag tag-vision">Vision</span>
+        </div>
+        <h1>The Category We Are Creating: AI Orchestration as Infrastructure</h1>
+        <p class="lead">OCCP is not a tool, a framework, or a platform feature. It is a new infrastructure layer. Just as Kubernetes became the control plane for containers, OCCP is building the control plane for AI agents. This article explains the gap we identified, the category we are defining, and why we believe agent orchestration infrastructure will become as fundamental as container orchestration.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Infrastructure Stack Today</h2>
+
+        <p>The modern AI stack has three well-defined layers. At the bottom, model providers (OpenAI, Anthropic, Google, open-source models) supply the intelligence. In the middle, agent frameworks (LangChain, CrewAI, AutoGen, Semantic Kernel) provide the abstractions for building agents: chains, tools, memory, and multi-agent coordination. At the top, applications use these agents to automate workflows, generate content, analyze data, and make decisions.</p>
+
+        <p>This stack has a structural gap. Model providers are responsible for model quality but not for what happens after the API response. Agent frameworks are responsible for building agent logic but not for governing agent behavior in production. Applications are responsible for business logic but not for the security, compliance, and operational properties of the agents they deploy. Nobody is responsible for governing the agent once it is running.</p>
+
+        <pre><code># The AI stack today
++----------------------------+
+|  Applications              |  Business logic, UX
++----------------------------+
+|  Agent Frameworks          |  LangChain, CrewAI, AutoGen
++----------------------------+
+|  ???                       |  WHO GOVERNS THE AGENT?
++----------------------------+
+|  Model Providers           |  OpenAI, Anthropic, Google
++----------------------------+</code></pre>
+
+        <h2>The Kubernetes Parallel</h2>
+
+        <h3>Before Kubernetes</h3>
+
+        <p>In 2013, containers existed (Docker had just launched), and applications existed, but there was no standard way to deploy, scale, monitor, and manage containers in production. Each organization built custom deployment scripts, health check systems, scaling logic, and networking configurations. The container was a powerful primitive, but production operations were bespoke and fragile.</p>
+
+        <h3>What Kubernetes Did</h3>
+
+        <p>Kubernetes did not replace Docker. It did not replace applications. It created a new infrastructure layer between them: the container control plane. This layer provided a standardized API for deployment, service discovery, scaling, health management, resource allocation, and access control. It turned container operations from a custom engineering problem into an infrastructure capability.</p>
+
+        <h3>The Same Gap Exists for AI Agents</h3>
+
+        <p>AI agents in 2026 are where containers were in 2013. The primitive is powerful (LLMs can reason, plan, and act), the frameworks exist (LangChain, CrewAI are mature), but production governance is bespoke. Each organization builds custom logging, custom policy checks, custom access control, custom audit trails. There is no standard control plane for AI agents.</p>
+
+        <pre><code># The AI stack with OCCP
++----------------------------+
+|  Applications              |  Business logic, UX
++----------------------------+
+|  Agent Frameworks          |  LangChain, CrewAI, AutoGen
++----------------------------+
+|  OCCP (Agent Control Plane)|  Governance, audit, policy,
+|                            |  security, compliance
++----------------------------+
+|  Model Providers           |  OpenAI, Anthropic, Google
++----------------------------+</code></pre>
+
+        <h2>Three Types of Solutions, One Missing</h2>
+
+        <h3>Frameworks Build Agents</h3>
+
+        <p>LangChain, CrewAI, AutoGen, and Semantic Kernel are agent frameworks. They provide the abstractions for constructing agent logic: prompt templates, tool integrations, memory systems, and multi-agent coordination patterns. Their job is to make agent development productive. They are not designed to govern agents in production &mdash; that is outside their scope, and deliberately so. A framework that is opinionated about governance limits its adoption.</p>
+
+        <h3>Platforms Run Agents</h3>
+
+        <p>Hosted platforms (LangSmith, AgentOps, various cloud-provider agent services) provide runtime environments for agents. They offer hosting, monitoring, tracing, and sometimes basic access control. Their value is operational: they make it easier to deploy and observe agents. But they are typically coupled to a specific framework or provider, and their governance capabilities are limited to what the platform vendor implements.</p>
+
+        <h3>Nobody Governs Agents</h3>
+
+        <p>There is no standard infrastructure layer that provides: policy-as-code enforcement for agent behavior, immutable audit trails for every agent action, role-based access control for agent capabilities, supply chain verification for agent extensions, PII detection and prompt injection defense, EU AI Act compliance as an architectural property, and sandbox isolation for untrusted code execution. This is the gap OCCP fills.</p>
+
+        <blockquote>Frameworks build agents. Platforms run agents. Control planes govern agents. The first two categories exist. The third is what we are creating.</blockquote>
+
+        <h2>What Makes This Infrastructure, Not a Feature</h2>
+
+        <h3>Infrastructure Is Framework-Agnostic</h3>
+
+        <p>OCCP does not require a specific agent framework. An agent built with LangChain, CrewAI, AutoGen, or raw API calls can be governed by OCCP. The Verified Autonomy Pipeline accepts any task that conforms to its input schema, evaluates it against policies, executes it in a sandbox, validates the output, and records the audit trail. The governance logic does not depend on the agent's implementation details.</p>
+
+        <h3>Infrastructure Is Provider-Agnostic</h3>
+
+        <p>OCCP does not require a specific model provider. The encryption layer protects API tokens for any provider. The policy engine evaluates prompts regardless of which model will process them. The audit chain records actions regardless of whether they involved Claude, GPT, Gemini, or an open-source model. Provider agnosticism is a prerequisite for infrastructure status: infrastructure that only works with one provider is a product feature, not an infrastructure layer.</p>
+
+        <h3>Infrastructure Is Invisible When Working</h3>
+
+        <p>Good infrastructure is invisible. Kubernetes does not require developers to think about container orchestration for every API call. DNS does not require users to think about name resolution for every web request. Similarly, OCCP's governance should be invisible during normal operation: tasks flow through the pipeline, policies are evaluated, audit entries are written, and the application layer never needs to implement governance logic itself. Governance becomes a property of the environment, not a feature of the application.</p>
+
+        <h2>The Position in the Stack</h2>
+
+        <p>OCCP sits between the agent framework and the production environment. It receives tasks from the application layer (which uses any agent framework), subjects them to the Verified Autonomy Pipeline, and delivers results to the application. From the application's perspective, OCCP is a transparent governance layer. From the compliance team's perspective, OCCP is the source of truth for what every agent did, when, and why.</p>
+
+        <p>This position is deliberate. OCCP does not compete with LangChain (it works with LangChain). It does not compete with cloud hosting (it runs on any cloud). It does not compete with model providers (it works with all of them). It competes with the custom governance code that every organization currently writes from scratch, and it offers a standard replacement that is auditable, extensible, and compliance-ready.</p>
+
+        <h2>Why Now</h2>
+
+        <p>Three convergent forces make this the right time for an agent control plane. First, AI agents are moving from demos to production. Enterprises are deploying agents that process real data, make real decisions, and incur real costs. Governance is no longer theoretical. Second, regulation is arriving. The EU AI Act is in force, and similar regulations are emerging in other jurisdictions. Compliance is not optional for enterprises operating in regulated markets. Third, the agent ecosystem is fragmenting. Multiple frameworks, multiple providers, multiple deployment patterns &mdash; the diversity that drives innovation also creates a governance nightmare. A standard control plane reduces this complexity.</p>
+
+        <p>The organizations that adopt agent governance early will have a structural advantage: their agents will be auditable, compliant, and operationally resilient from the beginning. The organizations that bolt on governance later will face the same pain that enterprises experienced adding security to legacy applications &mdash; it is always harder and more expensive to add fundamental properties after the architecture is set.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>A structural gap exists in the AI stack: frameworks build agents, platforms run agents, but nobody governs agents</li>
+          <li>OCCP fills this gap as an agent control plane, analogous to Kubernetes for containers</li>
+          <li>Infrastructure properties: framework-agnostic, provider-agnostic, and invisible when working correctly</li>
+          <li>OCCP does not compete with agent frameworks or model providers &mdash; it complements them</li>
+          <li>Three forces drive timing: production agent adoption, arriving regulation, and ecosystem fragmentation</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="key-rotation-architecture.html">&larr; Key Rotation Architecture</a>
+        <a href="enterprise-agent-governance.html">Enterprise Agent Governance &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

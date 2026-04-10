@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SHA-256 Hash Chains: Building a Tamper-Evident Audit Trail — OCCP News</title>
+  <meta name="description" content="How cryptographic hash chaining creates an immutable record of every AI action — the foundation of trustworthy autonomy.">
+  <meta name="keywords" content="OCCP, SHA-256, hash chain, audit trail, tamper-evident, EU AI Act, compliance">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/sha256-audit-trail.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/sha256-audit-trail.html">
+  <meta property="og:title" content="SHA-256 Hash Chains: Building a Tamper-Evident Audit Trail">
+  <meta property="og:description" content="How cryptographic hash chaining creates an immutable record of every AI action — the foundation of trustworthy autonomy.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2025-11-15">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SHA-256 Hash Chains: Building a Tamper-Evident Audit Trail">
+  <meta name="twitter:description" content="How cryptographic hash chaining creates an immutable record of every AI action — the foundation of trustworthy autonomy.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "SHA-256 Hash Chains: Building a Tamper-Evident Audit Trail",
+    "datePublished": "2025-11-15",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "How cryptographic hash chaining creates an immutable record of every AI action — the foundation of trustworthy autonomy.",
+    "url": "https://news.occp.ai/articles/sha256-audit-trail.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2025-11-15</span>
+          <span class="card-tag tag-security">Security</span>
+          <span class="card-version">v0.1.0</span>
+        </div>
+        <h1>SHA-256 Hash Chains: Building a Tamper-Evident Audit Trail</h1>
+        <p class="lead">Every action in OCCP produces an audit entry. Each entry contains the SHA-256 hash of the previous entry, forming an append-only chain where any modification to historical records is cryptographically detectable. This is how OCCP builds trust in autonomous AI systems.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>Why Simple Logging Is Not Enough</h2>
+
+        <p>Most software systems log events to files or databases. These logs record what happened, when, and sometimes why. For debugging and monitoring, simple logging is sufficient. For governance, it is not.</p>
+
+        <p>The problem with simple logs is that they are mutable. An administrator with database access can modify a log entry, delete entries, or insert fabricated entries. A compromised system can alter its own logs to conceal malicious activity. In a legal or regulatory context, a simple log cannot prove that it has not been tampered with. It can show you what it currently contains, but it cannot prove that its contents are the same as what was originally recorded.</p>
+
+        <blockquote>A log that can be modified without detection is not evidence. It is a narrative that anyone with write access can revise.</blockquote>
+
+        <p>For AI governance, this limitation is critical. When an AI agent takes an action &mdash; sends an email, modifies a database, generates a document &mdash; the audit trail must be able to prove, retroactively, that the recorded action is what actually happened. This is not a theoretical requirement; it is a legal one under frameworks like the EU AI Act.</p>
+
+        <h2>Hash Chain Architecture</h2>
+
+        <p>A hash chain is a sequence of records where each record includes a cryptographic hash of the previous record. This creates a dependency chain: to verify that record N has not been modified, you recompute its hash and compare it to the hash stored in record N+1. To verify the entire chain, you walk it from the beginning, recomputing and comparing hashes at each step.</p>
+
+        <pre><code># Hash chain entry structure
+@dataclass
+class AuditEntry:
+    entry_id: str              # Unique identifier
+    timestamp: str             # ISO 8601 timestamp
+    task_id: str               # Associated task
+    action_type: str           # plan, gate, execute, validate, ship
+    actor: str                 # Agent or user identifier
+    resource: str              # What was acted upon
+    result: str                # Action outcome
+    details: dict              # Stage-specific data
+    previous_hash: str         # SHA-256 hash of previous entry
+    entry_hash: str            # SHA-256 hash of this entry</code></pre>
+
+        <h3>Hash Computation</h3>
+
+        <p>The entry hash is computed over a canonical representation of all fields except the hash itself. This includes the previous hash, which chains the entry to its predecessor. The canonical representation is a deterministic JSON serialization with sorted keys and no whitespace, ensuring that the same data always produces the same hash.</p>
+
+        <pre><code>import hashlib
+import json
+
+def compute_entry_hash(entry: AuditEntry) -> str:
+    """Compute SHA-256 hash of an audit entry."""
+    # Canonical representation: all fields except entry_hash
+    canonical = {
+        "entry_id": entry.entry_id,
+        "timestamp": entry.timestamp,
+        "task_id": entry.task_id,
+        "action_type": entry.action_type,
+        "actor": entry.actor,
+        "resource": entry.resource,
+        "result": entry.result,
+        "details": entry.details,
+        "previous_hash": entry.previous_hash,
+    }
+    # Deterministic serialization
+    serialized = json.dumps(canonical, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()</code></pre>
+
+        <p>SHA-256 was chosen for several reasons: it is a widely-accepted cryptographic hash function with no known practical collision attacks, it is included in Python's standard library (no external dependencies), and it produces a 64-character hexadecimal string that is compact enough for storage and display.</p>
+
+        <h2>Tamper Detection</h2>
+
+        <p>The hash chain enables tamper detection through chain verification. The verification algorithm walks the chain from the genesis entry (the first entry, whose previous hash is a known constant) to the most recent entry, recomputing each hash and comparing it to the stored value.</p>
+
+        <pre><code>def verify_chain(entries: list[AuditEntry]) -> ChainVerification:
+    """Verify the integrity of the entire audit chain."""
+    if not entries:
+        return ChainVerification(valid=True, entries_checked=0)
+
+    # Genesis entry: previous_hash must be the known constant
+    GENESIS_HASH = "0" * 64
+    if entries[0].previous_hash != GENESIS_HASH:
+        return ChainVerification(valid=False, broken_at=0, reason="Invalid genesis")
+
+    for i, entry in enumerate(entries):
+        # Recompute the hash
+        expected_hash = compute_entry_hash(entry)
+        if expected_hash != entry.entry_hash:
+            return ChainVerification(
+                valid=False, broken_at=i,
+                reason=f"Entry {entry.entry_id}: hash mismatch"
+            )
+
+        # Verify chain linkage (except for genesis)
+        if i > 0 and entry.previous_hash != entries[i - 1].entry_hash:
+            return ChainVerification(
+                valid=False, broken_at=i,
+                reason=f"Entry {entry.entry_id}: chain link broken"
+            )
+
+    return ChainVerification(valid=True, entries_checked=len(entries))</code></pre>
+
+        <h3>What Tampering Looks Like</h3>
+
+        <p>If an attacker modifies any field of entry N, its recomputed hash will differ from the stored hash. The verification algorithm detects this immediately. If the attacker also updates entry N's stored hash to match the modified content, the chain breaks at entry N+1, because N+1's previous_hash no longer matches N's hash. To fix this, the attacker would need to update N+1's previous_hash, which changes N+1's content, which changes N+1's hash, which breaks the chain at N+2. The cascade continues to the end of the chain.</p>
+
+        <p>In other words, to tamper with a single entry without detection, the attacker must rewrite every subsequent entry in the chain. This is computationally trivial for a local chain, which is why OCCP's design includes additional tamper-resistance measures: periodic chain snapshots with external hash publication, and support for external witness services in enterprise deployments.</p>
+
+        <h2>Data Stored Per Entry</h2>
+
+        <p>Each audit entry records the complete context of an action in the Verified Autonomy Pipeline:</p>
+
+        <ul>
+          <li><strong>entry_id</strong> &mdash; UUID v4 identifier, unique across the entire audit trail</li>
+          <li><strong>timestamp</strong> &mdash; ISO 8601 UTC timestamp with millisecond precision</li>
+          <li><strong>task_id</strong> &mdash; The task this entry belongs to, linking related entries</li>
+          <li><strong>action_type</strong> &mdash; The pipeline stage: plan, gate_pass, gate_deny, execute, validate_pass, validate_fail, ship</li>
+          <li><strong>actor</strong> &mdash; The agent or user that performed the action</li>
+          <li><strong>resource</strong> &mdash; What was acted upon (model endpoint, file path, API target)</li>
+          <li><strong>result</strong> &mdash; The action outcome (success, failure, denial, with reason)</li>
+          <li><strong>details</strong> &mdash; Stage-specific structured data (policy evaluation results, token usage, validation findings)</li>
+          <li><strong>previous_hash</strong> &mdash; SHA-256 hash of the previous entry in the chain</li>
+          <li><strong>entry_hash</strong> &mdash; SHA-256 hash of this entry's canonical representation</li>
+        </ul>
+
+        <p>A single task typically produces 5-8 audit entries: one for planning, one or more for gate evaluation (one per policy check), one for execution, one for validation, and one for shipping. A denied task produces fewer entries &mdash; the chain records exactly where the pipeline stopped.</p>
+
+        <h2>EU AI Act Compliance</h2>
+
+        <h3>Article 12: Record-Keeping</h3>
+
+        <p>Article 12 of the EU AI Act requires high-risk AI systems to have "automatic recording of events" that enables tracing the system's operation throughout its lifecycle. The OCCP audit chain directly implements this requirement. Every action, from task submission through result delivery, is automatically recorded with a complete data set that enables reconstruction of the system's decision process.</p>
+
+        <h3>What Article 12 Requires</h3>
+
+        <p>The regulation specifies that records must include: the identification of the AI system and its version, dates and times of operation, input data that triggered the system's operation, the system's output, and the persons involved in the operation. The OCCP audit entry structure maps directly to these requirements: <code>entry_id</code> and <code>actor</code> for identification, <code>timestamp</code> for dates and times, <code>details</code> for input data, <code>result</code> for output, and the task chain for operational reconstruction.</p>
+
+        <h3>Tamper Evidence as a Compliance Feature</h3>
+
+        <p>While Article 12 does not explicitly require tamper-evident logging, the integrity of audit records is implicitly required for their evidentiary value. A record that cannot prove it has not been modified has limited value in a regulatory investigation. The SHA-256 hash chain provides the mathematical guarantee that records are unmodified since creation, strengthening the evidentiary value of the audit trail for regulatory compliance and legal proceedings.</p>
+
+        <h2>Performance Characteristics</h2>
+
+        <p>SHA-256 computation is fast: hashing a typical audit entry (1-5 KB of canonical JSON) takes microseconds on modern hardware. The hash chain adds negligible overhead to pipeline execution. Chain verification, which walks the entire chain, scales linearly with the number of entries. For the expected audit volume (thousands to tens of thousands of entries per day), full-chain verification completes in milliseconds. For very large chains, incremental verification (checking only new entries since the last verified point) reduces verification time to constant regardless of total chain length.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Simple logs are mutable and cannot prove they have not been tampered with &mdash; insufficient for governance</li>
+          <li>Each audit entry contains the SHA-256 hash of the previous entry, forming a tamper-evident chain</li>
+          <li>Modifying any entry requires rewriting every subsequent entry &mdash; tampering is detectable through chain verification</li>
+          <li>Entries record: timestamp, task ID, action type, actor, resource, result, details, and hash linkage</li>
+          <li>The hash chain directly supports EU AI Act Article 12 record-keeping requirements</li>
+          <li>SHA-256 computation adds microseconds of overhead per entry &mdash; negligible performance impact</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="policy-engine-governance.html">&larr; Inside the Policy Engine</a>
+        <a href="agent-scheduling-concurrency.html">Agent Scheduling and Concurrency &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,265 @@
+version: 1
+generated: 2026-04-08
+schema: occp.architecture.issue_registry.v1
+
+# Architectural Issue Registry — known concerns, technical debt, hotspots.
+# The proposal generator reads this file + metrics anomalies + critiques
+# to produce ranked redesign candidates.
+#
+# Each issue has:
+#   id:            stable identifier (e.g. "ISS-001")
+#   title:         short description
+#   category:      performance | reliability | security | maintainability | scalability | debt
+#   severity:      info | low | medium | high | critical
+#   status:        open | in_progress | resolved | wontfix
+#   affected_paths: list of files/modules
+#   evidence:      how we know this is an issue
+#   suggested_fix: minimum professional solution outline
+#   risk_of_fix:   low | medium | high
+#   introduced_in: version or commit where detected
+
+issues:
+
+  - id: ISS-001
+    title: brain_flow dispatch does not actually run pipeline.run()
+    category: reliability
+    severity: medium
+    status: open
+    affected_paths:
+      - orchestrator/brain_flow.py
+    evidence: |
+      Pipeline metrics counter stays at 0 after /brain/message reaches DISPATCH phase.
+      _dispatch_tasks() in brain_flow.py only generates task_ids and returns a
+      message — no pipeline.run() is awaited. Only voice_handler and explicit
+      /pipeline/run/{task_id} calls actually execute tasks.
+    suggested_fix: |
+      Add a proper dispatcher: for each task in plan.steps, create a Task,
+      persist, then await pipeline.run(task). Ensure chat_id is in task.metadata
+      so voice-style replies work.
+    risk_of_fix: medium  # touches the main conversation loop
+    introduced_in: v0.8.0
+    detected_in: v0.10.0
+
+  - id: ISS-002
+    title: No persistence for feature flags
+    category: maintainability
+    severity: low
+    status: resolved
+    affected_paths:
+      - evaluation/feature_flags.py
+    evidence: |
+      FeatureFlagStore was in-memory only. Flags reset on every API restart.
+    suggested_fix: |
+      Atomic JSON write to data/feature_flags.json on every set/delete with
+      corrupt-file fallback to defaults. Env override OCCP_FEATURE_FLAG_STORE.
+      DB-backed store deferred to v0.11.0 if scale demands it.
+    risk_of_fix: low
+    introduced_in: v0.10.0
+    detected_in: v0.10.0
+    resolved_in: v0.10.0-maxstate
+    resolution_commit: a13c24a
+
+  - id: ISS-003
+    title: replay_harness.run() is a stub
+    category: reliability
+    severity: medium
+    status: resolved
+    affected_paths:
+      - evaluation/replay_harness.py
+    evidence: |
+      run() returned a ReplayResult with outcome="skipped" and improvements
+      listing "stub". No real execution happened.
+    suggested_fix: |
+      Real deterministic run() implemented: takes async candidate (callable
+      or ReplayCandidate protocol), compares stages/outcome/output/duration
+      against baseline, produces regressions + improvements. 21 tests cover
+      stable/slow/regressed/raising candidates + run_all batch mode.
+    risk_of_fix: low
+    introduced_in: v0.10.0
+    detected_in: v0.10.0
+    resolved_in: v0.10.0-l6-completion
+    resolution_commit: b1c6957
+
+  - id: ISS-004
+    title: MCP bridge audit writes disabled (shared-session race)
+    category: maintainability
+    severity: low
+    status: resolved
+    affected_paths:
+      - adapters/mcp_bridge.py
+    evidence: |
+      Concurrent bridge dispatches to audit_store caused
+      sqlalchemy.exc.PendingRollbackError due to shared session. Fixed by
+      replacing background audit tasks with structured logger calls.
+    suggested_fix: |
+      Use a dedicated audit session per bridge write. Implement in v0.11.0
+      when DB-backed audit has a connection pool option.
+    risk_of_fix: medium
+    introduced_in: v0.9.0
+    detected_in: v0.9.0
+    resolved_in: v0.9.0
+
+  - id: ISS-005
+    title: Governance documented but not runtime-enforced
+    category: security
+    severity: medium
+    status: resolved
+    affected_paths:
+      - architecture/governance.yaml
+      - architecture/boundaries.yaml
+      - evaluation/self_modifier.py
+    evidence: |
+      Prior to v0.10.0 completion, governance.yaml defined boundaries but
+      no runtime component verified them before proposed edits.
+    suggested_fix: |
+      Implement evaluation/self_modifier.py that reads boundaries.yaml
+      and validates every proposed path with fail-secure defaults.
+    risk_of_fix: low  # pure validator, no edits
+    introduced_in: v0.10.0
+    detected_in: v0.10.0
+    resolved_in: v0.10.0
+
+  - id: ISS-006
+    title: Observability produces raw metrics but no interpretation
+    category: maintainability
+    severity: medium
+    status: resolved
+    affected_paths:
+      - observability/metrics_collector.py
+      - observability/anomaly_detector.py
+      - observability/behavior_digest.py
+    evidence: |
+      Prior to v0.10.0 completion, /observability/metrics returned Prometheus
+      text but no anomaly or digest endpoint existed — operators had to parse
+      raw data manually.
+    suggested_fix: |
+      Add AnomalyDetector + BehaviorDigestGenerator with /observability/anomalies
+      and /observability/digest endpoints.
+    risk_of_fix: low  # read-only interpretation
+    introduced_in: v0.10.0
+    detected_in: v0.10.0
+    resolved_in: v0.10.0
+
+  - id: ISS-007
+    title: No automated issue→proposal flow
+    category: maintainability
+    severity: low
+    status: resolved
+    affected_paths:
+      - architecture/issue_registry.yaml
+      - evaluation/proposal_generator.py
+      - .planning/rfc/
+    evidence: |
+      Issues were tracked only in prose. No mechanism to generate RFC
+      candidates from known architectural issues.
+    suggested_fix: |
+      Add issue_registry.yaml (this file) + proposal_generator.py that
+      reads issues + metrics + anomalies and generates RFC candidates.
+    risk_of_fix: low  # pure read + markdown write
+    introduced_in: v0.10.0
+    detected_in: v0.10.0
+    resolved_in: v0.10.0
+
+  - id: ISS-008
+    title: Telegram reply via brain_flow does not include OpenClaw final text
+    category: reliability
+    severity: low
+    status: resolved
+    affected_paths:
+      - adapters/voice_handler.py
+    evidence: |
+      Text messages were routed through BrainFlow which produced a generic
+      stock plan template ("Terv kész! Indíthatom?") for every input,
+      regardless of content. Voice messages went through the rich pipeline.
+    suggested_fix: |
+      Bypass BrainFlow for text unless explicit trigger keywords present
+      ("tervezz", "feladat:", "<directive>", "brainflow:"). Default path is
+      intent_router → pipeline.run() → OpenClaw, same as voice. BrainFlow
+      reserved for explicit multi-phase planning requests.
+    risk_of_fix: low
+    introduced_in: v0.9.0
+    detected_in: v0.10.0-maxstate
+    resolved_in: v0.10.0-maxstate
+
+  - id: ISS-009
+    title: Telegram bot required Brian prefix in owner DM context
+    category: maintainability
+    severity: low
+    status: resolved
+    affected_paths:
+      - adapters/telegram_voice_bot.py
+    evidence: |
+      The text path required "Brian:" case-insensitive prefix; plain text
+      without prefix was silently ignored. In owner-DM context this is
+      redundant because owner_chat_id already authenticates sender.
+    suggested_fix: |
+      Owner DM bypass: if chat_id == owner_chat_id, accept any text and
+      still strip optional Brian:/Brain: prefix. Group chats keep the
+      strict prefix rule.
+    risk_of_fix: low
+    introduced_in: v0.9.0
+    detected_in: v0.10.0-maxstate
+    resolved_in: v0.10.0-maxstate
+
+  - id: ISS-010
+    title: Model routing not cost-optimized (single-tier Sonnet for everything)
+    category: performance
+    severity: low
+    status: open
+    affected_paths:
+      - adapters/multi_llm_planner.py
+      - adapters/claude_planner.py
+    evidence: |
+      All tasks currently route to anthropic claude-sonnet-4-6. 2026 best
+      practice is 70/20/10 split (Haiku 4.5 / Sonnet 4.6 / Opus 4.6) which
+      cuts cost by 60%. Prompt caching provides additional 90% savings on
+      repeated system prompts.
+    suggested_fix: |
+      Phase 1: enable prompt caching via feature flag l6.llm.prompt_caching
+      Phase 2: tier-based router (intent.risk_level → model)
+        low/status_check → Haiku 4.5
+        medium/general   → Sonnet 4.6 (current default)
+        high/critical    → Opus 4.6
+      Phase 3: Batch API for non-realtime (50% discount)
+    risk_of_fix: medium  # touches LLM planner path
+    introduced_in: v0.9.0
+    detected_in: v0.10.0-maxstate
+
+  - id: ISS-011
+    title: Prompt caching not enabled despite large stable system prompts
+    category: performance
+    severity: info
+    status: open
+    affected_paths:
+      - adapters/claude_planner.py
+    evidence: |
+      ClaudePlanner generates 500-800 token plans per call. System prompt is
+      stable across calls. Prompt caching would give 90% savings on cached
+      tokens per 2026 Anthropic pricing.
+    suggested_fix: |
+      Add cache_control={"type": "ephemeral"} to stable prompt blocks in
+      ClaudePlanner. Gate via feature flag. Measure hit rate via metrics.
+    risk_of_fix: low
+    introduced_in: v0.9.0
+    detected_in: v0.10.0-maxstate
+
+
+# Ranking configuration — used by proposal_generator.py
+ranking:
+  severity_weight:
+    critical: 10
+    high: 5
+    medium: 3
+    low: 1
+    info: 0
+  risk_penalty:
+    low: 0
+    medium: -1
+    high: -3
+  category_boost:
+    security: 2
+    reliability: 2
+    performance: 1
+    maintainability: 0
+    scalability: 0
+    debt: 0

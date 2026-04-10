@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JWT Authentication Architecture for AI Control Planes — OCCP News</title>
+  <meta name="description" content="Token-based authentication design for AI platforms — balancing security, performance, and developer experience.">
+  <meta name="keywords" content="OCCP, JWT, authentication, bcrypt, RBAC, token security, AI platform">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/jwt-auth-architecture.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/jwt-auth-architecture.html">
+  <meta property="og:title" content="JWT Authentication Architecture for AI Control Planes">
+  <meta property="og:description" content="Token-based authentication design for AI platforms — balancing security, performance, and developer experience.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2025-12-08">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="JWT Authentication Architecture for AI Control Planes">
+  <meta name="twitter:description" content="Token-based authentication design for AI platforms — balancing security, performance, and developer experience.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "JWT Authentication Architecture for AI Control Planes",
+    "datePublished": "2025-12-08",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Token-based authentication design for AI platforms — balancing security, performance, and developer experience.",
+    "url": "https://news.occp.ai/articles/jwt-auth-architecture.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2025-12-08</span>
+          <span class="card-tag tag-security">Security</span>
+          <span class="card-version">v0.2.0</span>
+        </div>
+        <h1>JWT Authentication Architecture for AI Control Planes</h1>
+        <p class="lead">OCCP's authentication layer uses JSON Web Tokens to identify users and embed role claims in every API request. This article details the JWT design decisions: why tokens over sessions, how the token structure supports RBAC, bcrypt password hashing configuration, token expiration strategy, and how the auth middleware validates requests at the gateway level.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>Why JWT Over Sessions</h2>
+
+        <p>Session-based authentication stores user state on the server: a session ID in a cookie maps to a server-side record containing user identity and permissions. JWT authentication stores user state in the token itself: the token payload contains the user identity and role, signed by the server's secret key.</p>
+
+        <p>For traditional web applications, sessions work well. But AI control planes have characteristics that favor JWT:</p>
+
+        <h3>SDK-Native Authentication</h3>
+
+        <p>OCCP is accessed through three channels: the CLI, the Python SDK, and the TypeScript SDK. Sessions require cookies, which are a browser mechanism. The CLI and Python SDK do not run in browsers. They can set cookie headers manually, but this feels unnatural and requires cookie jar management (persistence, domain scoping, expiration tracking). JWTs are bearer tokens: set the <code>Authorization</code> header and the request is authenticated. Every HTTP client supports this pattern natively.</p>
+
+        <pre><code># Python SDK — JWT authentication is natural
+import urllib.request
+
+token = "eyJhbGciOiJIUzI1NiIs..."
+request = urllib.request.Request(
+    url="https://api.occp.ai/api/v1/tasks",
+    headers={"Authorization": f"Bearer {token}"},
+    data=json.dumps(task_data).encode(),
+    method="POST"
+)
+
+# Compare with session-based — requires cookie management
+# session_id = login_response.headers["Set-Cookie"]
+# ... parse cookie, store in jar, handle expiration, re-authenticate ...</code></pre>
+
+        <h3>Stateless Verification</h3>
+
+        <p>Session validation requires a server-side lookup: the session store (database, Redis, in-memory cache) must be queried on every request. For an AI platform processing long-running pipeline executions, the session lookup adds a database round-trip to every API call. JWT validation is a local operation: the server verifies the token's signature against its secret key and checks the expiration claim. No database query is required. This makes JWT validation both faster and more resilient &mdash; a database outage does not prevent authentication.</p>
+
+        <h3>Horizontal Scalability</h3>
+
+        <p>When multiple API server instances handle requests behind a load balancer, session-based authentication requires a shared session store. Without it, a request authenticated on instance A will be unauthenticated on instance B. JWT tokens are verified independently by each instance using the shared secret key, requiring no inter-instance communication. This simplifies horizontal scaling for production deployments.</p>
+
+        <h2>Token Structure</h2>
+
+        <p>A JWT consists of three parts: a header specifying the algorithm, a payload containing claims, and a signature verifying integrity. OCCP's token structure includes the following claims:</p>
+
+        <pre><code>// JWT Header
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+
+// JWT Payload
+{
+  "sub": "usr_7f3a2e1d",          // Subject: user ID
+  "role": "operator",              // User role for RBAC
+  "exp": 1733443200,               // Expiration: Unix timestamp
+  "iat": 1733356800,               // Issued at: Unix timestamp
+  "iss": "occp-api"                // Issuer: OCCP API server
+}
+
+// JWT Signature
+HMACSHA256(
+  base64UrlEncode(header) + "." + base64UrlEncode(payload),
+  secret_key
+)</code></pre>
+
+        <h3>The sub Claim</h3>
+
+        <p>The <code>sub</code> (subject) claim contains the user's unique identifier, prefixed with <code>usr_</code> for type disambiguation. This ID maps to the user record in the database and is used for audit trail attribution. When an AI task is submitted through the API, the audit entry records the <code>sub</code> claim as the actor, creating a direct link between the authenticated user and the actions they initiated.</p>
+
+        <h3>The role Claim</h3>
+
+        <p>The <code>role</code> claim embeds the user's authorization level directly in the token. In v0.2.0, OCCP defines two roles: <code>admin</code> (full platform access including user management) and <code>operator</code> (task submission, status queries, and audit trail access). The role claim is the foundation for the Casbin RBAC system introduced in v0.7.0, which expands the role hierarchy to four levels: admin, operator, viewer, and auditor.</p>
+
+        <p>Embedding the role in the token means that authorization checks do not require a database lookup. The middleware extracts the role from the token payload and compares it against the endpoint's required role. This is particularly important for the audit endpoint, which may be called frequently by monitoring systems &mdash; each call requires authentication and authorization, and database lookups for every call would create unnecessary load.</p>
+
+        <h3>The exp and iat Claims</h3>
+
+        <p>Token expiration (<code>exp</code>) is set to 24 hours after issuance (<code>iat</code>). This balance reflects the operational reality of AI platform usage: developers and operators interact with the platform throughout the workday, and requiring re-authentication every hour would create friction. The 24-hour window allows a full working day of uninterrupted access while limiting the exposure window if a token is compromised.</p>
+
+        <blockquote>Token expiry is a trade-off between security and usability. Shorter expiry reduces the window of compromise but increases authentication friction. For an AI control plane, where operators need sustained access during long-running tasks, 24 hours provides the right balance.</blockquote>
+
+        <h2>bcrypt Password Hashing</h2>
+
+        <p>User passwords are stored as bcrypt hashes with a work factor of 12 (2^12 = 4,096 iterations). bcrypt was chosen over alternatives for specific cryptographic properties:</p>
+
+        <ul>
+          <li><strong>Adaptive cost</strong> &mdash; The work factor can be increased as hardware improves, maintaining resistance against brute-force attacks without changing the algorithm</li>
+          <li><strong>Built-in salt</strong> &mdash; bcrypt generates and stores a random salt with each hash, preventing rainbow table attacks and ensuring identical passwords produce different hashes</li>
+          <li><strong>Deliberate slowness</strong> &mdash; At 12 rounds, bcrypt takes approximately 250ms per hash on modern hardware. This is imperceptible during login but makes brute-force attacks (millions of attempts) computationally prohibitive</li>
+        </ul>
+
+        <pre><code>import bcrypt
+
+class PasswordService:
+    ROUNDS = 12
+
+    @staticmethod
+    def hash(password: str) -> str:
+        """Hash a password with bcrypt.
+        Returns the hash as a string for database storage."""
+        salt = bcrypt.gensalt(rounds=PasswordService.ROUNDS)
+        return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
+
+    @staticmethod
+    def verify(password: str, stored_hash: str) -> bool:
+        """Verify a password against a stored bcrypt hash."""
+        return bcrypt.checkpw(
+            password.encode("utf-8"),
+            stored_hash.encode("utf-8")
+        )</code></pre>
+
+        <p>The password is never stored, logged, or transmitted in plaintext after initial receipt. The login endpoint receives the password over HTTPS, verifies it against the stored hash, and discards it. The JWT token returned to the client does not contain the password or hash.</p>
+
+        <h2>Auth Middleware Architecture</h2>
+
+        <p>The auth middleware intercepts every API request before it reaches the endpoint handler. The middleware performs four steps in sequence:</p>
+
+        <ol>
+          <li><strong>Header extraction</strong> &mdash; Extract the <code>Authorization</code> header and verify it follows the <code>Bearer {token}</code> format. Missing or malformed headers produce a 401 response.</li>
+          <li><strong>Signature verification</strong> &mdash; Decode the JWT and verify its HMAC-SHA256 signature against the server's secret key. Invalid signatures (indicating a forged or corrupted token) produce a 401 response.</li>
+          <li><strong>Expiration check</strong> &mdash; Verify that the current time is before the token's <code>exp</code> claim. Expired tokens produce a 401 response with a message indicating token expiry.</li>
+          <li><strong>Context injection</strong> &mdash; Extract the <code>sub</code> and <code>role</code> claims and inject them into the request context, making them available to endpoint handlers for authorization checks and audit attribution.</li>
+        </ol>
+
+        <pre><code>from fastapi import Request, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import jwt
+
+class JWTMiddleware:
+    def __init__(self, secret_key: str):
+        self.secret_key = secret_key
+        self.scheme = HTTPBearer()
+
+    async def authenticate(self, request: Request) -> dict:
+        credentials: HTTPAuthorizationCredentials = await self.scheme(request)
+        token = credentials.credentials
+
+        try:
+            payload = jwt.decode(
+                token,
+                self.secret_key,
+                algorithms=["HS256"],
+                options={"require": ["sub", "role", "exp", "iat"]}
+            )
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail="Token has expired")
+        except jwt.InvalidTokenError:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        return {
+            "user_id": payload["sub"],
+            "role": payload["role"],
+        }</code></pre>
+
+        <h3>Public Endpoints</h3>
+
+        <p>Two endpoints are exempt from authentication: the healthcheck endpoint (<code>/api/v1/health</code>), which must be accessible to Docker healthcheck probes and load balancer health monitors, and the login endpoint (<code>/api/v1/auth/login</code>), which is how unauthenticated users obtain a token. All other endpoints require a valid JWT.</p>
+
+        <h2>Role-Based Access Control Foundation</h2>
+
+        <p>The <code>role</code> claim in the JWT payload provides the foundation for role-based access control. In v0.2.0, the implementation is simple: endpoint handlers check the role claim against a required role. In later versions, this evolves into a full Casbin RBAC system with policy definitions, but the JWT role claim remains the source of identity.</p>
+
+        <pre><code># Role check in endpoint handler
+@app.post("/api/v1/users")
+async def create_user(
+    user_data: UserCreate,
+    auth: dict = Depends(jwt_middleware.authenticate)
+):
+    if auth["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+    # ... create user logic</code></pre>
+
+        <p>This pattern &mdash; extract role from token, check against required role, deny if insufficient &mdash; is repeated at every protected endpoint. The Casbin integration in v0.7.0 replaces these inline checks with policy-based evaluation, but the JWT token remains the identity source. The token tells OCCP <em>who</em> is making the request and <em>what role</em> they hold; the authorization system decides what that role is <em>allowed to do</em>.</p>
+
+        <h2>Security Considerations</h2>
+
+        <p>JWT authentication has known limitations that OCCP addresses through complementary measures. Token revocation is not natively supported by JWT (the token is valid until it expires, even if the user's account is disabled). OCCP mitigates this with short expiration windows and a server-side token blocklist for emergency revocations. Token theft (if an attacker obtains a valid token) is mitigated by HTTPS enforcement (tokens are never transmitted over unencrypted connections) and the 24-hour expiration window. Secret key compromise (if the signing key is leaked) would allow token forgery; this is mitigated by the key rotation architecture introduced in v0.8.2.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>JWT chosen over sessions for SDK compatibility, stateless verification, and horizontal scalability</li>
+          <li>Token payload includes sub (user ID), role (RBAC), exp (24h expiry), and iat (issuance time)</li>
+          <li>bcrypt with 12 rounds for password hashing &mdash; ~250ms per hash, resistant to brute-force attacks</li>
+          <li>Auth middleware performs 4-step validation: header extraction, signature check, expiry check, context injection</li>
+          <li>Role claim in JWT is the foundation for RBAC &mdash; no database lookup needed for authorization</li>
+          <li>Known JWT limitations addressed with token blocklist, HTTPS enforcement, and key rotation support</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="occp-v020-production-ready.html">&larr; OCCP v0.2.0: Production-Ready</a>
+        <span>&nbsp;</span>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

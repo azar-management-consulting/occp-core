@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EU AI Act Compliance: Article 12, 14, and 19 in Practice — OCCP News</title>
+  <meta name="description" content="How OCCP implements the three most critical EU AI Act requirements: record-keeping, human oversight, and log retention through architectural design.">
+  <meta name="keywords" content="OCCP, EU AI Act, Article 12, Article 14, Article 19, AI compliance, record-keeping, human oversight, log retention">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/eu-ai-act-compliance.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/eu-ai-act-compliance.html">
+  <meta property="og:title" content="EU AI Act Compliance: Article 12, 14, and 19 in Practice">
+  <meta property="og:description" content="How OCCP implements the three most critical EU AI Act requirements: record-keeping, human oversight, and log retention through architectural design.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-25">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="EU AI Act Compliance: Article 12, 14, and 19 in Practice">
+  <meta name="twitter:description" content="How OCCP implements the three most critical EU AI Act requirements: record-keeping, human oversight, and log retention through architectural design.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "EU AI Act Compliance: Article 12, 14, and 19 in Practice",
+    "datePublished": "2026-02-25",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "How OCCP implements the three most critical EU AI Act requirements: record-keeping, human oversight, and log retention through architectural design.",
+    "url": "https://news.occp.ai/articles/eu-ai-act-compliance.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-25</span>
+          <span class="card-tag tag-governance">Governance</span>
+          <span class="card-version">v0.8.2</span>
+        </div>
+        <h1>EU AI Act Compliance: Article 12, 14, and 19 in Practice</h1>
+        <p class="lead">The EU AI Act is the world's first comprehensive AI regulation. For AI orchestration platforms, three articles carry the most immediate implementation requirements: Article 12 on record-keeping, Article 14 on human oversight, and Article 19 on log retention. This article examines how OCCP implements each requirement as an architectural feature rather than a compliance afterthought.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>Compliance as Architecture, Not Configuration</h2>
+
+        <p>Most organizations approach regulatory compliance as a layer added on top of existing systems. A compliance team writes policies, an engineering team implements logging and reporting tools, and an audit team periodically checks that the two align. This approach fails for AI systems for a fundamental reason: AI operations happen at machine speed, with machine-generated decisions, across machine-managed workflows. Human-speed compliance processes cannot keep pace with machine-speed operations.</p>
+
+        <p>OCCP takes a different approach. Compliance requirements are implemented as architectural invariants &mdash; structural properties of the system that cannot be circumvented without modifying the code itself. This distinction matters: a compliance feature that can be disabled by a configuration change is a feature. A compliance property that is embedded in the execution pipeline is an invariant.</p>
+
+        <blockquote>If compliance can be turned off with a configuration flag, it will be turned off during the incident that most needs it.</blockquote>
+
+        <h2>Article 12: Record-Keeping</h2>
+
+        <h3>What the Regulation Requires</h3>
+
+        <p>Article 12 of the EU AI Act requires that high-risk AI systems have "automatic recording of events" (logging) that enables monitoring of the system's operation. The logs must be sufficient to identify situations that may result in the system presenting a risk, and to facilitate post-market monitoring. Specifically, the regulation requires that logs capture the period of use, the input data, the reference database against which input data is checked, and the natural persons responsible for verification of results.</p>
+
+        <h3>OCCP's Implementation: SHA-256 Audit Chain</h3>
+
+        <p>OCCP implements Article 12 through its SHA-256 hash-chained audit log. Every action in the Verified Autonomy Pipeline produces an audit entry containing: the task identifier, the stage (Plan, Gate, Execute, Validate, Ship), the input to the stage, the output of the stage, the decision made (approved, denied, modified), the policy rules that were evaluated, the agent involved, the timestamp, and a SHA-256 hash linking this entry to the previous entry in the chain.</p>
+
+        <pre><code># Audit entry structure
+{
+    "entry_id": "aud_20260225_001",
+    "prev_hash": "sha256:9f86d0...",
+    "timestamp": "2026-02-25T10:30:00Z",
+    "stage": "gate",
+    "task_id": "tsk_abc123",
+    "agent_id": "agent_text_01",
+    "action": "policy_evaluation",
+    "input_summary": "text_analysis task, 1200 tokens",
+    "decision": "approved",
+    "policies_evaluated": [
+        {"policy": "pii_detection", "result": "pass"},
+        {"policy": "injection_guard", "result": "pass"},
+        {"policy": "token_budget", "result": "pass"}
+    ],
+    "entry_hash": "sha256:7c211a..."
+}</code></pre>
+
+        <h3>Hash Chain Integrity</h3>
+
+        <p>The hash chain ensures that audit entries cannot be modified or deleted retroactively. Each entry's hash is computed over the entry contents plus the previous entry's hash, creating a cryptographic chain. If any entry in the chain is modified, all subsequent hashes become invalid. This property satisfies Article 12's implicit requirement that logs be trustworthy: a log that can be silently altered by an administrator does not constitute a reliable record of events.</p>
+
+        <h2>Article 14: Human Oversight</h2>
+
+        <h3>What the Regulation Requires</h3>
+
+        <p>Article 14 requires that high-risk AI systems are designed to allow "effective oversight by natural persons" during the period of use. The oversight measures must enable the human overseer to understand the AI system's capabilities and limitations, monitor its operation, and be able to intervene in the system's operation, including by stopping it.</p>
+
+        <h3>OCCP's Implementation: The Gate Stage</h3>
+
+        <p>The Gate stage in the Verified Autonomy Pipeline is OCCP's primary mechanism for human oversight. For tasks classified as high-risk or critical, the Gate stage pauses execution and requests human approval before proceeding. The human reviewer sees the task plan, the risk classification, the policy evaluation results, and the estimated resource requirements. They can approve the task, deny it, or modify the plan before execution.</p>
+
+        <pre><code># Gate stage with human-in-the-loop for high-risk tasks
+async def gate_evaluate(task: Task, plan: TaskPlan) -> GateResult:
+    # Automated policy checks run first
+    policy_result = evaluate_policies(task, plan)
+    if policy_result.denied:
+        return policy_result
+
+    # Human approval required for high/critical risk
+    if plan.risk_level in ("high", "critical"):
+        approval = await request_human_approval(
+            task_id=task.task_id,
+            plan=plan,
+            policy_results=policy_result,
+            timeout_hours=24
+        )
+        if not approval.approved:
+            audit_log("GATE_HUMAN_DENIED", task, approval.reason)
+            return GateResult(
+                allowed=False,
+                reason=f"Human reviewer denied: {approval.reason}"
+            )
+        audit_log("GATE_HUMAN_APPROVED", task, approval.reviewer_id)
+
+    return GateResult(allowed=True)</code></pre>
+
+        <h3>Risk-Based Oversight</h3>
+
+        <p>Not every task requires human approval. OCCP implements risk-based oversight: low-risk tasks proceed through automated policy checks only, medium-risk tasks proceed with automated checks and generate a notification to human overseers, high-risk tasks require explicit human approval before execution, and critical-risk tasks require approval from two independent reviewers. This graduated approach satisfies Article 14 without creating a bottleneck where every trivial task requires human intervention.</p>
+
+        <h3>The Stop Button</h3>
+
+        <p>Article 14 specifically requires the ability to stop the AI system. OCCP implements this through multiple mechanisms: task cancellation (stop a specific running task), agent suspension (immediately halt all tasks for a specific agent), pipeline pause (halt the entire orchestration pipeline), and emergency shutdown (terminate all running processes). Each mechanism is available through both the API and the dashboard, and each action is recorded in the audit chain.</p>
+
+        <h2>Article 19: Log Retention</h2>
+
+        <h3>What the Regulation Requires</h3>
+
+        <p>Article 19 requires that logs generated by high-risk AI systems are "kept for a period that is appropriate in view of the intended purpose of the high-risk AI system and applicable legal obligations." While the regulation does not specify an exact retention period, common interpretations and national implementations suggest a minimum of one year for most use cases, with longer periods for safety-critical applications.</p>
+
+        <h3>OCCP's Implementation: Startup-Time Enforcement</h3>
+
+        <p>OCCP enforces log retention policies at application startup. Before the platform begins serving requests, the startup sequence verifies that all audit logs meet the configured retention requirements. The default retention period is 365 days. Logs within the retention period are verified for hash chain integrity. Logs past the retention period are archived (not deleted) to a configured archive storage location.</p>
+
+        <pre><code># Startup retention enforcement
+async def enforce_retention_on_startup(
+    retention_days: int = 365
+) -> RetentionResult:
+    """Run at application startup before serving requests."""
+    cutoff = datetime.utcnow() - timedelta(days=retention_days)
+
+    # Verify active logs
+    active_count = await count_audit_entries_after(cutoff)
+    chain_valid = await verify_hash_chain_integrity()
+
+    # Archive expired entries
+    expired = await get_audit_entries_before(cutoff)
+    if expired:
+        archived = await archive_entries(expired)
+        audit_log("RETENTION_ARCHIVE", count=len(archived))
+
+    return RetentionResult(
+        active_entries=active_count,
+        chain_integrity=chain_valid,
+        archived_entries=len(expired)
+    )</code></pre>
+
+        <h3>Archive, Not Delete</h3>
+
+        <p>OCCP never deletes audit logs. Entries past the retention period are moved to archive storage, which can be a separate database, object storage (S3-compatible), or a filesystem location. Archived entries retain their hash chain links, so the complete audit history can be reconstructed if needed for a regulatory investigation. The distinction between "active" and "archived" is a performance optimization, not a data destruction mechanism.</p>
+
+        <h3>Retention Verification in Health Checks</h3>
+
+        <p>The retention enforcement is not limited to startup. OCCP's health check endpoint includes a retention status indicator that reports whether the platform is in compliance with its configured retention policy. If the retention verification fails (corrupted entries, missing chain links, archive failures), the health check reports a degraded state. Monitoring systems can alert on this degradation, ensuring that retention compliance issues are detected before they become audit findings.</p>
+
+        <h2>Cross-Article Integration</h2>
+
+        <p>The three articles work together in OCCP's architecture. Article 12 (record-keeping) provides the data that Article 14 (human oversight) presents to human reviewers for decision-making. Article 14 decisions are themselves recorded per Article 12 requirements. Article 19 (retention) ensures that the records required by Article 12 and the oversight decisions required by Article 14 are preserved for the legally mandated period. No article can function effectively without the other two.</p>
+
+        <p>This integration is a consequence of implementing compliance as architecture. When compliance features are bolted on separately, they tend to operate in isolation: the logging system does not know about the approval workflow, and the retention system does not know about the logging format. When compliance is architectural, the features share data structures, execution paths, and enforcement mechanisms.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Article 12 (Record-keeping): implemented through SHA-256 hash-chained audit logs that capture every pipeline action</li>
+          <li>Article 14 (Human oversight): implemented through the Gate stage with risk-based approval requirements</li>
+          <li>Article 19 (Log retention): implemented through startup-time enforcement with configurable retention periods</li>
+          <li>Compliance is architectural (invariants in the pipeline), not configurational (flags that can be disabled)</li>
+          <li>Audit logs are archived, never deleted, preserving hash chain integrity for regulatory investigations</li>
+          <li>The three articles are integrated: record-keeping feeds oversight, oversight decisions are recorded, retention preserves both</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="agent-boundary-enforcement.html">&larr; Agent Boundary Enforcement</a>
+        <a href="audit-retention-engineering.html">Audit Retention Engineering &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

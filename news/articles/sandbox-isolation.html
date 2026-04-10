@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sandbox Isolation: nsjail, Bubblewrap, and Defense in Depth — OCCP News</title>
+  <meta name="description" content="Three-tier sandbox architecture with automatic fallback — isolating AI-generated code execution from the host system.">
+  <meta name="keywords" content="OCCP, sandbox, nsjail, bubblewrap, code isolation, seccomp, namespace isolation, AI security">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/sandbox-isolation.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/sandbox-isolation.html">
+  <meta property="og:title" content="Sandbox Isolation: nsjail, Bubblewrap, and Defense in Depth">
+  <meta property="og:description" content="Three-tier sandbox architecture with automatic fallback — isolating AI-generated code execution from the host system.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-11">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Sandbox Isolation: nsjail, Bubblewrap, and Defense in Depth">
+  <meta name="twitter:description" content="Three-tier sandbox architecture with automatic fallback — isolating AI-generated code execution from the host system.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Sandbox Isolation: nsjail, Bubblewrap, and Defense in Depth",
+    "datePublished": "2026-02-11",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Three-tier sandbox architecture with automatic fallback — isolating AI-generated code execution from the host system.",
+    "url": "https://news.occp.ai/articles/sandbox-isolation.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-11</span>
+          <span class="card-tag tag-security">Security</span>
+          <span class="card-version">v0.7.0</span>
+        </div>
+        <h1>Sandbox Isolation: nsjail, Bubblewrap, and Defense in Depth</h1>
+        <p class="lead">AI-generated code is untrusted code. It may be correct, it may be buggy, or it may be actively malicious &mdash; the result of a prompt injection that turned the code generation agent against the platform. The sandbox ensures that regardless of what the code does, it cannot escape its execution boundary.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Case for Sandboxing AI Code</h2>
+
+        <p>When an AI agent in OCCP generates Python code as part of task execution, that code needs to run somewhere. The simplest approach is to execute it in the same Python process that runs the platform: call <code>exec()</code> on the generated string and capture the output. This is also the most dangerous approach. The generated code has access to everything the platform process has access to: environment variables (which contain API keys), the filesystem (which contains configuration files), the network (which connects to databases and external services), and the process itself (which it can crash or compromise).</p>
+
+        <p>The threat model is not hypothetical. Prompt injection attacks can cause code generation agents to produce code that reads <code>/etc/shadow</code>, exfiltrates environment variables through HTTP requests, or spawns a reverse shell. Even without adversarial intent, a buggy code generation might create an infinite loop that consumes all CPU, or a recursive function that exhausts memory, or a disk operation that fills the filesystem.</p>
+
+        <blockquote>The question is not whether AI-generated code will eventually do something dangerous. The question is whether the platform contains the damage when it happens. Sandbox isolation turns a potential security incident into a contained execution failure.</blockquote>
+
+        <h2>Three-Tier Architecture</h2>
+
+        <p>OCCP implements three sandbox tiers with decreasing isolation strength. The platform automatically selects the strongest tier available on the host system, with automatic fallback when a tier is not available.</p>
+
+        <h3>Tier 1: nsjail</h3>
+
+        <p>nsjail is a process isolation tool developed by Google's security team. It uses Linux kernel namespaces to create a completely isolated execution environment: separate PID namespace (the sandboxed process cannot see other processes), separate network namespace (no network access by default), separate mount namespace (the sandboxed process sees only explicitly mounted paths), and separate user namespace (the process runs as an unprivileged user regardless of the host user).</p>
+
+        <p>On top of namespace isolation, nsjail applies seccomp-bpf filters that restrict which system calls the sandboxed process can make. OCCP's seccomp profile allows a minimal set of system calls needed to run Python: <code>read</code>, <code>write</code>, <code>open</code> (restricted to the sandbox directory), <code>close</code>, <code>mmap</code>, <code>brk</code>, and a few others. Dangerous system calls like <code>execve</code> (running other programs), <code>socket</code> (network access), and <code>ptrace</code> (process debugging) are blocked.</p>
+
+        <pre><code># nsjail configuration for OCCP code execution
+class NsjailSandbox:
+    def __init__(self):
+        self.config = {
+            "time_limit": 30,          # Max 30 seconds
+            "rlimit_as": 256,          # Max 256MB memory
+            "rlimit_cpu": 10,          # Max 10 seconds CPU time
+            "rlimit_fsize": 10,        # Max 10MB file creation
+            "rlimit_nofile": 32,       # Max 32 open file descriptors
+            "mount_proc": False,       # No /proc access
+            "disable_clone_newnet": False,  # Network namespace isolation
+            "cwd": "/sandbox",
+            "keep_env": False,         # No environment variable inheritance
+        }
+
+    async def execute(self, code: str, timeout: int = 30) -> ExecutionResult:
+        # Write code to temporary file in sandbox mount
+        code_path = self._write_code_file(code)
+
+        # Execute in nsjail
+        proc = await asyncio.create_subprocess_exec(
+            "nsjail", *self._build_args(code_path),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await asyncio.wait_for(
+            proc.communicate(), timeout=timeout
+        )
+        return ExecutionResult(
+            stdout=stdout.decode(),
+            stderr=stderr.decode(),
+            exit_code=proc.returncode,
+            tier="nsjail"
+        )</code></pre>
+
+        <p>Key configuration details: <code>keep_env: False</code> ensures the sandboxed process inherits zero environment variables from the host. This prevents exfiltration of API keys, database credentials, or any other secrets stored in environment variables. The <code>mount_proc: False</code> setting blocks access to <code>/proc</code>, which on Linux exposes process information, memory maps, and other sensitive system data.</p>
+
+        <h3>Tier 2: bubblewrap (bwrap)</h3>
+
+        <p>bubblewrap is a lightweight sandbox used by Flatpak and other Linux desktop application frameworks. It provides user namespace isolation and filesystem restrictions but does not include seccomp filtering. This makes it weaker than nsjail but significantly stronger than unsandboxed execution.</p>
+
+        <pre><code># bubblewrap sandbox configuration
+class BubblewrapSandbox:
+    def _build_args(self, code_path: str) -> list[str]:
+        return [
+            "bwrap",
+            "--ro-bind", "/usr", "/usr",           # Read-only system libraries
+            "--ro-bind", "/lib", "/lib",
+            "--ro-bind", "/lib64", "/lib64",
+            "--bind", self.sandbox_dir, "/sandbox", # Read-write sandbox dir
+            "--dev", "/dev",                         # Minimal /dev
+            "--unshare-all",                         # Unshare all namespaces
+            "--die-with-parent",                     # Kill sandbox if parent dies
+            "--new-session",                         # New session ID
+            "--chdir", "/sandbox",
+            "python3", code_path,
+        ]</code></pre>
+
+        <p>The <code>--unshare-all</code> flag creates new namespaces for PID, network, IPC, UTS, and user. The <code>--ro-bind</code> mounts make system libraries available in read-only mode so Python can run, while the sandbox directory is the only writable location. The <code>--die-with-parent</code> flag ensures the sandbox is terminated if the OCCP process crashes, preventing orphaned sandbox processes.</p>
+
+        <h3>Tier 3: Restricted Subprocess</h3>
+
+        <p>When neither nsjail nor bubblewrap is available (macOS development environments, Windows, minimal Linux containers), the sandbox falls back to a standard subprocess with resource limits applied through Python's <code>resource</code> module.</p>
+
+        <pre><code>import resource
+import subprocess
+
+class SubprocessSandbox:
+    def _apply_limits(self):
+        """Called in subprocess via preexec_fn."""
+        # CPU time limit: 10 seconds
+        resource.setrlimit(resource.RLIMIT_CPU, (10, 10))
+        # Memory limit: 256 MB
+        resource.setrlimit(resource.RLIMIT_AS, (256 * 1024 * 1024, 256 * 1024 * 1024))
+        # File size limit: 10 MB
+        resource.setrlimit(resource.RLIMIT_FSIZE, (10 * 1024 * 1024, 10 * 1024 * 1024))
+        # Max file descriptors: 32
+        resource.setrlimit(resource.RLIMIT_NOFILE, (32, 32))
+
+    async def execute(self, code: str, timeout: int = 30) -> ExecutionResult:
+        proc = await asyncio.create_subprocess_exec(
+            "python3", self._write_code_file(code),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            preexec_fn=self._apply_limits,
+        )
+        stdout, stderr = await asyncio.wait_for(
+            proc.communicate(), timeout=timeout
+        )
+        return ExecutionResult(
+            stdout=stdout.decode(), stderr=stderr.decode(),
+            exit_code=proc.returncode, tier="subprocess"
+        )</code></pre>
+
+        <p>Tier 3 provides resource limits (CPU, memory, file size) but no namespace isolation. The subprocess can access the network, see other processes, and read any file the OCCP process can read. This tier is suitable only for development environments and is explicitly flagged in the dashboard as "limited isolation."</p>
+
+        <h2>Automatic Fallback</h2>
+
+        <p>The sandbox manager probes the system at startup to determine which tiers are available:</p>
+
+        <pre><code>class SandboxManager:
+    def __init__(self):
+        self.active_tier = self._detect_tier()
+
+    def _detect_tier(self) -> str:
+        if shutil.which("nsjail"):
+            if self._test_nsjail():
+                return "nsjail"
+        if shutil.which("bwrap"):
+            if self._test_bubblewrap():
+                return "bubblewrap"
+        return "subprocess"
+
+    def _test_nsjail(self) -> bool:
+        """Run a trivial nsjail command to verify it works."""
+        try:
+            result = subprocess.run(
+                ["nsjail", "--help"],
+                capture_output=True, timeout=5
+            )
+            return result.returncode == 0
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            return False</code></pre>
+
+        <p>The detection is not just a binary "is the binary present" check. The manager runs a trivial test command to verify the tool actually works. This catches cases where nsjail is installed but the kernel does not support the required namespace features (common in some container environments where user namespaces are disabled).</p>
+
+        <h2>Resource Limits</h2>
+
+        <p>All three tiers enforce the same resource limits, using different mechanisms:</p>
+
+        <ul>
+          <li><strong>CPU time</strong> &mdash; Maximum 10 seconds of CPU time. Prevents infinite loops and computationally expensive operations. Applied via seccomp (Tier 1), rlimit (Tier 2 and 3).</li>
+          <li><strong>Wall clock time</strong> &mdash; Maximum 30 seconds total execution time. Applied via <code>asyncio.wait_for</code> timeout at the Python level.</li>
+          <li><strong>Memory</strong> &mdash; Maximum 256 MB virtual memory. Prevents memory-intensive attacks and accidental memory leaks. Applied via nsjail config, rlimit, or subprocess rlimit.</li>
+          <li><strong>Network</strong> &mdash; Blocked in Tier 1 (namespace isolation) and Tier 2 (namespace unsharing). Not blocked in Tier 3.</li>
+          <li><strong>Filesystem</strong> &mdash; Write access limited to the sandbox directory in Tier 1 and 2. Maximum 10 MB file creation across all tiers. No access to host system files in Tier 1 and 2.</li>
+          <li><strong>Process creation</strong> &mdash; Blocked in Tier 1 (seccomp). Limited in Tier 2 (PID namespace). Unrestricted in Tier 3.</li>
+        </ul>
+
+        <blockquote>The sandbox assumes the worst case for every execution. If the code tries to allocate 1GB of memory, the limit terminates it. If it tries to run for 60 seconds, the timeout kills it. If it tries to open a network socket, the namespace blocks it. Every resource request is bounded, and every bound is enforced by the kernel, not by Python.</blockquote>
+
+        <h2>Execution Result Handling</h2>
+
+        <p>The sandbox returns a structured <code>ExecutionResult</code> that includes stdout, stderr, the exit code, and the tier that was used. The tier information is critical for security auditing &mdash; if an execution ran in Tier 3 (limited isolation), the audit log reflects this, and operators can investigate whether the execution posed a risk that stronger isolation would have prevented.</p>
+
+        <p>Execution results are passed through the same output sanitization guard that processes LLM responses. Even code execution output is scanned for credential patterns before it reaches the user or the audit log. This layered approach means that even if sandboxed code manages to read a credential (possible in Tier 3), the output guard prevents it from being delivered.</p>
+
+        <h2>Defense in Depth</h2>
+
+        <p>The sandbox is one layer in a multi-layer defense strategy. Before code reaches the sandbox, the policy engine evaluates whether code execution is permitted for the current task and agent. The injection detection system scans the generated code for known malicious patterns. The agent's capability declaration must include execute permissions. Only after passing all these checks does the code enter the sandbox.</p>
+
+        <p>After the sandbox, the output is sanitized, validated against the task's expected output format, and recorded in the audit log with the execution tier and resource consumption metrics. This pre-and-post processing ensures that the sandbox is not the only defense &mdash; it is the last defense, backed by multiple earlier layers that reduce the likelihood of malicious code reaching execution in the first place.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Three tiers: nsjail (kernel namespaces + seccomp), bubblewrap (user namespaces), subprocess (resource limits only)</li>
+          <li>Automatic detection and fallback at startup with verification that the sandbox tool actually works</li>
+          <li>Resource limits enforced across all tiers: 10s CPU, 30s wall clock, 256MB memory, 10MB disk, no network (Tier 1/2)</li>
+          <li>Environment variables are never inherited by the sandbox (Tier 1/2), preventing credential exfiltration</li>
+          <li>Execution tier is recorded in audit logs for security review of isolation level</li>
+          <li>The sandbox is defense-in-depth: policy, injection detection, and capability checks filter code before it reaches execution</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="casbin-rbac-governance.html">&larr; Casbin RBAC</a>
+        <a href="alembic-migrations.html">Alembic Migrations &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

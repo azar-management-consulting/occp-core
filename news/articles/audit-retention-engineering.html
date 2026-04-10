@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audit Retention Engineering: Automated Compliance at Startup — OCCP News</title>
+  <meta name="description" content="Implementing EU AI Act Article 19 compliance through automated audit log retention enforcement, startup-time verification, and configurable archival.">
+  <meta name="keywords" content="OCCP, audit retention, EU AI Act Article 19, log retention, compliance automation, startup enforcement, archival">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/audit-retention-engineering.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/audit-retention-engineering.html">
+  <meta property="og:title" content="Audit Retention Engineering: Automated Compliance at Startup">
+  <meta property="og:description" content="Implementing EU AI Act Article 19 compliance through automated audit log retention enforcement, startup-time verification, and configurable archival.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-25">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Audit Retention Engineering: Automated Compliance at Startup">
+  <meta name="twitter:description" content="Implementing EU AI Act Article 19 compliance through automated audit log retention enforcement, startup-time verification, and configurable archival.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Audit Retention Engineering: Automated Compliance at Startup",
+    "datePublished": "2026-02-25",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Implementing EU AI Act Article 19 compliance through automated audit log retention enforcement, startup-time verification, and configurable archival.",
+    "url": "https://news.occp.ai/articles/audit-retention-engineering.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-25</span>
+          <span class="card-tag tag-architecture">Architecture</span>
+          <span class="card-version">v0.8.2</span>
+        </div>
+        <h1>Audit Retention Engineering: Automated Compliance at Startup</h1>
+        <p class="lead">Log retention is one of the most overlooked aspects of AI compliance. The EU AI Act requires that operational logs be maintained for an appropriate period, but most systems treat retention as a background cron job that nobody monitors. OCCP takes a different approach: retention compliance is verified at application startup, before the platform serves a single request.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Retention Problem</h2>
+
+        <p>Audit log retention seems simple: keep logs for N days, delete (or archive) anything older. In practice, retention is fraught with engineering challenges. Logs grow continuously, creating storage pressure. Archive operations can fail silently, leaving gaps in the retention chain. Hash chain integrity must be preserved across active and archived segments. And the retention policy itself must be configurable per deployment, because different jurisdictions and risk levels require different retention periods.</p>
+
+        <p>The most common failure mode is not data loss &mdash; it is undetected non-compliance. A cron job that archives old logs might fail for weeks without anyone noticing. The logs appear to be retained (the retention job is "running"), but the archive destination is full, the network mount is disconnected, or a permission change broke the write path. The organization discovers the gap during an audit, which is the worst possible time to discover it.</p>
+
+        <blockquote>The difference between "we have a retention policy" and "we are compliant with our retention policy" is the difference between intent and evidence. OCCP's retention system produces evidence at every startup.</blockquote>
+
+        <h2>Startup-Time Enforcement</h2>
+
+        <h3>The Startup Sequence</h3>
+
+        <p>When OCCP starts, the application initialization sequence includes a mandatory retention verification step. This step runs after database migration checks and before the HTTP server begins accepting requests. The sequence is: verify database connectivity, run pending migrations, execute retention verification, start the HTTP server. If retention verification fails, the server does not start.</p>
+
+        <pre><code># Application startup sequence
+async def startup():
+    """OCCP application startup with retention enforcement."""
+    # Step 1: Database
+    await verify_database_connection()
+    await run_pending_migrations()
+
+    # Step 2: Retention enforcement (blocking)
+    retention = await enforce_audit_retention()
+    if not retention.compliant:
+        logger.critical(
+            "Retention verification failed: %s",
+            retention.failure_reason
+        )
+        raise StartupError(
+            "Cannot start: audit retention non-compliant. "
+            f"Reason: {retention.failure_reason}"
+        )
+
+    logger.info(
+        "Retention verified: %d active entries, "
+        "%d archived, chain integrity: %s",
+        retention.active_count,
+        retention.archived_count,
+        retention.chain_valid
+    )
+
+    # Step 3: Start serving (only if retention passes)
+    await start_http_server()</code></pre>
+
+        <h3>Why at Startup</h3>
+
+        <p>Startup-time enforcement guarantees that the platform is never in a non-compliant state while serving requests. A cron-based approach has a window between the last successful run and the current time where compliance is assumed but not verified. A startup-based approach eliminates this window: every time the application starts (after a deploy, a restart, a crash recovery), retention compliance is re-verified from scratch.</p>
+
+        <p>This is particularly important for containerized deployments where containers are frequently recreated. Each new container instance verifies retention before joining the load balancer. There is no accumulated state or stale assumptions from previous runs.</p>
+
+        <h2>Configurable Retention Periods</h2>
+
+        <h3>Default and Override</h3>
+
+        <p>OCCP's default retention period is 365 days, aligned with the most common interpretation of EU AI Act Article 19 requirements. The retention period is configurable through environment variables and the configuration file, allowing organizations to set longer periods for regulated industries or shorter periods where permitted.</p>
+
+        <pre><code># Configuration options
+OCCP_AUDIT_RETENTION_DAYS=365       # Default: 1 year
+OCCP_AUDIT_ARCHIVE_BACKEND=s3       # s3, filesystem, database
+OCCP_AUDIT_ARCHIVE_PATH=/archive    # Backend-specific path
+OCCP_AUDIT_VERIFY_CHAIN=true        # Verify hash chain integrity
+OCCP_AUDIT_STARTUP_BLOCK=true       # Block startup on failure</code></pre>
+
+        <h3>Per-Category Retention</h3>
+
+        <p>Different audit entry categories may have different retention requirements. Security-related entries (authentication failures, policy denials, boundary violations) may require longer retention than operational entries (task completion, performance metrics). OCCP supports per-category retention periods, with a global minimum that cannot be reduced below the platform-wide default.</p>
+
+        <pre><code># Per-category retention configuration
+retention:
+  default_days: 365
+  categories:
+    security_events: 730      # 2 years for security logs
+    policy_denials: 730       # 2 years for compliance evidence
+    task_completions: 365     # 1 year for operational logs
+    performance_metrics: 180  # 6 months for metrics
+  minimum_days: 180           # Global floor</code></pre>
+
+        <h2>The Archival Process</h2>
+
+        <h3>Archive, Never Delete</h3>
+
+        <p>OCCP's retention system moves expired entries to archive storage; it never deletes them. This design decision reflects a regulatory reality: an audit investigation may request logs from any period, and "we deleted them per our retention policy" is a weaker defense than "here are the archived logs." Archive storage is typically cheaper than primary storage, so the cost of indefinite archival is manageable.</p>
+
+        <h3>Archive Backends</h3>
+
+        <p>OCCP supports three archive backends. The filesystem backend writes archived entries as JSON files to a configured directory, suitable for development and small deployments. The S3-compatible backend writes to any S3-compatible object store (AWS S3, MinIO, Cloudflare R2), suitable for production deployments with durability requirements. The database backend writes to a separate database table or schema, suitable for organizations that prefer to keep all data in a single database system.</p>
+
+        <pre><code># Archive entry format (filesystem backend)
+# /archive/2025/10/aud_20251015_001.json
+{
+    "entry_id": "aud_20251015_001",
+    "original_hash": "sha256:9f86d0...",
+    "prev_hash": "sha256:7c211a...",
+    "archived_at": "2026-02-25T00:00:00Z",
+    "retention_category": "task_completions",
+    "original_timestamp": "2025-10-15T14:30:00Z",
+    "data": { ... }  # Complete original entry
+}</code></pre>
+
+        <h3>Hash Chain Continuity</h3>
+
+        <p>When entries are moved to the archive, the hash chain must remain verifiable. The archived entries retain their original hashes and chain links. A "chain bridge" entry is written at the transition point, recording the hash of the last archived entry and the hash of the first active entry. This bridge allows the complete chain to be reconstructed from archive storage for audit investigations, while the active chain remains independently verifiable for routine operations.</p>
+
+        <h2>Retention Verification in Health Checks</h2>
+
+        <h3>Continuous Monitoring</h3>
+
+        <p>Startup-time verification ensures compliance at boot. But what about retention compliance during long-running operation? OCCP's health check endpoint includes a retention status component that reports the current state of retention compliance without performing a full re-verification (which would be too expensive for a health check).</p>
+
+        <pre><code># Health check response including retention status
+{
+    "status": "healthy",
+    "components": {
+        "database": "connected",
+        "retention": {
+            "status": "compliant",
+            "last_verified": "2026-02-25T00:00:00Z",
+            "active_entries": 45230,
+            "oldest_active": "2025-02-26T08:15:00Z",
+            "retention_days": 365,
+            "chain_integrity": "verified",
+            "next_archive_due": "2026-02-26T00:00:00Z"
+        }
+    }
+}</code></pre>
+
+        <h3>Degradation Alerts</h3>
+
+        <p>If the retention status degrades (archive backend unreachable, chain integrity check failed, retention period exceeded without archival), the health check reports a degraded state. Monitoring systems (Prometheus, Grafana, or any system polling the health endpoint) can alert on this degradation. The platform continues serving requests during retention degradation &mdash; stopping service because archival is delayed would be disproportionate &mdash; but the degradation is visible and actionable.</p>
+
+        <h2>Operational Considerations</h2>
+
+        <h3>Storage Growth</h3>
+
+        <p>Audit logs grow proportionally to the platform's activity. A moderately active deployment generating 1,000 tasks per day, with an average of 5 audit entries per task (one per pipeline stage), produces approximately 5,000 entries per day. At an average of 2 KB per entry, this is 10 MB per day or 3.6 GB per year. For most deployments, storage growth is not a concern. For high-volume deployments, the S3 archive backend provides cost-effective long-term storage.</p>
+
+        <h3>Recovery from Archive Failures</h3>
+
+        <p>If the archive backend is unavailable during a scheduled archival run, OCCP retains the expired entries in the active store and retries at the next startup or scheduled interval. Entries are never discarded because the archive is unreachable. This fail-safe behavior means the active store may temporarily hold more entries than expected, but compliance is maintained: the entries exist, they are just in the wrong storage tier.</p>
+
+        <h3>Performance Impact</h3>
+
+        <p>Startup-time retention verification adds latency to the application boot process. For a deployment with 50,000 active audit entries, the verification (count entries, verify chain integrity, identify entries for archival) takes approximately 2-5 seconds on a standard database. For most deployments, this is acceptable. For deployments where sub-second startup is critical (serverless, aggressive autoscaling), the chain integrity verification can be configured to run asynchronously after the server starts, with the startup only checking entry counts and retention period compliance.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Retention verification runs at application startup, before serving requests, eliminating undetected non-compliance windows</li>
+          <li>Default retention period is 365 days (EU AI Act Article 19), configurable per deployment and per audit category</li>
+          <li>Expired entries are archived, never deleted, preserving the complete audit history for regulatory investigations</li>
+          <li>Hash chain continuity is maintained across active and archived segments through bridge entries</li>
+          <li>Health check endpoints report retention compliance status for continuous monitoring</li>
+          <li>Archive failures trigger retry, not data loss: entries remain in active storage until successfully archived</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="eu-ai-act-compliance.html">&larr; EU AI Act Compliance</a>
+        <a href="key-rotation-architecture.html">Key Rotation Architecture &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

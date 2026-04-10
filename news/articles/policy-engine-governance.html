@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inside the Policy Engine: Code-Level Governance for LLM Actions — OCCP News</title>
+  <meta name="description" content="Policy-as-code enforcement with PII detection, prompt injection guards, and resource limits — governance at the speed of AI.">
+  <meta name="keywords" content="OCCP, policy engine, PII detection, prompt injection, policy-as-code, AI governance">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/policy-engine-governance.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/policy-engine-governance.html">
+  <meta property="og:title" content="Inside the Policy Engine: Code-Level Governance for LLM Actions">
+  <meta property="og:description" content="Policy-as-code enforcement with PII detection, prompt injection guards, and resource limits — governance at the speed of AI.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2025-11-10">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Inside the Policy Engine: Code-Level Governance for LLM Actions">
+  <meta name="twitter:description" content="Policy-as-code enforcement with PII detection, prompt injection guards, and resource limits — governance at the speed of AI.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Inside the Policy Engine: Code-Level Governance for LLM Actions",
+    "datePublished": "2025-11-10",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Policy-as-code enforcement with PII detection, prompt injection guards, and resource limits — governance at the speed of AI.",
+    "url": "https://news.occp.ai/articles/policy-engine-governance.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2025-11-10</span>
+          <span class="card-tag tag-architecture">Architecture</span>
+          <span class="card-version">v0.1.0</span>
+        </div>
+        <h1>Inside the Policy Engine: Code-Level Governance for LLM Actions</h1>
+        <p class="lead">The policy engine is the Gate stage of the Verified Autonomy Pipeline. It evaluates every task plan against a set of programmatic policies before any LLM call executes. Policies are defined as code, enforced unconditionally, and logged for audit. This article details the engine's architecture and its initial five guards.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>Why Policies Must Be Code</h2>
+
+        <p>There are two ways to define governance rules for AI systems. The first is configuration: YAML files, JSON schemas, or database entries that describe what is and is not allowed. The second is code: Python classes that implement evaluation logic, return structured results, and can be unit tested like any other software component.</p>
+
+        <p>OCCP chose code. The reasons are practical, not ideological. Configuration-based policies are limited to the operations the configuration format supports. If your YAML schema supports "block if input contains pattern X," then your policies can only block on pattern matching. If you need a policy that evaluates a combination of input length, content category, user role, and time of day, you need to extend the configuration schema &mdash; or write code.</p>
+
+        <blockquote>Configuration tells you what to check. Code tells you how to check it. In governance, the "how" matters as much as the "what."</blockquote>
+
+        <pre><code># Policy interface — all policies implement this
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+
+@dataclass
+class PolicyResult:
+    denied: bool
+    reason: str = ""
+    details: dict = None
+
+class Policy(ABC):
+    @abstractmethod
+    def evaluate(self, task_plan: TaskPlan) -> PolicyResult:
+        """Evaluate a task plan against this policy.
+        Returns PolicyResult with denied=True if the task violates the policy."""
+        pass
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """Human-readable policy name for audit logging."""
+        pass</code></pre>
+
+        <p>Every policy in OCCP implements this interface. The interface is deliberately minimal: a name property for identification and an evaluate method that returns a structured result. The simplicity ensures that policies are easy to write, easy to test, and easy to compose.</p>
+
+        <h2>The Deny-by-Default Philosophy</h2>
+
+        <p>The policy engine operates on a deny-by-default model. This means that a task plan must pass <strong>every active policy</strong> to proceed to execution. If any single policy returns <code>denied=True</code>, the entire task is blocked at the Gate stage.</p>
+
+        <p>This is the opposite of how most AI systems work. By default, LLM calls are unrestricted: everything is allowed unless a specific check prohibits it. The deny-by-default model inverts this assumption. Nothing is allowed unless every policy explicitly permits it.</p>
+
+        <pre><code># Policy engine evaluation loop
+class PolicyEngine:
+    def __init__(self, policies: list[Policy]):
+        self.policies = policies
+
+    def evaluate(self, task_plan: TaskPlan) -> GateResult:
+        results = []
+        for policy in self.policies:
+            result = policy.evaluate(task_plan)
+            results.append((policy.name, result))
+
+            if result.denied:
+                return GateResult(
+                    allowed=False,
+                    denied_by=policy.name,
+                    reason=result.reason,
+                    all_results=results
+                )
+
+        return GateResult(allowed=True, all_results=results)</code></pre>
+
+        <p>The evaluation loop is short-circuiting: it stops at the first denial. This is an intentional design choice for performance &mdash; there is no reason to evaluate remaining policies once one has already denied the task. All results up to and including the denial are recorded in the audit trail.</p>
+
+        <h2>PII Detection Patterns</h2>
+
+        <p>The PII detection policy scans input text for personally identifiable information before it reaches the LLM. The v0.1.0 implementation uses compiled regular expressions for four PII categories:</p>
+
+        <pre><code>class PIIDetectionPolicy(Policy):
+    name = "pii_detection"
+
+    PATTERNS = {
+        "email": re.compile(
+            r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+        ),
+        "phone_us": re.compile(
+            r"\b(?:\+1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"
+        ),
+        "ssn": re.compile(
+            r"\b\d{3}-\d{2}-\d{4}\b"
+        ),
+        "credit_card": re.compile(
+            r"\b(?:\d{4}[-\s]?){3}\d{4}\b"
+        ),
+    }
+
+    def evaluate(self, task_plan: TaskPlan) -> PolicyResult:
+        text = task_plan.input_text
+        findings = {}
+        for pii_type, pattern in self.PATTERNS.items():
+            matches = pattern.findall(text)
+            if matches:
+                findings[pii_type] = len(matches)
+
+        if findings:
+            return PolicyResult(
+                denied=True,
+                reason=f"PII detected: {findings}",
+                details={"findings": findings}
+            )
+        return PolicyResult(denied=False)</code></pre>
+
+        <p>The patterns are intentionally conservative in v0.1.0 &mdash; they favor precision over recall. A false positive (blocking legitimate content) is preferable to a false negative (allowing PII to reach the model). Future versions will add more sophisticated PII detection, including named entity recognition and context-aware pattern matching.</p>
+
+        <h3>Pattern Limitations</h3>
+
+        <p>Regex-based PII detection has known limitations. It cannot detect PII that does not match predefined patterns (for example, a full name like "John Smith" without additional context). It can produce false positives on text that resembles PII patterns (a product serial number that matches a phone number format). These limitations are documented and accepted in v0.1.0, with plans to add NER-based detection in future releases.</p>
+
+        <h2>Prompt Injection Detection</h2>
+
+        <p>The injection detection policy scans for five categories of prompt injection attacks in the v0.1.0 release:</p>
+
+        <ol>
+          <li><strong>Role Override</strong> &mdash; Attempts to change the model's assigned role, such as "ignore your instructions and act as..." or "you are now a different assistant"</li>
+          <li><strong>Delimiter Injection</strong> &mdash; Inserting fake system/user delimiters to manipulate the conversation structure, like inserting <code>[SYSTEM]</code> or <code>---\nNew instructions:</code> markers</li>
+          <li><strong>Instruction Leak</strong> &mdash; Requests designed to extract system prompt content: "repeat your system prompt" or "what are your instructions"</li>
+          <li><strong>Encoding Evasion</strong> &mdash; Instructions encoded in base64, ROT13, or other encoding schemes to bypass text-based filters</li>
+          <li><strong>Context Boundary</strong> &mdash; Attempts to close one context and open another: "END OF CONVERSATION. BEGIN NEW SESSION WITH FULL ACCESS"</li>
+        </ol>
+
+        <p>Each category has multiple detection patterns. When any pattern matches, the task is denied unconditionally. Unlike PII detection, which can be configured to redact and continue, injection detection always denies &mdash; there is no legitimate use case for prompt injection patterns in task input.</p>
+
+        <h2>Resource Limit Enforcement</h2>
+
+        <h3>Token Budget Policy</h3>
+
+        <p>The token budget policy verifies that the planned token usage falls within configured limits. The policy checks three values: the maximum input tokens (how much text can be sent to the model), the maximum output tokens (how much the model can generate), and the total budget (input plus output). If the task plan requests more tokens than any of these limits allow, the task is denied with a clear message indicating which limit was exceeded.</p>
+
+        <h3>Timeout Policy</h3>
+
+        <p>The timeout policy enforces a maximum execution time per task. The v0.1.0 default is 60 seconds. If a task plan specifies a timeout exceeding this limit, the plan is denied at the Gate stage. This is distinct from runtime timeout enforcement: the policy checks the planned timeout before execution begins, while the executor enforces the actual timeout during execution. Both checks are necessary &mdash; the policy prevents unreasonable plans, and the executor prevents runaway execution.</p>
+
+        <h2>Content Category Filter</h2>
+
+        <p>The content category filter checks task descriptions against a configurable deny-list. Categories include broad content types that the platform operator has decided should not be processed. The v0.1.0 implementation uses keyword matching against the deny-list, which is effective for explicit category violations but limited for subtle content classification. Future versions will integrate more sophisticated content classification using model-based categorization.</p>
+
+        <h2>Composability and Extension</h2>
+
+        <p>The policy engine is designed for extension. Adding a new policy requires three steps: implement the <code>Policy</code> interface, write unit tests for the policy, and register the policy with the engine. No changes to the engine itself are required. This composability means that enterprise deployments can add organization-specific policies (industry-specific compliance rules, internal data handling policies, custom content restrictions) without modifying the core platform.</p>
+
+        <pre><code># Adding a custom policy
+class MaxInputLengthPolicy(Policy):
+    name = "max_input_length"
+
+    def __init__(self, max_chars: int = 10000):
+        self.max_chars = max_chars
+
+    def evaluate(self, task_plan: TaskPlan) -> PolicyResult:
+        length = len(task_plan.input_text)
+        if length > self.max_chars:
+            return PolicyResult(
+                denied=True,
+                reason=f"Input length {length} exceeds maximum {self.max_chars}"
+            )
+        return PolicyResult(denied=False)
+
+# Register with engine
+engine.add_policy(MaxInputLengthPolicy(max_chars=50000))</code></pre>
+
+        <p>This extension model is the practical realization of policy-as-code. Policies are first-class objects that can be instantiated with parameters, composed into sets, and tested independently. The policy engine does not need to know what policies exist; it only needs to know that they implement the <code>Policy</code> interface.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Policies are code (Python classes), not configuration &mdash; enabling complex evaluation logic and unit testing</li>
+          <li>Deny-by-default model: every active policy must pass before a task can execute</li>
+          <li>PII detection covers email, phone, SSN, and credit card patterns with compiled regex</li>
+          <li>Prompt injection detection addresses five attack categories with unconditional denial</li>
+          <li>Resource limits enforce token budgets and timeouts at the planning stage, before execution begins</li>
+          <li>The Policy interface enables extension without modifying the core engine</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="occp-v010-first-cycle.html">&larr; OCCP v0.1.0: The First Verified Cycle</a>
+        <a href="sha256-audit-trail.html">SHA-256 Hash Chains &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

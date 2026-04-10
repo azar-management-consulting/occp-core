@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>10-Step Wizard: Designing Zero-Friction AI Platform Onboarding — OCCP News</title>
+  <meta name="description" content="From landing page to first autonomous task — engineering a guided onboarding experience that respects developer intelligence.">
+  <meta name="keywords" content="OCCP, onboarding wizard, UX design, developer experience, AI platform, guided setup">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/10-step-wizard.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/10-step-wizard.html">
+  <meta property="og:title" content="10-Step Wizard: Designing Zero-Friction AI Platform Onboarding">
+  <meta property="og:description" content="From landing page to first autonomous task — engineering a guided onboarding experience that respects developer intelligence.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-19">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="10-Step Wizard: Designing Zero-Friction AI Platform Onboarding">
+  <meta name="twitter:description" content="From landing page to first autonomous task — engineering a guided onboarding experience that respects developer intelligence.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "10-Step Wizard: Designing Zero-Friction AI Platform Onboarding",
+    "datePublished": "2026-02-19",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "From landing page to first autonomous task — engineering a guided onboarding experience that respects developer intelligence.",
+    "url": "https://news.occp.ai/articles/10-step-wizard.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-19</span>
+          <span class="card-tag tag-ux">UX</span>
+          <span class="card-version">v0.8.0</span>
+        </div>
+        <h1>10-Step Wizard: Designing Zero-Friction AI Platform Onboarding</h1>
+        <p class="lead">The gap between "I installed this" and "I am using this" is where most infrastructure software loses its users. OCCP's 10-step onboarding wizard bridges that gap by guiding developers from the landing page to their first autonomous, governed task &mdash; without treating them like beginners.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Design Constraint</h2>
+
+        <p>OCCP is developer infrastructure, not a consumer application. The target user knows what API keys are, understands what agents do, and does not need tooltips explaining what "JSON" means. The wizard's design constraint is respect: guide the user through the required configuration sequence without condescending, without over-explaining, and without hiding complexity behind abstractions that will confuse them later.</p>
+
+        <p>The wizard is not a tutorial. It does not teach concepts. It produces a working system. When a user completes step 10, they have a registered agent executing governed tasks through the Verified Autonomy Pipeline. They have not "learned about" OCCP &mdash; they have configured and operated OCCP.</p>
+
+        <h2>Step-by-Step Architecture</h2>
+
+        <h3>Step 1: Landing Page</h3>
+
+        <p>The landing page presents the platform's value proposition in three lines: what OCCP is (an AI orchestration control plane), what it does (governs agent execution through a verified pipeline), and why it matters (audit trails, policy enforcement, compliance). A single "Get Started" button initiates the wizard. No registration wall &mdash; the user sees the platform's purpose before creating an account.</p>
+
+        <h3>Step 2: Account Creation</h3>
+
+        <p>Username, email, password. Password strength validation enforces minimum entropy without arbitrary character class rules. The form submits to <code>POST /api/v1/auth/register</code>, which creates the user and returns a JWT token. The wizard stores the token and advances to step 3 automatically. No email verification at this stage &mdash; that is a production configuration, not an onboarding blocker.</p>
+
+        <h3>Step 3: LLM Provider Configuration</h3>
+
+        <p>A selector presents supported providers: Anthropic (Claude), OpenAI (GPT-4), Google (Gemini), and a "Local Model" option for self-hosted inference. Each provider card shows the models available, pricing tier, and capability summary. The selection is stored in the user's settings and determines which API key format is required in step 4.</p>
+
+        <pre><code>// Wizard step 3 — provider configuration component
+const providers = [
+  { id: "anthropic", name: "Anthropic", models: ["claude-3-opus", "claude-3-sonnet"] },
+  { id: "openai", name: "OpenAI", models: ["gpt-4-turbo", "gpt-4o"] },
+  { id: "google", name: "Google", models: ["gemini-1.5-pro", "gemini-1.5-flash"] },
+  { id: "local", name: "Local Model", models: ["ollama", "vllm", "custom"] },
+];
+
+function ProviderStep({ onSelect }) {
+  return (
+    &lt;div className="provider-grid"&gt;
+      {providers.map(p =&gt; (
+        &lt;ProviderCard key={p.id} provider={p} onSelect={onSelect} /&gt;
+      ))}
+    &lt;/div&gt;
+  );
+}</code></pre>
+
+        <h3>Step 4: API Key Entry</h3>
+
+        <p>The API key input validates format against the selected provider. Anthropic keys start with <code>sk-ant-</code>, OpenAI keys with <code>sk-</code>, Google keys have a different format. After format validation, the wizard makes a lightweight API call to the provider to verify the key works &mdash; a simple model list request that costs nothing but confirms connectivity. The key is encrypted with AES-256-GCM before storage and is never displayed again after submission.</p>
+
+        <h3>Step 5: Register First Agent</h3>
+
+        <p>Agent registration requires a name and a description. The wizard provides sensible defaults ("My First Agent" / "General-purpose assistant for testing the OCCP pipeline") but encourages customization. The registration creates an agent record in the database with a unique identifier, status set to "active", and creation timestamp. The agent is assigned to the user who created it.</p>
+
+        <h3>Step 6: Define Agent Capabilities</h3>
+
+        <p>This step presents available skills as a checkbox grid. Each skill shows its name, description, required tools, and permission scope. The wizard pre-selects a minimal skill set appropriate for a first-time setup: basic text generation and code analysis. Advanced skills (repository management, database access, deployment automation) are available but not pre-selected. The selected skills are validated against the agent's tool access &mdash; if a skill requires a tool that is not connected, the wizard flags the dependency.</p>
+
+        <pre><code>// Prerequisite validation for skill selection
+function validateSkillSelection(selectedSkills, connectedTools) {
+  const issues = [];
+  for (const skill of selectedSkills) {
+    for (const requiredTool of skill.required_tools) {
+      if (!connectedTools.includes(requiredTool)) {
+        issues.push({
+          skill: skill.name,
+          missing_tool: requiredTool,
+          message: `Skill "${skill.name}" requires "${requiredTool}" — connect it in Settings > Tools`
+        });
+      }
+    }
+  }
+  return { valid: issues.length === 0, issues };
+}</code></pre>
+
+        <h3>Step 7: Create First Task</h3>
+
+        <p>The task creation form requires a title and description. The wizard provides a suggested task: "Analyze the OCCP README and summarize the platform's key features." This task is designed to exercise the pipeline without requiring external tool access &mdash; it uses only the LLM provider configured in steps 3-4. The task is assigned to the agent created in step 5 and enters the pipeline in "pending" status.</p>
+
+        <h3>Step 8: Pipeline Execution</h3>
+
+        <p>This is the wizard's centerpiece. Clicking "Execute" triggers the full Verified Autonomy Pipeline. The wizard displays a real-time visualization of the five stages:</p>
+
+        <ol>
+          <li><strong>Plan</strong> &mdash; The agent generates a task plan with step breakdown and risk assessment. The plan appears in the wizard as a collapsible JSON document.</li>
+          <li><strong>Gate</strong> &mdash; The policy engine evaluates the plan. PII detection, injection scanning, and resource limit checks run against the plan content. A green checkmark appears for each passed check.</li>
+          <li><strong>Execute</strong> &mdash; The LLM processes the task within the sandboxed environment. Execution output streams into the wizard in real time.</li>
+          <li><strong>Validate</strong> &mdash; Output validation verifies the result against task constraints. Output sanitization strips any inadvertently leaked credentials or PII.</li>
+          <li><strong>Ship</strong> &mdash; The result is finalized, the audit entry is created with SHA-256 hash chain linkage, and the task status updates to "completed".</li>
+        </ol>
+
+        <p>If any stage fails, the wizard displays the failure reason and suggests remediation. A policy gate rejection, for example, shows which policy was violated and how to modify the task to comply.</p>
+
+        <h3>Step 9: Audit Trail Review</h3>
+
+        <p>After successful execution, the wizard navigates to the audit trail view for the completed task. The user sees every pipeline stage with timestamps, durations, inputs, outputs, and the SHA-256 hash that links each entry to the previous one. This step demonstrates the governance value: every action the agent took is recorded, timestamped, and cryptographically chained. The wizard highlights the hash chain verification &mdash; showing that the audit trail is tamper-evident.</p>
+
+        <h3>Step 10: Production Deployment Path</h3>
+
+        <p>The final step presents the production deployment configuration: a Docker Compose file with environment variables, SSL certificate instructions, and the recommended Apache2 reverse proxy configuration. This step does not execute the deployment &mdash; it provides the artifacts needed for the user to deploy on their own infrastructure. A "Download Configuration" button exports the deployment files as a zip archive.</p>
+
+        <blockquote>Step 10 is the exit from the wizard and the entrance to production. The user leaves with a working configuration, not a promise of future documentation.</blockquote>
+
+        <h2>Prerequisite Validation</h2>
+
+        <p>Each step validates that its prerequisites are satisfied before allowing progression. Step 4 (API key) cannot be reached without step 3 (provider selection). Step 7 (create task) cannot be reached without step 5 (register agent). The validation is enforced both client-side (disabled buttons, progress indicators) and server-side (the API rejects task creation if no agent exists, skill assignment if no agent is registered).</p>
+
+        <p>However, the wizard allows backward navigation without penalty. A user who reaches step 6 and realizes they want a different LLM provider can return to step 3, change the provider, and the wizard will re-validate all dependent steps. The progress indicator shows which steps need re-validation after a backward change.</p>
+
+        <h2>State Persistence</h2>
+
+        <p>Wizard progress is stored in two locations: browser <code>localStorage</code> for the current step index and UI state, and the server-side user profile for completed configuration (provider, API key, agent, skills). If the user closes the browser and returns, the wizard resumes from the last incomplete step. If the user completes the wizard and later wants to reconfigure, each step is accessible independently through the settings pages &mdash; the wizard is an onboarding convenience, not a configuration prison.</p>
+
+        <h2>Respecting Developer Intelligence</h2>
+
+        <p>The wizard does not explain what an API key is. It does not define "agent" or "task." It does not include tooltip popups or animated tutorials. Every step presents a form with clear labels, a submit action, and an optional "Learn more" link to the documentation. The wizard assumes the user is a capable engineer who needs a clear sequence, not an explanation of basic concepts. This design choice is deliberate: condescending onboarding is the fastest way to lose a technical user's trust.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>The wizard produces a working system, not a learning experience &mdash; step 10 outputs deployment-ready configuration</li>
+          <li>Prerequisite validation enforces step ordering without blocking backward navigation</li>
+          <li>Step 8 executes the full Verified Autonomy Pipeline with real-time stage visualization</li>
+          <li>State persists across sessions: localStorage for UI state, server-side for configuration</li>
+          <li>Developer-respectful design: clear forms, no tooltips, no concept explanations</li>
+          <li>Each wizard step maps to a settings page for post-wizard reconfiguration</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="occp-v080-onboarding.html">&larr; OCCP v0.8.0: The Onboarding Revolution</a>
+        <a href="mcp-integration.html">MCP Integration &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

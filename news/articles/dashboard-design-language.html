@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Building the OCCP Dashboard: Design Language for AI Operations — OCCP News</title>
+  <meta name="description" content="Creating a visual system for AI operations: pipeline status visualization, the retro-terminal aesthetic, and real-time agent monitoring.">
+  <meta name="keywords" content="dashboard design, AI operations, pipeline visualization, retro terminal, design language, WebSocket, OCCP">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/dashboard-design-language.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/dashboard-design-language.html">
+  <meta property="og:title" content="Building the OCCP Dashboard: Design Language for AI Operations">
+  <meta property="og:description" content="Creating a visual system for AI operations: pipeline visualization, retro-terminal aesthetic, and real-time monitoring.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2025-12-30">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Building the OCCP Dashboard: Design Language for AI Operations">
+  <meta name="twitter:description" content="Creating a visual system for AI operations: pipeline visualization and retro-terminal aesthetic.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Building the OCCP Dashboard: Design Language for AI Operations",
+    "description": "Creating a visual system for AI operations with pipeline visualization and retro-terminal aesthetic.",
+    "datePublished": "2025-12-30",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "url": "https://news.occp.ai/articles/dashboard-design-language.html",
+    "mainEntityOfPage": "https://news.occp.ai/articles/dashboard-design-language.html",
+    "proficiencyLevel": "Intermediate"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo">OCCP <span>// news</span></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="https://news.occp.ai/" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+
+    <!-- Article Header -->
+    <header class="article-header">
+      <div class="card-meta">
+        <span class="card-date">2025-12-30</span>
+        <span class="card-tag tag-ux">UX</span>
+        <span class="card-version">v0.3.0</span>
+      </div>
+      <h1>Building the OCCP Dashboard: Design Language for AI Operations</h1>
+      <p class="lead">AI operations dashboards face a unique challenge: they must represent non-deterministic processes, multi-stage pipelines, and real-time agent status in a way that gives operators confidence rather than anxiety. The design language we built for OCCP's dashboard was shaped by this constraint.</p>
+    </header>
+
+    <!-- Article Body -->
+    <div class="article-body">
+
+      <h2>Why Design Language Matters for AI Operations</h2>
+
+      <p>A dashboard for an AI orchestration platform is not the same as a dashboard for a web application. Web app dashboards show request rates, error counts, and latency percentiles -- metrics with well-understood ranges and intuitive interpretation. An AI operations dashboard must show pipeline stages (some of which involve non-deterministic LLM responses), policy evaluation results (pass/fail with nuanced reasons), and agent status (autonomous systems that may or may not be behaving as expected).</p>
+
+      <p>The design language must communicate one thing above all else: <strong>control</strong>. Operators need to feel that they understand what the system is doing and can intervene when necessary. Every visual element in the OCCP dashboard exists to reinforce this sense of controlled autonomy.</p>
+
+      <h2>The Retro-Terminal Aesthetic</h2>
+
+      <p>OCCP uses a CRT-inspired design language: dark backgrounds, monospace typography (IBM Plex Mono), green-on-black text, and subtle scanline effects. This was not a random aesthetic choice. The retro-terminal look communicates several things simultaneously:</p>
+
+      <ul>
+        <li><strong>Precision.</strong> Monospace fonts and terminal aesthetics are associated with engineering tools, compilers, and system monitors. They signal "this is a tool for professionals" without saying it.</li>
+        <li><strong>Transparency.</strong> Terminals show exactly what is happening. There is no abstraction hiding the state of the system. The design language inherits this connotation.</li>
+        <li><strong>Control.</strong> Command lines are the most direct interface between human and machine. The aesthetic evokes that directness even in a graphical interface.</li>
+      </ul>
+
+      <h3>The Color System</h3>
+
+      <p>The color palette is deliberately constrained. Four colors carry meaning; everything else is grayscale:</p>
+
+      <pre><code>--bg:      #0a0a0a    /* Near-black background */
+--green:   #33ff33    /* Success, active, operational */
+--amber:   #ffb000    /* Warning, in-progress, attention */
+--red:     #f87171    /* Error, failed, blocked */
+--blue:    #60a5fa    /* Information, links, neutral actions */
+
+--text:    #e5e5e5    /* Primary text */
+--text-sec: #9ca3af   /* Secondary text */
+--text-muted: #6b7280 /* Deemphasized text */</code></pre>
+
+      <p>Green means "operating correctly." Amber means "pay attention." Red means "intervention needed." Blue is for interactive elements and informational content. This four-color system is simple enough to be internalized in minutes, which is essential for an operator monitoring multiple tasks simultaneously.</p>
+
+      <h2>Pipeline Visualization</h2>
+
+      <p>The Verified Autonomy Pipeline has five stages: Plan, Gate, Execute, Validate, Ship. Visualizing these stages is the dashboard's most critical design challenge. The representation must show:</p>
+
+      <ul>
+        <li>Which stage is currently active</li>
+        <li>Which stages have completed and their duration</li>
+        <li>Whether any stage failed or was blocked by policy</li>
+        <li>The overall progression of the task</li>
+      </ul>
+
+      <h3>The Stage Indicator Component</h3>
+
+      <p>Each pipeline stage is represented as a horizontal bar segment. The segments are connected, creating a visual flow from left (Plan) to right (Ship). The component uses CSS transitions for stage changes, creating smooth color shifts as the pipeline progresses:</p>
+
+      <pre><code>/* Pipeline stage indicator */
+.pipeline-stage {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.pipeline-stage .stage {
+  flex: 1;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.3s ease;
+  border: 1px solid var(--border-card);
+}
+.stage.pending   { background: #1a1a1a; color: var(--text-muted); }
+.stage.active    { background: rgba(255,176,0,0.15); color: var(--amber);
+                   border-color: var(--amber-dim);
+                   animation: glow-pulse 2s ease infinite; }
+.stage.completed { background: rgba(51,255,51,0.1); color: var(--green);
+                   border-color: var(--green-dim); }
+.stage.failed    { background: rgba(248,113,113,0.1); color: var(--red);
+                   border-color: rgba(248,113,113,0.3); }
+.stage.blocked   { background: rgba(248,113,113,0.05); color: var(--red);
+                   border-style: dashed; }</code></pre>
+
+      <p>The <code>glow-pulse</code> animation on the active stage creates a subtle breathing effect that draws the eye to the current processing step. This is a deliberate attention-management technique: in a list of 20 running tasks, the animated stage immediately identifies where each task is in its lifecycle.</p>
+
+      <h3>Duration Labels</h3>
+
+      <p>Completed stages display their execution duration directly within the stage bar. This provides instant performance insight without requiring operators to click into detail views. If the Gate stage shows "1,240ms" when it typically takes 200ms, the operator knows policy evaluation is under load before any alert fires.</p>
+
+      <h2>Status Indicators for Real-Time Agent Monitoring</h2>
+
+      <p>The agent monitoring panel shows each registered agent with its current status. The status indicator uses a dot system borrowed from network operations centers:</p>
+
+      <pre><code>.agent-status {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+.agent-status.online  { background: var(--green);
+                        box-shadow: 0 0 6px var(--green); }
+.agent-status.busy    { background: var(--amber);
+                        box-shadow: 0 0 6px var(--amber); }
+.agent-status.offline { background: var(--text-muted); }
+.agent-status.error   { background: var(--red);
+                        animation: blink 1s step-end infinite; }</code></pre>
+
+      <p>The error state uses a blinking animation -- the only element in the dashboard that blinks. In a panel of 10 agents, a blinking red dot is impossible to miss. The blink rate matches the terminal cursor blink, maintaining visual consistency.</p>
+
+      <h2>WebSocket Integration for Live Updates</h2>
+
+      <p>Static dashboards require manual refresh. For an AI operations platform where tasks complete in seconds and agent status changes continuously, manual refresh is unacceptable. The OCCP dashboard uses WebSocket connections for real-time state synchronization.</p>
+
+      <h3>Connection Management</h3>
+
+      <p>The dashboard establishes a single WebSocket connection on load and multiplexes all event types through it. This approach is simpler and more efficient than per-task connections:</p>
+
+      <pre><code>// Dashboard WebSocket client
+class DashboardSocket {
+  private ws: WebSocket | null = null;
+  private reconnectDelay = 1000;
+
+  connect() {
+    this.ws = new WebSocket("wss://api.occp.ai/ws/dashboard");
+    this.ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      switch (data.type) {
+        case "task_update":
+          this.handleTaskUpdate(data);
+          break;
+        case "agent_heartbeat":
+          this.handleAgentHeartbeat(data);
+          break;
+        case "pipeline_transition":
+          this.handlePipelineTransition(data);
+          break;
+      }
+    };
+    this.ws.onclose = () => {
+      setTimeout(() => this.connect(), this.reconnectDelay);
+      this.reconnectDelay = Math.min(this.reconnectDelay * 2, 30000);
+    };
+    this.ws.onopen = () => {
+      this.reconnectDelay = 1000; // Reset on successful connection
+    };
+  }
+}</code></pre>
+
+      <p>The reconnection logic uses exponential backoff capped at 30 seconds. This prevents a flood of reconnection attempts if the API server restarts, while ensuring the dashboard recovers automatically once the server is back online. The backoff resets on successful connection, so transient disconnects recover at the fastest rate.</p>
+
+      <h2>Design Principles for Operator Confidence</h2>
+
+      <p>Every design decision in the dashboard serves one of three principles:</p>
+
+      <ol>
+        <li><strong>State visibility.</strong> Every task, agent, and pipeline stage has a visible, unambiguous state indicator. No element can be in an "unknown" visual state.</li>
+        <li><strong>Progressive disclosure.</strong> The summary view shows status and timing. Clicking into a task reveals the full audit log, policy evaluation details, and LLM input/output. The operator chooses their depth of engagement.</li>
+        <li><strong>Minimal surprise.</strong> Colors mean the same thing everywhere. Green is always good. Red is always a problem. Amber is always "watch this." Consistency across components builds unconscious trust in the interface.</li>
+      </ol>
+
+      <blockquote>A dashboard that makes operators anxious is worse than no dashboard at all. The design language exists to convert raw system state into confident understanding. When an operator glances at the screen and knows "everything is fine" or "task 47 needs attention" within two seconds, the design is working.</blockquote>
+
+      <h2>CRT Overlay: The Detail That Ties It Together</h2>
+
+      <p>The subtle CRT scanline overlay is implemented as a CSS pseudo-element on the body. It creates a faint horizontal line pattern that simulates the look of a phosphor display:</p>
+
+      <pre><code>body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent, transparent 2px,
+    rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}</code></pre>
+
+      <p>The vignette effect darkens the edges of the viewport, subtly focusing attention on the center of the screen where the primary content lives. Both effects use <code>pointer-events: none</code> so they never interfere with interaction. The combined effect is barely noticeable consciously but contributes to the overall feeling that this is a serious, precision engineering tool.</p>
+
+    </div>
+
+    <!-- Summary Box -->
+    <div class="summary-box">
+      <h3>// Key Takeaways</h3>
+      <ul>
+        <li>AI operations dashboards must communicate control over non-deterministic processes</li>
+        <li>The retro-terminal aesthetic signals precision, transparency, and engineering authority</li>
+        <li>A four-color system (green/amber/red/blue) enables instant state comprehension</li>
+        <li>Pipeline stage indicators use animation only for the active stage to manage attention</li>
+        <li>WebSocket multiplexing with exponential backoff provides reliable real-time updates</li>
+        <li>Design principles: state visibility, progressive disclosure, minimal surprise</li>
+      </ul>
+    </div>
+
+    <!-- Article Navigation -->
+    <nav class="article-nav">
+      <a href="prompt-injection-detection.html">&larr; #016 Prompt Injection Detection</a>
+      <a href="reverse-proxy-architecture.html">#018 Reverse Proxy Architecture &rarr;</a>
+    </nav>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP — OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

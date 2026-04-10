@@ -1,12 +1,14 @@
-"""Pipeline execution endpoint – triggers the full VAP pipeline for a task."""
+"""Pipeline execution endpoint – triggers the full Verified Autonomy Pipeline for a task."""
 
 from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from orchestrator.event_emitter import EventEmitter
 from orchestrator.exceptions import GateRejectedError
 from orchestrator.models import TaskStatus
 
@@ -74,3 +76,21 @@ async def run_pipeline(
             "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         raise HTTPException(status_code=422, detail=exc.reason)
+
+
+@router.get("/events/{task_id}")
+async def get_events(
+    task_id: str,
+    limit: int = Query(default=50, ge=1, le=500),
+    user: dict = Depends(PermissionChecker("pipeline", "read")),
+    state: AppState = Depends(get_state),
+) -> list[dict[str, Any]]:
+    """Query events for a specific task."""
+    if state.pipeline is None:
+        raise HTTPException(status_code=503, detail="Pipeline not configured")
+
+    emitter = getattr(state.pipeline, "_event_emitter", None)
+    if not isinstance(emitter, EventEmitter):
+        return []
+
+    return emitter.get_events(task_id=task_id, limit=limit)

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Protocol-Based Adapters: Making AI Orchestration Pluggable — OCCP News</title>
+  <meta name="description" content="Designing the adapter pattern for planners, executors, validators, and shippers — pluggable AI orchestration at its core.">
+  <meta name="keywords" content="OCCP, adapter pattern, protocol, pluggable, AI orchestration, Python ABC">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/protocol-based-adapters.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/protocol-based-adapters.html">
+  <meta property="og:title" content="Protocol-Based Adapters: Making AI Orchestration Pluggable">
+  <meta property="og:description" content="Designing the adapter pattern for planners, executors, validators, and shippers — pluggable AI orchestration at its core.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2025-11-28">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Protocol-Based Adapters: Making AI Orchestration Pluggable">
+  <meta name="twitter:description" content="Designing the adapter pattern for planners, executors, validators, and shippers — pluggable AI orchestration at its core.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Protocol-Based Adapters: Making AI Orchestration Pluggable",
+    "datePublished": "2025-11-28",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Designing the adapter pattern for planners, executors, validators, and shippers — pluggable AI orchestration at its core.",
+    "url": "https://news.occp.ai/articles/protocol-based-adapters.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2025-11-28</span>
+          <span class="card-tag tag-architecture">Architecture</span>
+          <span class="card-version">v0.1.0</span>
+        </div>
+        <h1>Protocol-Based Adapters: Making AI Orchestration Pluggable</h1>
+        <p class="lead">Each stage of the Verified Autonomy Pipeline is defined by a protocol &mdash; a Python interface that specifies inputs, outputs, and behavioral contracts. Any component that implements the protocol can be used at that stage. This adapter pattern makes OCCP pluggable by design, enabling new LLM providers, validators, and delivery mechanisms without modifying the core pipeline.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Problem with Hard-Coded Integrations</h2>
+
+        <p>Most AI orchestration frameworks start with a specific LLM provider in mind. The orchestrator calls the OpenAI API directly, or imports the Anthropic client library, or uses a specific embedding service. When a new provider is needed, the orchestrator code must be modified: new import statements, new API call patterns, new response parsing logic. Each integration is a code change to the core system.</p>
+
+        <p>This approach creates several problems. Adding a new provider requires modifying core code, which risks introducing regressions. Testing requires mocking the specific API clients of each provider. Switching providers for a deployment means changing code, not configuration. And the core orchestrator accumulates provider-specific logic that makes it harder to understand and maintain.</p>
+
+        <blockquote>When your orchestrator imports a specific LLM client library, you have not built an orchestrator. You have built a wrapper around that library.</blockquote>
+
+        <h2>Protocols vs. Abstract Base Classes</h2>
+
+        <p>Python offers two mechanisms for defining interfaces: Abstract Base Classes (ABC) from the <code>abc</code> module, and Protocols from the <code>typing</code> module (introduced in Python 3.8). OCCP uses both, for different purposes.</p>
+
+        <p>ABCs require explicit inheritance: a class must declare that it extends the ABC. This provides strong guarantees (the class is checked at instantiation time) but requires coupling &mdash; the implementing class must know about and import the ABC.</p>
+
+        <p>Protocols use structural subtyping (duck typing with static checking): a class satisfies a Protocol if it has the required methods and attributes, without declaring any relationship to the Protocol. This enables loose coupling &mdash; an adapter can be written in a separate package that does not depend on OCCP's core.</p>
+
+        <pre><code># ABC approach — requires inheritance
+from abc import ABC, abstractmethod
+
+class ExecutorABC(ABC):
+    @abstractmethod
+    async def execute(self, plan: TaskPlan) -> ExecutionResult:
+        pass
+
+class ClaudeExecutor(ExecutorABC):  # Must inherit
+    async def execute(self, plan: TaskPlan) -> ExecutionResult:
+        ...
+
+# Protocol approach — structural subtyping
+from typing import Protocol, runtime_checkable
+
+@runtime_checkable
+class Executor(Protocol):
+    async def execute(self, plan: TaskPlan) -> ExecutionResult:
+        ...
+
+class ClaudeExecutor:  # No inheritance needed
+    async def execute(self, plan: TaskPlan) -> ExecutionResult:
+        ...</code></pre>
+
+        <p>OCCP uses ABCs for the core pipeline stages (where strong guarantees are important) and Protocols for extension points (where third-party adapters should not need to depend on OCCP's internals). The <code>@runtime_checkable</code> decorator enables <code>isinstance()</code> checks at runtime, providing a safety net even with structural subtyping.</p>
+
+        <h2>The Four Adapter Protocols</h2>
+
+        <h3>Planner Adapter</h3>
+
+        <p>The Planner adapter is responsible for decomposing a raw task into a structured <code>TaskPlan</code>. The default planner uses rule-based decomposition, but the protocol allows LLM-based planning (using the model itself to decompose complex tasks) or hybrid approaches.</p>
+
+        <pre><code>class Planner(Protocol):
+    async def plan(self, task: Task) -> TaskPlan:
+        """Decompose a task into a structured plan.
+
+        Args:
+            task: Raw task with description and parameters.
+
+        Returns:
+            TaskPlan with subtasks, strategy, risk level, and resource estimates.
+
+        Raises:
+            PlanningError: If the task cannot be decomposed.
+        """
+        ...</code></pre>
+
+        <p>The Planner protocol is deliberately minimal: one method, one input type, one output type. This constraint forces planners to have a single responsibility. A planner that also validates or executes is a violation of the protocol's intent, even if it satisfies the type signature.</p>
+
+        <h3>Executor Adapter</h3>
+
+        <p>The Executor adapter handles the actual LLM API call or code execution. This is where provider-specific logic lives: API endpoint URLs, authentication headers, request formatting, response parsing, error handling, and retry logic.</p>
+
+        <pre><code>class Executor(Protocol):
+    async def execute(self, plan: TaskPlan) -> ExecutionResult:
+        """Execute a planned task.
+
+        Args:
+            plan: A TaskPlan that has passed Gate evaluation.
+
+        Returns:
+            ExecutionResult with output, token usage, and timing.
+
+        Raises:
+            ExecutionError: If execution fails (timeout, API error, etc.).
+        """
+        ...
+
+    @property
+    def provider_name(self) -> str:
+        """Human-readable name of the LLM provider."""
+        ...</code></pre>
+
+        <p>The Executor protocol includes a <code>provider_name</code> property used for logging and metrics. Each executor implementation maps to a specific provider: <code>ClaudeExecutor</code>, <code>GPT4Executor</code>, <code>GeminiExecutor</code>. The orchestrator selects the executor based on the task plan's provider specification, without knowing anything about the provider's API details.</p>
+
+        <h3>Validator Adapter</h3>
+
+        <p>The Validator adapter checks execution results against task constraints. The default validator performs PII scanning and schema validation. Custom validators can implement domain-specific checks: verifying that generated SQL is syntactically valid, checking that generated code compiles, or ensuring that summarization output preserves key facts.</p>
+
+        <pre><code>class Validator(Protocol):
+    async def validate(self, result: ExecutionResult, plan: TaskPlan) -> ValidationResult:
+        """Validate an execution result against task constraints.
+
+        Args:
+            result: The output from the Execute stage.
+            plan: The original TaskPlan, for constraint reference.
+
+        Returns:
+            ValidationResult with passed/failed status and issues list.
+        """
+        ...</code></pre>
+
+        <p>Validators receive both the execution result and the original plan. This is intentional: the plan contains the constraints that the validator must check against. Without the plan, the validator would need to re-derive constraints from the raw task, duplicating the planner's work.</p>
+
+        <h3>Shipper Adapter</h3>
+
+        <p>The Shipper adapter handles result delivery after validation and audit logging. Different deployment scenarios require different delivery mechanisms: a REST API returns results as HTTP responses, a batch system writes results to a file system, an event-driven system publishes results to a message queue.</p>
+
+        <pre><code>class Shipper(Protocol):
+    async def ship(self, result: ValidationResult, audit_id: str) -> ShipResult:
+        """Deliver a validated result to its destination.
+
+        Args:
+            result: The validated execution result.
+            audit_id: The ID of the committed audit entry.
+
+        Returns:
+            ShipResult with delivery confirmation.
+
+        Raises:
+            ShipError: If delivery fails.
+        """
+        ...</code></pre>
+
+        <p>The Shipper receives the <code>audit_id</code> as a parameter, ensuring that every delivered result can be traced back to its audit entry. This is a deliberate design constraint: results cannot be shipped without an audit record.</p>
+
+        <h2>Adding a New LLM Provider</h2>
+
+        <p>To integrate a new LLM provider with OCCP, a developer implements the <code>Executor</code> protocol. Here is a simplified example showing the structure:</p>
+
+        <pre><code>class NewProviderExecutor:
+    """Executor adapter for a hypothetical LLM provider."""
+
+    provider_name = "new-provider"
+
+    def __init__(self, api_endpoint: str, model: str):
+        self.api_endpoint = api_endpoint
+        self.model = model
+
+    async def execute(self, plan: TaskPlan) -> ExecutionResult:
+        start_time = time.monotonic()
+
+        # Provider-specific API call
+        request_body = self._format_request(plan)
+        response = await self._call_api(request_body)
+        output = self._parse_response(response)
+
+        elapsed = time.monotonic() - start_time
+        return ExecutionResult(
+            output=output,
+            tokens_used=response.usage.total_tokens,
+            elapsed_seconds=elapsed,
+            provider=self.provider_name,
+            model=self.model,
+        )
+
+    def _format_request(self, plan: TaskPlan) -> dict:
+        # Provider-specific request formatting
+        ...
+
+    async def _call_api(self, body: dict) -> ProviderResponse:
+        # Provider-specific HTTP call with error handling
+        ...
+
+    def _parse_response(self, response: ProviderResponse) -> str:
+        # Provider-specific response extraction
+        ...</code></pre>
+
+        <p>Notice that this class does not import or inherit from anything in OCCP's core. It satisfies the <code>Executor</code> protocol through structural subtyping: it has an <code>execute</code> method with the correct signature and a <code>provider_name</code> property. This means the adapter can be distributed as an independent package, tested independently, and versioned independently from OCCP.</p>
+
+        <h2>Benefits of Protocol-Based Design</h2>
+
+        <h3>Testability</h3>
+
+        <p>Each adapter can be tested in isolation. A planner adapter can be tested with mock tasks. An executor adapter can be tested with a mock API server. A validator adapter can be tested with pre-fabricated execution results. The pipeline itself can be tested with mock adapters that return predictable results, enabling comprehensive integration testing without any LLM API calls.</p>
+
+        <h3>Pluggability</h3>
+
+        <p>Switching LLM providers is a configuration change, not a code change. A deployment can use Claude for code generation tasks and GPT-4 for summarization tasks by registering different executor adapters for different agent types. Provider selection is a scheduling decision, not an architectural one.</p>
+
+        <h3>Clear Contracts</h3>
+
+        <p>Each protocol defines a precise contract: what goes in, what comes out, and what exceptions can be raised. These contracts are enforced by Python's type system (with mypy or pyright) and by runtime checks. A developer implementing a new adapter knows exactly what is expected, without reading the orchestrator's implementation.</p>
+
+        <p>This contract-based architecture is what makes OCCP a platform rather than a framework. Frameworks require you to work within their structure. Platforms define interfaces and let you bring your own implementations. The protocol-based adapter pattern is the mechanism that makes this distinction concrete.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Each pipeline stage is defined by a protocol with clear input/output contracts</li>
+          <li>Four adapter protocols: Planner, Executor, Validator, Shipper &mdash; each with a single responsibility</li>
+          <li>Structural subtyping (Python Protocol) enables adapters without inheritance or OCCP dependencies</li>
+          <li>New LLM providers are added by implementing the Executor protocol &mdash; no core code changes</li>
+          <li>Protocol-based design enables independent testing, independent packaging, and independent versioning</li>
+          <li>Provider selection becomes a configuration decision, not an architectural one</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="agent-scheduling-concurrency.html">&larr; Agent Scheduling and Concurrency</a>
+        <a href="cli-first-design.html">CLI-First Design &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Tenancy and the Future of Shared AI Infrastructure — OCCP News</title>
+  <meta name="description" content="Designing isolation boundaries for multi-tenant AI orchestration where data isolation, execution isolation, and audit isolation must coexist with shared infrastructure efficiency.">
+  <meta name="keywords" content="OCCP, multi-tenancy, shared infrastructure, data isolation, execution isolation, audit isolation, AI orchestration">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/multi-tenancy-future.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/multi-tenancy-future.html">
+  <meta property="og:title" content="Multi-Tenancy and the Future of Shared AI Infrastructure">
+  <meta property="og:description" content="Designing isolation boundaries for multi-tenant AI orchestration where security and performance must coexist at scale.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-27">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Multi-Tenancy and the Future of Shared AI Infrastructure">
+  <meta name="twitter:description" content="Designing isolation boundaries for multi-tenant AI orchestration where security and performance must coexist at scale.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Multi-Tenancy and the Future of Shared AI Infrastructure",
+    "datePublished": "2026-02-27",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Designing isolation boundaries for multi-tenant AI orchestration where security and performance must coexist at scale.",
+    "url": "https://news.occp.ai/articles/multi-tenancy-future.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-27</span>
+          <span class="card-tag tag-architecture">Architecture</span>
+        </div>
+        <h1>Multi-Tenancy and the Future of Shared AI Infrastructure</h1>
+        <p class="lead">As AI orchestration moves from single-organization deployments to shared infrastructure, multi-tenancy becomes the defining architectural challenge. Tenant data must be completely isolated. Execution environments must be segregated. Audit chains must be tenant-scoped. And all of this must happen without sacrificing the cost efficiency, update velocity, and operational simplicity that make shared infrastructure attractive in the first place.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>Why Multi-Tenancy Matters for AI Orchestration</h2>
+
+        <p>Single-tenant deployments are straightforward: one organization, one database, one execution environment, one audit chain. Every resource belongs to one owner. Isolation is trivial because there is nothing to isolate from. But single-tenant deployments do not scale economically. Each new customer requires a new deployment: new servers, new databases, new monitoring, new maintenance. The operational cost per customer is constant, not amortized.</p>
+
+        <p>Multi-tenancy amortizes infrastructure across customers. One deployment serves many tenants, sharing compute, storage, and operational overhead. The cost per tenant decreases as the number of tenants increases. For SaaS-model AI orchestration, multi-tenancy is the economic foundation. But in AI orchestration, the isolation requirements are more demanding than in traditional SaaS applications because the data flowing through the system includes prompts, API tokens, model outputs, and audit records &mdash; each with its own sensitivity classification.</p>
+
+        <blockquote>Multi-tenancy is an economic requirement that creates a security engineering challenge. The challenge is not whether to share infrastructure, but how to share infrastructure without sharing trust boundaries.</blockquote>
+
+        <h2>Data Isolation: Three Approaches</h2>
+
+        <h3>Database-Per-Tenant</h3>
+
+        <p>The strongest isolation model gives each tenant its own database instance. Tenant A's data physically cannot be queried from Tenant B's connection. This model provides the simplest security guarantee but the worst operational scaling: managing thousands of database instances creates significant operational overhead, and cross-tenant operations (platform-wide analytics, system health monitoring) require querying every database individually.</p>
+
+        <pre><code># Database-per-tenant connection routing
+def get_tenant_db(tenant_id: str) -> Database:
+    """Route to tenant-specific database instance."""
+    db_url = tenant_config.get_database_url(tenant_id)
+    if db_url is None:
+        raise TenantNotFoundError(tenant_id)
+    return create_connection(db_url)
+
+# Pros: strongest isolation, simple security model
+# Cons: operational overhead, no cross-tenant queries</code></pre>
+
+        <h3>Schema-Per-Tenant</h3>
+
+        <p>A middle-ground approach uses a shared database instance with per-tenant schemas (namespaces). Each tenant's tables are in a separate schema, and database connections are scoped to the tenant's schema. This provides logical isolation within a shared physical database. Cross-tenant data access requires explicit schema switching, which can be controlled at the connection pool level. This model balances isolation strength with operational simplicity.</p>
+
+        <pre><code># Schema-per-tenant with connection pool scoping
+async def get_tenant_session(tenant_id: str) -> AsyncSession:
+    """Create a database session scoped to tenant's schema."""
+    session = await get_session()
+    schema = f"tenant_{tenant_id}"
+    await session.execute(
+        text(f"SET search_path TO {schema}, public")
+    )
+    return session</code></pre>
+
+        <h3>Row-Level Security</h3>
+
+        <p>The most operationally efficient model uses shared tables with row-level security (RLS) policies. Every table includes a <code>tenant_id</code> column, and database-level RLS policies automatically filter queries to the current tenant's rows. This model allows the simplest schema management (one set of tables, one migration path) but requires absolute trust in the RLS implementation. A bug in the RLS policy is a cross-tenant data breach.</p>
+
+        <pre><code># PostgreSQL row-level security for multi-tenancy
+-- Enable RLS on the audit_log table
+ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
+
+-- Create policy: tenants can only see their own rows
+CREATE POLICY tenant_isolation ON audit_log
+    USING (tenant_id = current_setting('app.current_tenant'));
+
+-- Set tenant context at connection time
+SET app.current_tenant = 'tenant_abc123';</code></pre>
+
+        <h3>OCCP's Approach</h3>
+
+        <p>OCCP's multi-tenancy roadmap uses schema-per-tenant as the default isolation model, with database-per-tenant available as an upgrade for tenants with strict regulatory requirements. The schema model provides strong logical isolation, allows per-tenant schema migrations, and supports platform-wide operations through cross-schema queries when needed. Row-level security is used as an additional defense-in-depth layer within each schema, not as the primary isolation mechanism.</p>
+
+        <h2>Execution Isolation</h2>
+
+        <h3>Per-Tenant Sandboxes</h3>
+
+        <p>Data isolation protects stored data. Execution isolation protects running processes. When Tenant A's agent is executing a task, it must not be able to observe, influence, or interfere with Tenant B's agent execution. In OCCP's architecture, each tenant's tasks execute in dedicated sandbox instances. The sandbox provides filesystem isolation (each tenant sees only its own working directory), process isolation (each tenant's processes cannot signal or inspect other tenants' processes), and network isolation (each tenant's execution environment has its own network namespace).</p>
+
+        <h3>Resource Quotas</h3>
+
+        <p>Execution isolation extends to resource allocation. Each tenant has configurable quotas for CPU time, memory, concurrent tasks, LLM API token consumption, and storage. These quotas prevent the "noisy neighbor" problem where one tenant's workload degrades performance for others. Resource enforcement is implemented at the orchestrator level (task scheduling) and at the sandbox level (cgroup limits for process-level enforcement).</p>
+
+        <pre><code># Per-tenant resource quota configuration
+{
+    "tenant_id": "tenant_abc123",
+    "quotas": {
+        "max_concurrent_tasks": 20,
+        "max_tokens_per_hour": 500000,
+        "max_cpu_seconds_per_task": 120,
+        "max_memory_mb_per_task": 512,
+        "max_storage_gb": 10,
+        "max_agents": 50
+    }
+}</code></pre>
+
+        <h3>Credential Isolation</h3>
+
+        <p>Each tenant's API tokens and encryption keys are isolated from other tenants. The envelope encryption system (described in the AES-256-GCM article) uses per-tenant master keys, ensuring that even a complete key compromise for one tenant does not expose another tenant's credentials. The key version registry is tenant-scoped: each tenant can rotate their keys independently on their own schedule.</p>
+
+        <h2>Audit Isolation</h2>
+
+        <h3>Tenant-Scoped Audit Chains</h3>
+
+        <p>Each tenant has its own SHA-256 hash chain. Tenant A's audit chain is independent of Tenant B's chain: they have separate genesis entries, separate hash sequences, and separate retention policies. This design ensures that one tenant's audit history cannot be tampered with by affecting another tenant's chain, and that audit exports for regulatory compliance contain only the requesting tenant's data.</p>
+
+        <pre><code># Tenant-scoped audit chain
+class TenantAuditChain:
+    def __init__(self, tenant_id: str):
+        self.tenant_id = tenant_id
+        self.schema = f"tenant_{tenant_id}"
+
+    async def append(self, entry: AuditEntry) -> str:
+        """Append entry to tenant-specific chain."""
+        prev = await self.get_latest_hash()
+        entry.prev_hash = prev
+        entry.tenant_id = self.tenant_id
+        entry.entry_hash = compute_hash(entry, prev)
+        await self.store(entry)
+        return entry.entry_hash
+
+    async def verify_integrity(self) -> bool:
+        """Verify this tenant's chain independently."""
+        entries = await self.get_all_entries()
+        return verify_chain(entries)</code></pre>
+
+        <h3>Cross-Tenant Visibility</h3>
+
+        <p>Platform operators need cross-tenant visibility for system health monitoring, capacity planning, and incident response. This visibility is carefully scoped: operators can see aggregated metrics (total tasks per tenant, error rates, resource utilization) but cannot see individual tenant data (prompt contents, model outputs, audit details). The aggregation happens at the query level, not by granting operators access to tenant schemas. Tenant data never leaves the tenant's isolation boundary, even for platform operations.</p>
+
+        <h2>The Challenge: Security and Performance</h2>
+
+        <h3>Isolation Overhead</h3>
+
+        <p>Every isolation mechanism has a performance cost. Schema-per-tenant requires connection pool management per schema. Sandbox-per-tenant requires process creation overhead for each task. Tenant-scoped audit chains require per-tenant hash computation. The engineering challenge is minimizing this overhead while maintaining isolation guarantees. Connection pooling per schema is amortized across requests. Sandbox creation is parallelized with task queuing. Hash computation is asynchronous and non-blocking.</p>
+
+        <h3>Migration Complexity</h3>
+
+        <p>Schema migrations in a multi-tenant system must be applied to every tenant's schema. A migration that takes 100ms for one schema takes 100ms times N tenants. Migrations must be backward-compatible (old code must work with the new schema) because tenants cannot all be migrated simultaneously in a rolling deployment. OCCP's migration system applies changes per schema with error handling: if a migration fails for one tenant, the other tenants are not affected, and the failed migration can be retried independently.</p>
+
+        <h2>Shared Infrastructure Benefits</h2>
+
+        <p>Despite the complexity, shared infrastructure provides compelling benefits. Cost efficiency: infrastructure costs are amortized across tenants, making the per-tenant cost lower than single-tenant deployments. Faster updates: platform improvements (security patches, new features, performance optimizations) are deployed once and benefit all tenants simultaneously. Unified monitoring: a single monitoring stack covers all tenants, enabling platform-wide alerting and capacity planning. Operational simplicity: one deployment pipeline, one incident response process, one on-call rotation.</p>
+
+        <p>The multi-tenancy roadmap for OCCP is designed to deliver these benefits while maintaining the isolation properties that enterprise customers require. The architecture is being developed incrementally: single-tenant foundations first (the current release), tenant-scoped data isolation next (v0.9.0), and full execution and audit isolation in the production-ready v1.0.0 release.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Multi-tenancy requires three isolation dimensions: data, execution, and audit chain separation</li>
+          <li>OCCP uses schema-per-tenant as the default, with database-per-tenant available for strict regulatory requirements</li>
+          <li>Execution isolation provides per-tenant sandboxes with cgroup-level resource quotas to prevent noisy-neighbor effects</li>
+          <li>Tenant-scoped SHA-256 audit chains ensure independent integrity verification and compliance-ready exports</li>
+          <li>Platform operators see aggregated metrics but never individual tenant data, preserving isolation even for operations</li>
+          <li>Shared infrastructure delivers cost efficiency, faster updates, and unified monitoring across the tenant base</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="enterprise-agent-governance.html">&larr; Enterprise Agent Governance</a>
+        <a href="open-source-governance.html">Open Source AI Governance &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

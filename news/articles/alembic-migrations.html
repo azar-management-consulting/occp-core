@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alembic Migrations: Managing Schema Evolution in AI Systems — OCCP News</title>
+  <meta name="description" content="How async Alembic migrations enable safe schema evolution across SQLite development and PostgreSQL production environments.">
+  <meta name="keywords" content="OCCP, Alembic, database migrations, SQLAlchemy, schema evolution, async ORM, AI platform infrastructure">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/alembic-migrations.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/alembic-migrations.html">
+  <meta property="og:title" content="Alembic Migrations: Managing Schema Evolution in AI Systems">
+  <meta property="og:description" content="How async Alembic migrations enable safe schema evolution across SQLite development and PostgreSQL production environments.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-12">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Alembic Migrations: Managing Schema Evolution in AI Systems">
+  <meta name="twitter:description" content="How async Alembic migrations enable safe schema evolution across SQLite development and PostgreSQL production environments.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Alembic Migrations: Managing Schema Evolution in AI Systems",
+    "datePublished": "2026-02-12",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "How async Alembic migrations enable safe schema evolution across SQLite development and PostgreSQL production environments.",
+    "url": "https://news.occp.ai/articles/alembic-migrations.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-12</span>
+          <span class="card-tag tag-infra">Infrastructure</span>
+          <span class="card-version">v0.7.0</span>
+        </div>
+        <h1>Alembic Migrations: Managing Schema Evolution in AI Systems</h1>
+        <p class="lead">AI platforms that maintain audit trails, policy evaluations, and agent registrations generate complex relational data. When the schema evolves &mdash; and it always does &mdash; you need migration infrastructure that handles async engines, dual backends, and zero-downtime upgrades. Here is how OCCP uses Alembic to manage schema evolution across SQLite development and PostgreSQL production.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>Why Schema Migration Matters for AI Platforms</h2>
+
+        <p>Most AI orchestration tools store data in flat files or ephemeral memory. OCCP takes a fundamentally different approach: every pipeline execution, every policy evaluation, every audit entry is persisted in a relational database. This data is not optional &mdash; it is the evidence chain that proves your AI system operated within defined boundaries. When regulations like the EU AI Act require record-keeping for high-risk AI systems, that data must survive schema changes without corruption or loss.</p>
+
+        <p>The challenge is that AI platforms evolve rapidly. In four months, OCCP went from a simple task table to a schema with users, agents, capabilities, audit entries, policy evaluations, settings, skills, and MCP connections. Each version added tables, modified columns, and introduced new relationships. Without migration infrastructure, each schema change would require manual database recreation and data loss.</p>
+
+        <blockquote>Schema migration is not a database concern. It is a compliance concern. If your AI platform cannot evolve its schema without losing audit data, you cannot satisfy Article 12 of the EU AI Act.</blockquote>
+
+        <h2>Alembic Configuration for Async Engines</h2>
+
+        <p>OCCP uses SQLAlchemy 2.0 with async mapped models. Alembic, SQLAlchemy's migration tool, supports async engines through its <code>run_async</code> configuration. The key configuration lives in <code>alembic/env.py</code>, where we configure the migration environment to work with both synchronous SQLite (development) and asynchronous PostgreSQL (production).</p>
+
+        <pre><code># alembic/env.py — async engine configuration
+from sqlalchemy.ext.asyncio import create_async_engine
+from alembic import context
+from occp.database import Base
+
+target_metadata = Base.metadata
+
+def run_migrations_offline():
+    """Run migrations in 'offline' mode — generates SQL scripts."""
+    url = config.get_main_option("sqlalchemy.url")
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+    )
+    with context.begin_transaction():
+        context.run_migrations()
+
+async def run_async_migrations():
+    """Run migrations with an async engine."""
+    connectable = create_async_engine(
+        config.get_main_option("sqlalchemy.url"),
+        poolclass=pool.NullPool,
+    )
+    async with connectable.connect() as connection:
+        await connection.run_sync(do_run_migrations)
+    await connectable.dispose()
+
+def do_run_migrations(connection):
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+    )
+    with context.begin_transaction():
+        context.run_migrations()</code></pre>
+
+        <p>The dual-mode configuration is critical. In development, we use <code>sqlite+aiosqlite:///./occp.db</code> for fast local iteration. In production, <code>postgresql+asyncpg://...</code> connects to the managed PostgreSQL instance. Alembic handles the dialect differences transparently, though some operations &mdash; like <code>ALTER COLUMN</code> &mdash; require dialect-specific handling that we encode in the migration files themselves.</p>
+
+        <h2>Migration File Structure</h2>
+
+        <p>Each migration file in <code>migrations/versions/</code> follows a strict structure: a revision ID, a reference to the parent revision, and two functions &mdash; <code>upgrade()</code> and <code>downgrade()</code>. The revision ID is a short hex string generated by Alembic, and the parent reference creates a linked list of migrations that must be applied in order.</p>
+
+        <pre><code># migrations/versions/a3f8b2c1d4e5_add_agent_capabilities.py
+"""Add agent capabilities table
+
+Revision ID: a3f8b2c1d4e5
+Revises: 9c7d6e5f4a3b
+Create Date: 2026-02-10 14:30:00.000000
+"""
+from alembic import op
+import sqlalchemy as sa
+
+revision = 'a3f8b2c1d4e5'
+down_revision = '9c7d6e5f4a3b'
+branch_labels = None
+depends_on = None
+
+def upgrade():
+    op.create_table(
+        'agent_capabilities',
+        sa.Column('id', sa.Integer(), primary_key=True),
+        sa.Column('agent_id', sa.Integer(), sa.ForeignKey('agents.id')),
+        sa.Column('capability', sa.String(100), nullable=False),
+        sa.Column('granted_at', sa.DateTime(), server_default=sa.func.now()),
+        sa.Column('granted_by', sa.Integer(), sa.ForeignKey('users.id')),
+    )
+    op.create_index('ix_agent_capabilities_agent_id', 'agent_capabilities', ['agent_id'])
+
+def downgrade():
+    op.drop_index('ix_agent_capabilities_agent_id')
+    op.drop_table('agent_capabilities')</code></pre>
+
+        <h3>Auto-Generating Migrations from Models</h3>
+
+        <p>Alembic can compare the current database state against the SQLAlchemy model definitions and auto-generate the migration diff. This is invoked with <code>alembic revision --autogenerate -m "description"</code>. The autogenerate feature inspects <code>Base.metadata</code>, compares it to the database schema, and produces <code>upgrade()</code> and <code>downgrade()</code> functions that reconcile the differences.</p>
+
+        <p>We do not blindly trust autogenerated migrations. Every generated file is reviewed for correctness, especially around these areas:</p>
+
+        <ul>
+          <li><strong>Column type changes</strong> &mdash; SQLite does not support <code>ALTER COLUMN TYPE</code>. We use batch operations (<code>op.batch_alter_table</code>) for SQLite compatibility.</li>
+          <li><strong>Default values</strong> &mdash; Server defaults versus client defaults have different behaviors across dialects. We enforce server defaults for audit timestamps.</li>
+          <li><strong>Foreign key constraints</strong> &mdash; SQLite foreign keys require <code>PRAGMA foreign_keys = ON</code>. Our test fixtures enable this explicitly.</li>
+          <li><strong>Index names</strong> &mdash; Autogenerated index names can conflict across backends. We use explicit naming conventions.</li>
+        </ul>
+
+        <h2>Testing Migrations in CI</h2>
+
+        <p>Every pull request that includes a migration file triggers a dedicated CI job that applies the full migration chain from scratch on a clean SQLite database. The job runs <code>alembic upgrade head</code> followed by <code>alembic downgrade base</code> followed by <code>alembic upgrade head</code> again. This round-trip test catches irreversible migrations, missing downgrade logic, and ordering conflicts.</p>
+
+        <pre><code># .github/workflows/ci.yml — migration test step
+- name: Test migrations
+  run: |
+    alembic upgrade head
+    alembic downgrade base
+    alembic upgrade head
+    python -c "from occp.database import Base; print(f'Tables: {len(Base.metadata.tables)}')"</code></pre>
+
+        <p>The final Python check verifies that the model metadata matches the migrated schema. If a migration creates a table that is not reflected in the models, or if a model references a table that no migration creates, the check fails. This keeps models and migrations in lockstep across all three Python versions we test against: 3.11, 3.12, and 3.13.</p>
+
+        <h2>Rollback Strategies</h2>
+
+        <p>Production rollback is the scenario nobody wants but everyone must plan for. Our rollback strategy operates at three levels:</p>
+
+        <ol>
+          <li><strong>Alembic downgrade</strong> &mdash; Each migration has a <code>downgrade()</code> function. For additive changes (new tables, new columns with defaults), downgrade is safe. For destructive changes (column removal, type changes), the downgrade function must restore the original schema without data loss.</li>
+          <li><strong>Database snapshots</strong> &mdash; Before any production migration, the deployment script creates a PostgreSQL snapshot. If the migration fails or the application behaves incorrectly after migration, we restore the snapshot and redeploy the previous version.</li>
+          <li><strong>Feature flags</strong> &mdash; New columns that drive new features are read behind feature flags. The migration can be applied in advance without the application code referencing the new columns until the feature is enabled.</li>
+        </ol>
+
+        <h3>The Additive-Only Rule</h3>
+
+        <p>We follow a strict rule: migrations should be additive whenever possible. Adding a new table is always safe. Adding a nullable column with a default is always safe. Renaming a column or changing a type is never safe without a multi-step migration: add the new column, backfill data, update the application to use the new column, then drop the old column in a subsequent migration.</p>
+
+        <blockquote>Never remove a column in the same release that stops writing to it. The rollback window must include at least one release where both columns exist.</blockquote>
+
+        <h2>Dual Backend Considerations</h2>
+
+        <p>Running SQLite in development and PostgreSQL in production introduces dialect-specific challenges. SQLite lacks support for several PostgreSQL features: <code>ALTER COLUMN</code>, concurrent index creation, and schema-qualified table names. Our migration files handle this with dialect-aware branching:</p>
+
+        <pre><code>def upgrade():
+    bind = op.get_bind()
+    if bind.dialect.name == 'sqlite':
+        with op.batch_alter_table('audit_entries') as batch_op:
+            batch_op.add_column(sa.Column('retention_days', sa.Integer(), default=2555))
+    else:
+        op.add_column('audit_entries',
+            sa.Column('retention_days', sa.Integer(), server_default='2555'))</code></pre>
+
+        <p>The <code>batch_alter_table</code> context manager is essential for SQLite. It creates a temporary table with the new schema, copies data from the original table, drops the original, and renames the temporary table. This is transparent to the migration author but critical for correctness on SQLite, where <code>ALTER TABLE</code> support is limited to adding columns and renaming tables.</p>
+
+        <h2>Migration as Compliance Infrastructure</h2>
+
+        <p>For an AI governance platform, migrations are not merely a development convenience. They are compliance infrastructure. The audit_entries table, for example, must retain records for seven years under EU AI Act Article 19. A migration that alters this table must preserve every existing record with its original timestamps and hash chain references. Our migration review checklist includes a specific item: "Does this migration preserve audit trail integrity?" If the answer is no, the migration is rejected regardless of its technical correctness.</p>
+
+        <p>The migration chain itself serves as a record of schema evolution. Each migration file is committed to the repository with a descriptive message. The revision history forms a timeline of how the platform's data model evolved, providing the kind of technical documentation that auditors require when evaluating AI system record-keeping practices.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Alembic async configuration enables migrations against both SQLite (dev) and PostgreSQL (prod) backends</li>
+          <li>Auto-generated migrations are reviewed for dialect-specific issues: batch operations for SQLite, server defaults for PostgreSQL</li>
+          <li>CI runs a full upgrade-downgrade-upgrade cycle to catch irreversible migrations</li>
+          <li>Additive-only rule: never remove a column in the same release that stops writing to it</li>
+          <li>Migration infrastructure is compliance infrastructure &mdash; audit data must survive every schema change</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="sandbox-isolation.html">&larr; Sandbox Isolation</a>
+        <a href="security-middleware-stack.html">Security Middleware Stack &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

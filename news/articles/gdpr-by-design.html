@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GDPR by Design: Privacy Engineering for AI Platforms — OCCP News</title>
+  <meta name="description" content="Building privacy into the architecture — data minimization, purpose limitation, and consent management in AI orchestration.">
+  <meta name="keywords" content="OCCP, GDPR, privacy by design, data minimization, AI privacy, consent management, data protection">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/gdpr-by-design.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/gdpr-by-design.html">
+  <meta property="og:title" content="GDPR by Design: Privacy Engineering for AI Platforms">
+  <meta property="og:description" content="Building privacy into the architecture — data minimization, purpose limitation, and consent management in AI orchestration.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-01">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="GDPR by Design: Privacy Engineering for AI Platforms">
+  <meta name="twitter:description" content="Building privacy into the architecture — data minimization, purpose limitation, and consent management in AI orchestration.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "GDPR by Design: Privacy Engineering for AI Platforms",
+    "datePublished": "2026-02-01",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Building privacy into the architecture — data minimization, purpose limitation, and consent management in AI orchestration.",
+    "url": "https://news.occp.ai/articles/gdpr-by-design.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-01</span>
+          <span class="card-tag tag-governance">Governance</span>
+          <span class="card-version">v0.6.0</span>
+        </div>
+        <h1>GDPR by Design: Privacy Engineering for AI Platforms</h1>
+        <p class="lead">The General Data Protection Regulation requires that data protection is built into systems from the outset &mdash; not retrofitted after deployment. For AI orchestration platforms that process user prompts, task data, and agent interactions, this principle demands specific architectural decisions about what data is stored, why it is stored, and how long it persists.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>Why AI Platforms Have a Special Privacy Problem</h2>
+
+        <p>Traditional web applications process structured personal data: names, email addresses, phone numbers. The GDPR obligations are well-understood &mdash; collect only what you need, store it securely, delete it when the purpose is fulfilled. AI orchestration platforms face a different challenge. The data they process is unstructured, unpredictable, and frequently contains personal information that was not explicitly requested.</p>
+
+        <p>When a user submits a prompt to an AI agent, that prompt might contain a customer name, a medical condition, a financial figure, or a home address. The user is not filling out a form with labeled fields. They are writing natural language that may or may not contain personal data. The platform cannot know in advance what personal data a prompt will contain, but it must handle all prompts as if they might contain personal data.</p>
+
+        <blockquote>In AI systems, personal data does not arrive through defined input channels. It arrives embedded in natural language, hidden in context, and reproduced in output. Privacy engineering for AI must account for data that is unstructured, unsolicited, and unpredictable.</blockquote>
+
+        <h2>Data Minimization: Store Only What Audit Requires</h2>
+
+        <p>GDPR Article 5(1)(c) establishes the principle of data minimization: personal data shall be "adequate, relevant and limited to what is necessary in relation to the purposes for which they are processed." For an AI orchestration platform, the primary purpose of data storage is audit compliance &mdash; maintaining a verifiable record of what the platform did and why.</p>
+
+        <p>OCCP implements data minimization through a tiered storage model:</p>
+
+        <pre><code># Tiered data storage model
+class AuditEntry:
+    # Tier 1: Always stored (required for audit)
+    task_id: str
+    agent_id: str
+    timestamp: datetime
+    action_type: str
+    policy_result: str  # pass/fail + policy ID
+    sha256_hash: str    # Hash chain integrity
+
+    # Tier 2: Stored with retention limit (useful for debugging)
+    prompt_summary: str  # Truncated, PII-stripped summary
+    output_summary: str  # Truncated, sanitized summary
+
+    # Tier 3: Never stored
+    # - Full raw prompts (may contain PII)
+    # - Full raw LLM responses (may contain PII)
+    # - User IP addresses (not needed for audit)
+    # - Session cookies or auth tokens</code></pre>
+
+        <p>The tier model makes data minimization decisions explicit and enforceable. Tier 1 data is the minimum required for the audit chain to function &mdash; task identifiers, timestamps, policy results, and hash chain values. Tier 2 data provides operational value (summarized prompts and responses for debugging) but is stored with a configurable retention period and undergoes PII stripping before storage. Tier 3 data is never persisted &mdash; full prompts and responses exist only in memory during pipeline execution.</p>
+
+        <h3>PII Stripping for Summaries</h3>
+
+        <p>The Tier 2 summaries are not raw truncations. Before a prompt or response summary is stored, it passes through the PII detection engine that the policy engine already uses for injection prevention. Named entities, email patterns, phone number formats, and government ID patterns are replaced with category markers: <code>[PERSON_NAME]</code>, <code>[EMAIL]</code>, <code>[PHONE]</code>. This means the summary retains its structural information ("User asked about [PERSON_NAME]'s account balance") without storing the actual personal data.</p>
+
+        <h2>Purpose Limitation: Clear Boundaries on Data Usage</h2>
+
+        <p>GDPR Article 5(1)(b) requires that personal data is "collected for specified, explicit and legitimate purposes and not further processed in a manner that is incompatible with those purposes." For OCCP, this means defining exactly why each data element is collected and ensuring it is never used for another purpose.</p>
+
+        <p>The platform defines three processing purposes:</p>
+
+        <ul>
+          <li><strong>Task execution</strong> &mdash; Processing the user's prompt through the Verified Autonomy Pipeline to produce a result. Data used for this purpose exists only during pipeline execution and is not retained after the task completes.</li>
+          <li><strong>Audit compliance</strong> &mdash; Maintaining the tamper-evident audit chain that records platform actions. Data used for this purpose is stored in the audit log with the tiered model described above.</li>
+          <li><strong>Platform improvement</strong> &mdash; Aggregated, anonymized metrics about platform performance (task completion rates, average response times, error frequencies). No personal data is used for this purpose.</li>
+        </ul>
+
+        <p>These purpose definitions are enforced architecturally. The task execution pipeline cannot write to the analytics database. The audit log cannot be queried by the metrics aggregation service. The purpose boundaries are not policies that can be reconfigured &mdash; they are hard-coded data flow restrictions.</p>
+
+        <h2>Consent Management in AI Contexts</h2>
+
+        <p>Consent management for AI platforms is more nuanced than for traditional web applications. A user consenting to "use this AI assistant" does not necessarily consent to their prompt being stored for audit, their data being processed by a specific LLM provider, or their interaction patterns being used for platform metrics.</p>
+
+        <p>OCCP implements granular consent through scoped consent records:</p>
+
+        <pre><code>class ConsentRecord:
+    user_id: str
+    scope: ConsentScope  # execution, audit_storage, metrics, third_party_llm
+    granted: bool
+    granted_at: datetime
+    expires_at: datetime | None
+    revoked_at: datetime | None
+    legal_basis: str  # consent, legitimate_interest, contract</code></pre>
+
+        <p>Each consent scope maps to a specific processing purpose. A user can consent to task execution (necessary for the service to function) while declining metrics collection. The platform respects these boundaries at every data decision point. If a user has not consented to audit storage, their task summaries are not persisted in Tier 2 &mdash; only the Tier 1 hash chain entries (which contain no personal data) are written.</p>
+
+        <h3>Legal Basis Beyond Consent</h3>
+
+        <p>GDPR recognizes six legal bases for data processing, and consent is only one of them. OCCP supports multiple legal bases because enterprise deployments often rely on "legitimate interest" (Article 6(1)(f)) or "contract performance" (Article 6(1)(b)) rather than individual consent. The consent record's <code>legal_basis</code> field documents which basis applies to each processing scope, ensuring that the platform can demonstrate compliance regardless of which basis the deployment uses.</p>
+
+        <h2>Data Subject Rights Implementation</h2>
+
+        <p>GDPR grants data subjects specific rights that the platform must support. OCCP implements four of these rights in v0.6.0:</p>
+
+        <h3>Right of Access (Article 15)</h3>
+
+        <p>Users can request all data the platform holds about them. The <code>/api/v1/privacy/export</code> endpoint generates a complete data package including the user's profile data, consent records, and any Tier 2 audit summaries associated with their tasks. The export is delivered as a structured JSON file, machine-readable per the portability requirement.</p>
+
+        <h3>Right to Erasure (Article 17)</h3>
+
+        <p>Users can request deletion of their personal data. The platform handles this in two phases. Phase 1: immediate deletion of Tier 2 audit summaries and user profile data. Phase 2: the Tier 1 audit chain entries are anonymized (user_id replaced with a hash) rather than deleted, because deleting entries would break the SHA-256 hash chain. The anonymized entries satisfy both the erasure right and the audit integrity requirement.</p>
+
+        <h3>Right to Rectification (Article 16)</h3>
+
+        <p>Users can correct inaccurate personal data. For profile data (name, email, organization), this is straightforward CRUD. For data embedded in past task prompts, rectification is handled through the same PII stripping mechanism &mdash; the specific inaccurate data point is identified and the relevant audit summaries are re-processed with the corrected information.</p>
+
+        <h3>Right to Data Portability (Article 20)</h3>
+
+        <p>The data export endpoint produces machine-readable JSON that can be imported into another system. The export format follows the schema defined by the Data Transfer Project where applicable, ensuring interoperability with other platforms that support the same standard.</p>
+
+        <h2>Privacy Impact Assessment</h2>
+
+        <p>GDPR Article 35 requires a Data Protection Impact Assessment (DPIA) for processing that is "likely to result in a high risk to the rights and freedoms of natural persons." AI orchestration platforms that process unstructured user prompts fall squarely within this requirement.</p>
+
+        <p>OCCP's architecture documentation includes a DPIA template pre-populated with the platform's data flows, processing purposes, and safeguards. Deploying organizations can use this template as the starting point for their own DPIA, supplementing it with organization-specific context. This reduces the compliance burden from "build a DPIA from scratch" to "customize the existing DPIA for your deployment."</p>
+
+        <blockquote>Privacy engineering is not about preventing data processing &mdash; it is about making data processing accountable. Every byte of personal data in OCCP has a documented purpose, a defined retention period, and a deletion mechanism. That is what GDPR by design means in practice.</blockquote>
+
+        <h2>Personal Data in LLM Interactions</h2>
+
+        <p>The most challenging privacy question for AI platforms is: what happens to personal data that is sent to a third-party LLM provider? The user's prompt, which may contain personal data, is transmitted to the LLM API for processing. The platform controls what it sends and what it stores, but it does not control what the LLM provider does with the data after receipt.</p>
+
+        <p>OCCP addresses this through transparency and data minimization at the transmission boundary. The platform logs which data fields are sent to the LLM provider, enabling operators and data subjects to know exactly what was shared. The PII detection engine can optionally strip personal data from prompts before they are sent to the LLM, replacing detected PII with generic placeholders. This reduces the privacy impact of LLM transmission at the cost of some response quality &mdash; a tradeoff that operators configure based on their deployment's privacy requirements.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Three-tier storage model ensures only audit-critical data is persisted, with PII stripping for operational summaries</li>
+          <li>Purpose limitation is enforced architecturally through hard-coded data flow restrictions, not configurable policies</li>
+          <li>Granular consent records support multiple GDPR legal bases with per-scope consent management</li>
+          <li>Data subject rights (access, erasure, rectification, portability) are implemented as API endpoints</li>
+          <li>Hash chain audit entries are anonymized rather than deleted to preserve audit integrity during erasure requests</li>
+          <li>Pre-populated DPIA template reduces compliance burden for deploying organizations</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="output-sanitization.html">&larr; Output Sanitization</a>
+        <a href="evolving-injection-guards.html">Evolving Injection Guards &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

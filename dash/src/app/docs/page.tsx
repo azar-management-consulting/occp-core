@@ -139,8 +139,8 @@ function EndpointRow({
   );
 }
 
-/* ── VAP Stage ──────────────────────────────────────────── */
-function VAPStage({
+/* ── Pipeline Stage ────────────────────────────────────── */
+function PipelineStage({
   num,
   label,
   desc,
@@ -215,7 +215,7 @@ export default function DocsPage() {
             >
               GITHUB
             </a>
-            <span className="font-pixel text-[7px] text-occp-accent">v0.8.0</span>
+            <span className="font-pixel text-[7px] text-occp-accent">v0.8.2</span>
             <Link href="/login" className="retro-btn-primary !text-[8px] !px-3 !py-1.5 font-pixel">
               DASHBOARD
             </Link>
@@ -290,7 +290,7 @@ export default function DocsPage() {
             <p>
               <strong className="text-[var(--text)]">OCCP</strong> is an open-source control plane that
               governs how AI agents operate in production. Every agent action flows through a{" "}
-              <strong className="text-occp-accent">5-stage Verified Autonomy Pipeline (VAP)</strong> &mdash;
+              <strong className="text-occp-accent">5-stage Verified Autonomy Pipeline</strong> &mdash;
               ensuring nothing runs unchecked.
             </p>
             <p>
@@ -330,7 +330,7 @@ export default function DocsPage() {
             <FeatureCard
               icon="&#x26A1;"
               title="Real-time Pipeline"
-              desc="WebSocket-powered live monitoring of VAP stage transitions."
+              desc="WebSocket-powered live monitoring of Verified Autonomy Pipeline stage transitions."
               color="var(--warning)"
             />
             <FeatureCard
@@ -446,7 +446,7 @@ export default function DocsPage() {
         </div>
       </section>
 
-      {/* ── ARCHITECTURE: VAP PIPELINE ─────────────────── */}
+      {/* ── ARCHITECTURE: PIPELINE ──────────────────────── */}
       <section id="architecture" className="max-w-6xl mx-auto px-6 pb-20">
         <div className="flex items-center gap-3 mb-8">
           <span className="font-pixel text-[10px] text-occp-success opacity-40">03</span>
@@ -456,21 +456,21 @@ export default function DocsPage() {
           <div className="flex-1 h-px bg-gradient-to-r from-occp-success/20 to-transparent" />
         </div>
 
-        {/* VAP Pipeline Visualization */}
+        {/* Pipeline Visualization */}
         <div className="retro-card crt-glow p-8 mb-8">
           <div className="font-pixel text-[8px] text-center text-[var(--text-muted)] mb-6 uppercase tracking-widest">
-            Verified Autonomy Pipeline (VAP)
+            Verified Autonomy Pipeline
           </div>
 
           <div className="flex items-start gap-2 sm:gap-4 relative">
             {/* Connecting line */}
             <div className="absolute top-6 left-[10%] right-[10%] h-px bg-gradient-to-r from-[var(--primary)]/40 via-occp-accent/40 to-occp-success/40 hidden sm:block" />
 
-            <VAPStage num="01" label="Plan" desc="Decompose task into atomic steps" color="var(--primary)" active />
-            <VAPStage num="02" label="Gate" desc="Policy check against risk thresholds" color="var(--accent)" />
-            <VAPStage num="03" label="Exec" desc="LLM-powered autonomous execution" color="var(--warning)" />
-            <VAPStage num="04" label="Valid" desc="Output verification & constraints" color="var(--purple)" />
-            <VAPStage num="05" label="Ship" desc="Deploy with audit hash chain" color="var(--success)" />
+            <PipelineStage num="01" label="Plan" desc="Decompose task into atomic steps" color="var(--primary)" active />
+            <PipelineStage num="02" label="Gate" desc="Policy check against risk thresholds" color="var(--accent)" />
+            <PipelineStage num="03" label="Exec" desc="LLM-powered autonomous execution" color="var(--warning)" />
+            <PipelineStage num="04" label="Valid" desc="Output verification & constraints" color="var(--purple)" />
+            <PipelineStage num="05" label="Ship" desc="Deploy with audit hash chain" color="var(--success)" />
           </div>
         </div>
 
@@ -486,8 +486,8 @@ export default function DocsPage() {
   └─────────────┘     └──────┬───────┘     └─────────────┘
                              │
                     ┌────────┴────────┐
-                    │   VAP Engine    │
-                    │  5-Stage Pipeline│
+                    │ Pipeline Engine  │
+                    │  5-Stage Verified│
                     └────────┬────────┘
                              │
               ┌──────────────┼──────────────┐
@@ -542,7 +542,7 @@ export default function DocsPage() {
           <div className="px-4 py-2 bg-[var(--surface-bright)] border-b border-[var(--muted)]/30">
             <span className="font-pixel text-[7px] text-occp-warning uppercase tracking-wider">Pipeline</span>
           </div>
-          <EndpointRow method="POST" path="/pipeline/run" desc="Execute VAP pipeline for a task" />
+          <EndpointRow method="POST" path="/pipeline/run" desc="Execute Verified Autonomy Pipeline for a task" />
           <EndpointRow method="GET" path="/pipeline/ws" desc="WebSocket live pipeline events" />
 
           {/* Agents */}
@@ -611,7 +611,7 @@ export default function DocsPage() {
             href="/pipeline"
             num="01"
             title="Pipeline"
-            desc="Submit tasks and monitor the 5-stage VAP execution flow in real-time via WebSocket."
+            desc="Submit tasks and monitor the 5-stage Verified Autonomy Pipeline execution flow in real-time via WebSocket."
             color="var(--primary)"
           />
           <NavCard
@@ -781,7 +781,7 @@ export default function DocsPage() {
                   Privacy Policy
                 </div>
                 <p className="text-[10px] text-[var(--text-muted)]">
-                  GDPR Art. 13-14 compliant data processing disclosure. EU data residency.
+                  GDPR Art. 13-14 aligned data processing disclosure. EU AI Act Art. 12, 14, 19 ready. EU data residency.
                 </p>
               </div>
             </Link>
@@ -817,7 +817,7 @@ export default function DocsPage() {
             <div>
               <span className="font-pixel text-[9px] text-[var(--primary)] text-glow">OCCP</span>
               <p className="text-[var(--text-muted)] text-xs mt-2 leading-relaxed">
-                OpenCloud Control Plane v0.8.0. Open-source AI agent governance with verified autonomy.
+                OpenCloud Control Plane v0.8.2. Open-source AI agent governance with verified autonomy.
               </p>
             </div>
 

@@ -1,0 +1,133 @@
+version: 1
+generated: 2026-04-07
+
+# OCCP has TWO separate agent registries — KNOWN GAP
+
+# ──────────────────────────────────────────────────────────────
+# REGISTRY A: OCCP API agent_configs (SQLite, 11 rows)
+# Used by: api/routes/agents.py
+# Source: server /opt/occp/data/occp.db agent_configs table
+# ──────────────────────────────────────────────────────────────
+occp_api_agents:
+  - { id: code-reviewer,    role: "Code analysis, PR review, security scan" }
+  - { id: demo,             role: "Echo + testing" }
+  - { id: general,          role: "General planning + execution + validation" }
+  - { id: llm-setup,        role: "LLM config + token validation" }
+  - { id: mcp-installer,    role: "MCP install + connector setup" }
+  - { id: onboarding-wizard, role: "Onboarding flow" }
+  - { id: openclaw,         role: "Bridge to OpenClaw remote agent" }
+  - { id: remote-agent,     role: "Alias for openclaw bridge" }
+  - { id: session-policy,   role: "Session scope + secure mode" }
+  - { id: skills-manager,   role: "Skills inventory + token budget" }
+  - { id: ux-copy,          role: "UI text + i18n + CRT style" }
+
+# ──────────────────────────────────────────────────────────────
+# REGISTRY B: OpenClaw agents.list (openclaw.json, 8 rows)
+# Used by: openclaw-deploy on 95.216.212.174
+# Reachable via: occp-brain → openclaw_executor → wss://claw.occp.ai
+# ──────────────────────────────────────────────────────────────
+openclaw_specialist_agents:
+  - id: eng-core
+    role: Engineering Agent
+    domain: Backend, API, Python, FastAPI, tests, refactor, bugfix
+    sub_agents: [frontend-ui, backend-api, database-data, qa-test, code-review]
+    primary_model: anthropic/claude-sonnet-4-6
+    tools_allowlist: [bash, read, write, edit, browser, exec, test_runner]
+
+  - id: wp-web
+    role: Web/WordPress Agent
+    domain: WordPress, Elementor, plugins, landing, REST API
+    sub_agents: [elementor-builder, wp-plugin-dev, seo-page-optimizer, conversion-page-builder, wp-debugger]
+    tools_allowlist: [bash, read, write, edit, browser, wp_cli, ftp]
+
+  - id: infra-ops
+    role: Infra/Deploy Agent
+    domain: Hetzner, Docker, Apache/Nginx, SSL, DNS, deploy
+    sub_agents: [server-provision, docker-stack, apache-nginx-proxy, ssl-dns-mail, live-verifier]
+    tools_allowlist: [bash, read, exec, ssh, docker, dns, ssl, grep, glob]
+
+  - id: design-lab
+    role: Design/UI Agent
+    domain: Wireframe, UI system, brand visual, ad creative
+    sub_agents: [ui-layout, brand-visual, ad-creative, presentation-visual]
+    tools_allowlist: [read, write, browser, screenshot]
+    sandbox: mock (no exec, no bash)
+
+  - id: content-forge
+    role: Content/Copy Agent
+    domain: Hungarian SEO/sales/executive copy, articles
+    sub_agents: [seo-copy, sales-copy, executive-copy, email-copy]
+    tools_allowlist: [read, write, browser, translate]
+
+  - id: social-growth
+    role: Social Media Agent
+    domain: Facebook, Instagram, TikTok, lead gen
+    sub_agents: [facebook-ads, instagram-ads, tiktok-script, lead-magnet-social]
+    tools_allowlist: [read, write, browser, api_call]
+
+  - id: intel-research
+    role: Research/Intelligence Agent
+    domain: Deep web research, competitor scan, fact-check
+    sub_agents: [market-research, competitor-scan, tech-radar, fact-check, procurement-scan]
+    tools_allowlist: [read, browser, web_search, web_fetch, grep, glob]
+    workspace_access: read-only
+
+  - id: biz-strategy
+    role: Business/Proposal Agent
+    domain: Proposals, pricing, pitch, partnership
+    sub_agents: [proposal-writer, pricing-architect, pitch-structurer, partnership-mapper]
+    tools_allowlist: [read, write, browser, calculator, web_search]
+
+# ──────────────────────────────────────────────────────────────
+# THE BRAIN
+# ──────────────────────────────────────────────────────────────
+brain:
+  identity: Brian the Brain
+  owner: Henry (Fülöp Henrik)
+  purpose: Central orchestrator — never executes directly
+  identity_injection_method: "[SYSTEM] prefix in openclaw_executor._build_message()"
+  workspace_files:
+    - /home/openclawadmin/.openclaw/workspace/SOUL.md
+    - /home/openclawadmin/.openclaw/workspace/IDENTITY.md
+    - /home/openclawadmin/.openclaw/workspace/USER.md
+    - /home/openclawadmin/.openclaw/workspace/AGENTS.md
+    - /home/openclawadmin/.openclaw/workspace/TOOLS.md
+    - /home/openclawadmin/.openclaw/workspace/BOOTSTRAP.md
+
+# ──────────────────────────────────────────────────────────────
+# GAPS / TRUTH
+# ──────────────────────────────────────────────────────────────
+gaps:
+  - id: dual-registry-mismatch
+    severity: HIGH
+    description: |
+      api/routes/agents.py /api/v1/agents shows 11 internal types,
+      while OpenClaw has 8 specialist agents. The two registries
+      are not unified. A user calling /api/v1/agents will NOT see
+      the specialist agents — only the bridge "openclaw" alias.
+
+  - id: brain-flow-not-driving
+    severity: HIGH
+    description: |
+      brain_conversations table = 0 rows.
+      pending_approvals table = 0 rows.
+      workflow_executions table = 0 rows.
+      The new BrainFlowEngine + ConfirmationGate + WorkflowStore
+      are deployed but the production traffic does NOT flow through
+      them. Tasks ARE created (180 in tasks table) but only via
+      legacy paths (test runs from this audit conversation).
+
+  - id: agent-tool-allowlist-not-enforced
+    severity: MEDIUM
+    description: |
+      AgentToolGuard is in log-only mode by design,
+      but no audit shows actual denials. Need to verify it's
+      receiving any traffic at all.
+
+  - id: telegram-owner-id-zero
+    severity: MEDIUM
+    description: |
+      OCCP_VOICE_TELEGRAM_OWNER_CHAT_ID=0 → channel_auth strict
+      mode rejects all real Telegram messages unless allowlist
+      is set. Voice pipeline is "started" but functionally inert
+      until owner_id is set.

@@ -1,4 +1,4 @@
-"""OCCP Adapters – reference + production implementations for the VAP pipeline.
+"""OCCP Adapters – reference + production implementations for the Verified Autonomy Pipeline.
 
 These adapters implement the Protocol interfaces defined in
 ``orchestrator.pipeline`` (Planner, Executor, Validator, Shipper) and
@@ -20,11 +20,14 @@ __all__ = [
     "EchoPlanner",
     "ClaudePlanner",
     "OpenAIPlanner",
+    "OllamaPlanner",
     "MultiLLMPlanner",
     "PolicyGate",
     "MockExecutor",
     "BasicValidator",
     "LogShipper",
+    "OpenClawClient",
+    "OpenClawTask",
 ]
 
 
@@ -36,4 +39,13 @@ def __getattr__(name: str):
     if name == "OpenAIPlanner":
         from adapters.openai_planner import OpenAIPlanner
         return OpenAIPlanner
+    if name == "OllamaPlanner":
+        from adapters.ollama_planner import OllamaPlanner
+        return OllamaPlanner
+    if name == "OpenClawClient":
+        from adapters.openclaw_client import OpenClawClient
+        return OpenClawClient
+    if name == "OpenClawTask":
+        from adapters.openclaw_client import OpenClawTask
+        return OpenClawTask
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

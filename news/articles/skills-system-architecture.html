@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skills System Architecture: Modular Capabilities for AI Agents — OCCP News</title>
+  <meta name="description" content="How OCCP's skills framework enables agents to acquire, validate, and execute domain-specific capabilities on demand.">
+  <meta name="keywords" content="OCCP, skills system, agent capabilities, modular AI, capability management, AI agents">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/skills-system-architecture.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/skills-system-architecture.html">
+  <meta property="og:title" content="Skills System Architecture: Modular Capabilities for AI Agents">
+  <meta property="og:description" content="How OCCP's skills framework enables agents to acquire, validate, and execute domain-specific capabilities on demand.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-20">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Skills System Architecture: Modular Capabilities for AI Agents">
+  <meta name="twitter:description" content="How OCCP's skills framework enables agents to acquire, validate, and execute domain-specific capabilities on demand.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Skills System Architecture: Modular Capabilities for AI Agents",
+    "datePublished": "2026-02-20",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "How OCCP's skills framework enables agents to acquire, validate, and execute domain-specific capabilities on demand.",
+    "url": "https://news.occp.ai/articles/skills-system-architecture.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-20</span>
+          <span class="card-tag tag-agent">Agents</span>
+          <span class="card-version">v0.8.0</span>
+        </div>
+        <h1>Skills System Architecture: Modular Capabilities for AI Agents</h1>
+        <p class="lead">Raw tool access gives agents power without structure. Skills give agents power with purpose. OCCP's skills system wraps tools, permissions, prompts, and validation rules into reusable, composable units that transform generic AI agents into domain-specific specialists &mdash; all within the governance framework.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Problem with Raw Tool Access</h2>
+
+        <p>Consider an agent with access to the GitHub MCP server. It can list repositories, read files, create branches, open pull requests, merge code, delete branches, modify repository settings, and manage team permissions. These are all valid operations. But should a code review agent have the ability to merge code? Should a documentation agent be able to modify repository settings? Raw tool access makes no distinction between the tools an agent needs for its purpose and the tools that happen to be available on the same server.</p>
+
+        <p>The permissions model from RBAC (Casbin) controls which roles can access which endpoints. But RBAC operates at the API level, not the task level. A user with the "operator" role can create tasks and execute them, but RBAC cannot express "this agent should only use GitHub for reading code, not writing it." That constraint operates at a finer granularity than roles and endpoints &mdash; it operates at the tool-and-parameter level. This is the gap that skills fill.</p>
+
+        <h2>Skill Definition</h2>
+
+        <p>A skill is a JSON document that declares five properties: the tools the skill requires, the permissions it grants, the validation rules it enforces, the prompt template it provides to the agent, and the output schema it expects from the result.</p>
+
+        <pre><code>{
+  "id": "skill-code-review-v1",
+  "name": "code-review",
+  "version": "1.0.0",
+  "description": "Review pull requests for code quality, security issues, and best practices",
+  "required_tools": [
+    "github.get_pull_request",
+    "github.get_pull_request_diff",
+    "github.create_review",
+    "github.list_pull_request_files"
+  ],
+  "forbidden_tools": [
+    "github.merge_pull_request",
+    "github.delete_branch",
+    "github.update_repository"
+  ],
+  "permissions": [
+    "read:repository",
+    "write:review"
+  ],
+  "validation_rules": {
+    "output_must_contain": ["severity", "recommendation"],
+    "output_must_not_contain_patterns": ["password", "token", "secret"],
+    "max_output_length": 10000
+  },
+  "prompt_template": "You are a code reviewer. Analyze the following diff...",
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "summary": { "type": "string" },
+      "issues": { "type": "array" },
+      "severity": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+      "recommendation": { "type": "string", "enum": ["approve", "request-changes", "comment"] }
+    },
+    "required": ["summary", "severity", "recommendation"]
+  }
+}</code></pre>
+
+        <p>The <code>forbidden_tools</code> field is as important as <code>required_tools</code>. It creates an explicit deny list that prevents the skill from accessing tools that are available on the same MCP server but outside the skill's intended scope. Even if the agent's underlying model attempts to call <code>github.merge_pull_request</code> during a code review, the skills system blocks the call before it reaches the MCP server.</p>
+
+        <h2>Skill Acquisition</h2>
+
+        <p>Agents do not start with skills. They acquire them through a request-and-validation flow that ensures the agent has the prerequisites to use the skill effectively.</p>
+
+        <pre><code># occp/skills/acquisition.py — skill acquisition flow
+class SkillAcquisition:
+    async def request_skill(self, agent_id: int, skill_id: str) -> AcquisitionResult:
+        agent = await self.agent_repo.get(agent_id)
+        skill = await self.skill_repo.get(skill_id)
+
+        # 1. Check tool availability
+        for tool in skill.required_tools:
+            if not self.tool_registry.is_available(tool):
+                return AcquisitionResult(
+                    granted=False,
+                    reason=f"Required tool '{tool}' is not connected"
+                )
+
+        # 2. Check agent's registered capabilities
+        for permission in skill.permissions:
+            if not agent.has_capability(permission):
+                return AcquisitionResult(
+                    granted=False,
+                    reason=f"Agent lacks capability '{permission}'"
+                )
+
+        # 3. Check concurrent skill limit
+        active_skills = await self.get_active_skills(agent_id)
+        if len(active_skills) >= agent.max_concurrent_skills:
+            return AcquisitionResult(
+                granted=False,
+                reason=f"Agent at max concurrent skills ({agent.max_concurrent_skills})"
+            )
+
+        # 4. Grant skill
+        await self.skill_repo.assign(agent_id, skill_id)
+        await self.audit.log("skill_acquired", agent_id=agent_id, skill_id=skill_id)
+
+        return AcquisitionResult(granted=True)</code></pre>
+
+        <p>The acquisition flow validates three conditions. First, every tool required by the skill must be available in OCCP's tool registry &mdash; which means the corresponding MCP server must be connected and healthy. Second, the agent must have the capability permissions declared by the skill. An agent registered with <code>read:repository</code> capability can acquire a code-review skill, but an agent without that capability cannot. Third, the agent must not exceed its concurrent skill limit, which prevents a single agent from accumulating excessive tool access.</p>
+
+        <h3>Skill Revocation</h3>
+
+        <p>Skills can be revoked by platform administrators or by automated policy enforcement. If an MCP server goes offline, all skills that depend on that server's tools are automatically suspended until the server reconnects. If an agent's capabilities are modified (demoted from operator to viewer, for example), skills that require the revoked capability are automatically removed from the agent's profile. Revocation is logged in the audit trail with the reason and the revoking authority.</p>
+
+        <h2>Skill Execution</h2>
+
+        <p>When an agent executes a task that requires a skill, the skills system provides three things to the execution context: the prompt template (which structures how the agent approaches the task), the tool configuration (which tools are available and which are forbidden), and the validation rules (which the output must satisfy before the task completes).</p>
+
+        <pre><code># Skill execution context injected into the pipeline
+class SkillExecutionContext:
+    skill: Skill
+    allowed_tools: list[str]     # required_tools only
+    forbidden_tools: list[str]   # explicitly denied
+    prompt_template: str         # structured prompt for the agent
+    output_schema: dict          # expected output format
+    validation_rules: dict       # output validation constraints
+
+    def validate_output(self, output: dict) -> ValidationResult:
+        """Validate agent output against skill's rules."""
+        # Schema validation
+        try:
+            jsonschema.validate(output, self.output_schema)
+        except ValidationError as e:
+            return ValidationResult(valid=False, reason=str(e))
+
+        # Content validation
+        for required_field in self.validation_rules.get("output_must_contain", []):
+            if required_field not in str(output):
+                return ValidationResult(
+                    valid=False,
+                    reason=f"Output missing required field: {required_field}"
+                )
+
+        return ValidationResult(valid=True)</code></pre>
+
+        <p>The execution context is injected into the pipeline's Execute stage. The agent receives the prompt template with the task-specific data interpolated, calls only the tools listed in <code>allowed_tools</code>, and produces output that conforms to the <code>output_schema</code>. Any attempt to call a tool not in the allowed list &mdash; or explicitly in the forbidden list &mdash; is rejected by the MCP executor before the call leaves OCCP.</p>
+
+        <h2>Composability: Building Complex Agents from Simple Skills</h2>
+
+        <p>Skills are designed to be composable. A "deployment automation" workflow might require three skills: <code>code-review</code> (analyze the PR), <code>test-runner</code> (execute the test suite), and <code>deployment</code> (push to staging). Each skill provides its own tools, permissions, and validation rules. The agent acquires all three skills and the pipeline orchestrates their execution in sequence, with each skill's output feeding into the next skill's input.</p>
+
+        <blockquote>Skills are to agents what functions are to programs. A function encapsulates logic, declares its inputs and outputs, and can be composed with other functions. A skill encapsulates capability, declares its tools and permissions, and can be composed with other skills. Both create reusable units of verified behavior.</blockquote>
+
+        <p>This composability model has a clear benefit for governance. Instead of auditing "what can this agent do?" by examining every tool on every MCP server it can access, an administrator audits the agent's skill set. Each skill has an explicit scope, explicit permissions, and explicit validation rules. The audit surface is the skill definition, not the entire MCP server catalog.</p>
+
+        <h2>The Skills Marketplace Vision</h2>
+
+        <p>The current skill definitions are bundled with the OCCP distribution. The long-term vision is a skills marketplace where organizations can publish and share skill definitions. A security consulting firm could publish a <code>vulnerability-assessment</code> skill. A DevOps team could publish a <code>kubernetes-deployment</code> skill. A data science team could publish a <code>dataset-analysis</code> skill. Each published skill would include its tool requirements, permission scope, and validation rules, allowing any OCCP deployment to evaluate and adopt skills that match their needs.</p>
+
+        <p>The marketplace model introduces its own governance challenges: skill verification, version compatibility, and trust delegation. These are engineering problems for future releases. The current skills system establishes the architectural foundation &mdash; the skill definition format, the acquisition flow, the execution context, and the validation pipeline &mdash; that the marketplace will build on.</p>
+
+        <h2>Skills and the Policy Engine</h2>
+
+        <p>Skills interact with the policy engine at two levels. At acquisition time, the policy engine evaluates whether the skill's permission requirements comply with organizational policies. An organization that prohibits agents from having write access to production databases would have a policy rule that blocks acquisition of any skill with <code>write:database</code> permission. At execution time, every tool call made through a skill passes through the standard policy gate, ensuring that skill-level permissions do not override organization-level restrictions.</p>
+
+        <p>This two-level enforcement means that skills cannot escalate privileges. A skill can only grant access to tools that the agent already has capability for, and every tool call is still subject to the same policy evaluation that governs direct tool access. Skills are a convenience layer for organizing tool access, not a bypass mechanism for the governance framework.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Skills bundle tools, permissions, prompts, and validation rules into reusable, governed capability units</li>
+          <li>The <code>forbidden_tools</code> field explicitly denies access to tools outside the skill's scope, even if available on the same MCP server</li>
+          <li>Skill acquisition validates tool availability, agent capabilities, and concurrent skill limits before granting</li>
+          <li>Skills are composable: complex workflows combine multiple skills, each with independent validation</li>
+          <li>Two-level policy enforcement: organizational policies at acquisition time, tool-level policies at execution time</li>
+          <li>Skills cannot escalate privileges &mdash; they organize existing capabilities, they do not create new ones</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="mcp-integration.html">&larr; MCP Integration</a>
+        <a href="settings-architecture.html">Settings Architecture &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

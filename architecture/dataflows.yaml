@@ -1,0 +1,100 @@
+version: 1
+generated: 2026-04-08
+schema: occp.architecture.dataflows.v1
+
+# Request paths through OCCP — canonical traces of how data moves.
+# Each flow has stages, each stage has module + risk + can_deny.
+
+flows:
+
+  # ─── Flow 1: Telegram voice message → response ─────────────────
+  - id: flow.telegram.voice
+    name: Telegram voice command → pipeline → reply
+    entry_point: adapters.telegram_voice_bot.TelegramVoiceBot._poll_loop
+    stages:
+      - { step: 1, module: telegram_voice_bot, action: long_poll_getUpdates, can_deny: false }
+      - { step: 2, module: telegram_voice_bot, action: owner_chat_id_filter, can_deny: true, reason: not_owner }
+      - { step: 3, module: telegram_voice_bot, action: download_voice_file, can_deny: true, reason: file_api_error }
+      - { step: 4, module: voice_handler.VoiceCommandHandler, action: channel_auth, can_deny: true, reason: unauthorized }
+      - { step: 5, module: whisper_client.WhisperClient, action: transcribe, can_deny: true, reason: empty_transcription }
+      - { step: 6, module: security.input_sanitizer.InputSanitizer, action: sanitize, can_deny: true, reason: prompt_injection }
+      - { step: 7, module: telegram_voice_bot, action: send_interim_message, can_deny: false }
+      - { step: 8, module: intent_router.IntentRouter, action: classify, can_deny: false }
+      - { step: 9, module: orchestrator.pipeline.Pipeline, action: run (PLAN), can_deny: false }
+      - { step: 10, module: policy_engine.engine.PolicyEngine, action: evaluate (GATE), can_deny: true, reason: guard_failed_or_deny_rule }
+      - { step: 11, module: adapters.confirmation_gate.ConfirmationGate, action: request_approval (if high risk), can_deny: true, reason: rejected_or_timeout }
+      - { step: 12, module: security.agent_allowlist.AgentToolGuard, action: check_access, can_deny: true, reason: unknown_agent_or_tool }
+      - { step: 13, module: adapters.openclaw_executor.OpenClawExecutor, action: execute (EXECUTE), can_deny: true, reason: circuit_breaker_open }
+      - { step: 14, module: orchestrator.pipeline, action: validate (VALIDATE), can_deny: true, reason: validation_failed }
+      - { step: 15, module: adapters.log_shipper.LogShipper, action: ship (SHIP), can_deny: false }
+      - { step: 16, module: adapters.voice_handler.VoiceCommandHandler, action: _format_result, can_deny: false }
+      - { step: 17, module: telegram_voice_bot, action: send_message (final reply), can_deny: false }
+    critical_path: true
+    latency_budget_seconds: 30
+    introduced_in: v0.9.0-l4
+
+  # ─── Flow 2: REST API /brain/message → response ────────────────
+  - id: flow.api.brain_message
+    name: POST /brain/message → BrainFlow phase response
+    entry_point: api.routes.brain.brain_message
+    stages:
+      - { step: 1, module: api.auth, action: jwt_verify, can_deny: true, reason: missing_or_invalid_token }
+      - { step: 2, module: api.rbac.PermissionChecker, action: check, can_deny: true, reason: rbac_denied }
+      - { step: 3, module: security.input_sanitizer.InputSanitizer, action: sanitize, can_deny: true, reason: prompt_injection }
+      - { step: 4, module: orchestrator.brain_flow.BrainFlowEngine, action: process_message, can_deny: false }
+      - { step: 5, module: orchestrator.brain_flow, action: phase_handler (intake|understand|plan|confirm|dispatch|monitor|deliver), can_deny: false }
+      - { step: 6, module: adapters.confirmation_gate.ApprovalStore, action: save (if medium+ risk), can_deny: false }
+      - { step: 7, module: orchestrator.pipeline.Pipeline, action: run (if dispatch), can_deny: true, reason: pipeline_error }
+      - { step: 8, module: api.routes.brain, action: return_response, can_deny: false }
+    critical_path: true
+    latency_budget_seconds: 45  # includes LLM plan generation + OpenClaw execution
+    introduced_in: v0.8.0
+
+  # ─── Flow 3: MCP Bridge tool dispatch ──────────────────────────
+  - id: flow.mcp_bridge.dispatch
+    name: POST /mcp-bridge/dispatch → tool execution
+    entry_point: api.routes.mcp_bridge.dispatch_tool
+    stages:
+      - { step: 1, module: api.auth, action: jwt_verify, can_deny: true }
+      - { step: 2, module: adapters.mcp_bridge.MCPBridge, action: check_tool_registered, can_deny: true, reason: unknown_tool }
+      - { step: 3, module: security.agent_allowlist.AgentToolGuard, action: check_access, can_deny: true, reason: agent_not_allowlisted }
+      - { step: 4, module: security.input_sanitizer, action: sanitize_params, can_deny: true }
+      - { step: 5, module: adapters.mcp_bridge, action: dispatch_with_semaphore, can_deny: true, reason: timeout }
+      - { step: 6, module: adapters.mcp_bridge, action: _audit_and_return, can_deny: false }
+    critical_path: true
+    latency_budget_seconds: 15  # default tool timeout
+    introduced_in: v0.9.0-l4
+
+  # ─── Flow 4: Multi-agent DAG workflow ──────────────────────────
+  - id: flow.workflow.dag
+    name: POST /workflows → wave-based DAG execution
+    entry_point: api.routes.brain.create_workflow
+    stages:
+      - { step: 1, module: api.routes.brain, action: validate_dag (no cycles), can_deny: true, reason: cycle_detected }
+      - { step: 2, module: orchestrator.multi_agent.WorkflowExecutor, action: compute_waves, can_deny: false }
+      - { step: 3, module: store, action: save WorkflowExecutionRow, can_deny: false }
+      - { step: 4, module: orchestrator.multi_agent, action: dispatch_wave_parallel, can_deny: true, reason: semaphore_exhausted }
+      - { step: 5, module: orchestrator.pipeline, action: run_per_node, can_deny: true }
+      - { step: 6, module: store, action: update WorkflowExecutionRow, can_deny: false }
+    critical_path: false
+    introduced_in: v0.9.0-l4
+
+  # ─── Flow 5: OpenClaw bridge event routing ─────────────────────
+  - id: flow.openclaw.events
+    name: OpenClaw WebSocket events → EventBridge → Brain routing
+    entry_point: adapters.openclaw_executor.OpenClawExecutor._event_loop
+    stages:
+      - { step: 1, module: openclaw_executor, action: websocket_recv, can_deny: false }
+      - { step: 2, module: openclaw_executor, action: parse_event, can_deny: false }
+      - { step: 3, module: adapters.event_bridge.EventBridge, action: route_by_session_prefix, can_deny: true, reason: non_telegram_session }
+      - { step: 4, module: event_bridge, action: _process_chat_final, can_deny: false }
+      - { step: 5, module: orchestrator.brain_flow, action: inject_into_conversation, can_deny: false }
+    critical_path: false
+
+
+# Invariants — enforced by tests/architecture/test_dataflows.py
+invariants:
+  - rule: every flow MUST have at least one auth stage (can_deny=true)
+  - rule: every flow MUST have at least one sanitization stage
+  - rule: every critical_path flow MUST have a latency_budget_seconds
+  - rule: no flow may skip policy_engine.evaluate if it produces external effects

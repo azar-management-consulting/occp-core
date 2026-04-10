@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OCCP v0.8.2: Enterprise-Grade Token Security — OCCP News</title>
+  <meta name="description" content="Token encryption, supply chain verification, agent boundaries, and EU AI Act compliance — the enterprise security release.">
+  <meta name="keywords" content="OCCP, v0.8.2, AES-256-GCM, token encryption, supply chain security, EU AI Act, agent boundaries, enterprise security">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/occp-v082-enterprise-security.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/occp-v082-enterprise-security.html">
+  <meta property="og:title" content="OCCP v0.8.2: Enterprise-Grade Token Security">
+  <meta property="og:description" content="Token encryption, supply chain verification, agent boundaries, and EU AI Act compliance — the enterprise security release.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-23">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="OCCP v0.8.2: Enterprise-Grade Token Security">
+  <meta name="twitter:description" content="Token encryption, supply chain verification, agent boundaries, and EU AI Act compliance — the enterprise security release.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "OCCP v0.8.2: Enterprise-Grade Token Security",
+    "datePublished": "2026-02-23",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Token encryption, supply chain verification, agent boundaries, and EU AI Act compliance — the enterprise security release.",
+    "url": "https://news.occp.ai/articles/occp-v082-enterprise-security.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-23</span>
+          <span class="card-tag tag-milestone">Milestone</span>
+          <span class="card-version">v0.8.2</span>
+        </div>
+        <h1>OCCP v0.8.2: Enterprise-Grade Token Security</h1>
+        <p class="lead">v0.8.0 made OCCP accessible. v0.8.2 makes it enterprise-ready. This release adds AES-256-GCM envelope encryption for LLM API tokens, supply chain verification for MCP packages and agent extensions, three-level agent boundary enforcement, and concrete implementations of EU AI Act Articles 12, 14, and 19. Security is no longer a feature &mdash; it is the release.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>AES-256-GCM Envelope Encryption</h2>
+
+        <p>OCCP stores LLM API tokens &mdash; Anthropic API keys, OpenAI keys, Google API keys &mdash; that represent direct access to expensive cloud resources. Before v0.8.2, these tokens were stored in the database with application-level obfuscation. v0.8.2 replaces this with proper cryptographic protection: AES-256-GCM authenticated encryption with HKDF key derivation.</p>
+
+        <h3>The Encryption Architecture</h3>
+
+        <p>The system uses envelope encryption, a pattern where each secret is encrypted with a unique data encryption key (DEK), and the DEK itself is encrypted with a key encryption key (KEK). The KEK is derived from a master secret using HKDF (HMAC-based Key Derivation Function) with a per-deployment salt.</p>
+
+        <pre><code># Envelope encryption flow
+Master Secret (environment variable)
+    |
+    v
+HKDF-SHA256 (salt=deployment_id, info="occp-token-encryption")
+    |
+    v
+Key Encryption Key (KEK)
+    |
+    v
+AES-256-GCM encrypt(DEK) -> encrypted_dek
+    |
+    v
+DEK + AES-256-GCM encrypt(token, nonce) -> encrypted_token
+
+# Stored in database:
+# { encrypted_dek, encrypted_token, nonce, salt, version }</code></pre>
+
+        <p>The two-layer approach provides a critical operational benefit: key rotation. When the master secret is rotated, only the DEK wrappers need to be re-encrypted. The actual tokens, encrypted under their individual DEKs, remain untouched. This means key rotation does not require decrypting and re-encrypting every stored secret &mdash; it only requires re-wrapping the DEKs, which is a lightweight operation that can execute without downtime.</p>
+
+        <h3>GCM Authentication</h3>
+
+        <p>AES-256-GCM provides authenticated encryption, meaning it produces both ciphertext and an authentication tag. The authentication tag detects any modification to the ciphertext, including truncation, bit-flipping, and reordering attacks. If the tag verification fails during decryption, the operation is rejected entirely &mdash; no partial plaintext is ever returned. This prevents a category of attacks where an adversary modifies the encrypted token to produce a valid but different plaintext.</p>
+
+        <p>Each encryption operation uses a unique 96-bit nonce generated from a cryptographically secure random source. The nonce is stored alongside the ciphertext. Nonce reuse with the same key would compromise GCM's security guarantees, which is why each token gets its own DEK &mdash; even if a nonce were accidentally reused across two tokens, they would be encrypted under different keys.</p>
+
+        <blockquote>The difference between encryption and authenticated encryption is the difference between "nobody can read this" and "nobody can read or tamper with this." In a system that stores API tokens, tamper detection is as important as confidentiality.</blockquote>
+
+        <h2>Supply Chain Verification</h2>
+
+        <p>v0.8.0 introduced MCP server connections and agent extensions. v0.8.2 adds verification that these external components are safe to load. The supply chain verification system operates at three levels: package allowlisting, static analysis, and fail-closed enforcement.</p>
+
+        <h3>Package Allowlisting</h3>
+
+        <p>MCP server packages must appear on a curated allowlist before they can be connected to the platform. The allowlist contains package names, version ranges, and cryptographic hashes of the approved packages. When an administrator attempts to connect a new MCP server, the system verifies the server's package identity against the allowlist. Packages not on the allowlist are rejected with a clear message indicating that the package requires explicit approval.</p>
+
+        <h3>Static Analysis</h3>
+
+        <p>Agent extensions &mdash; custom Python modules that add capabilities to agents &mdash; undergo static analysis before loading. The analyzer checks for known-dangerous patterns: dynamic code execution (<code>eval</code>, <code>exec</code>, <code>__import__</code>), network access outside approved domains, filesystem access outside approved directories, and attempts to modify the OCCP runtime. Extensions that fail static analysis are quarantined and cannot be loaded until the issues are resolved.</p>
+
+        <pre><code># Supply chain verification — three levels
+class SupplyChainVerifier:
+    async def verify_mcp_package(self, package: MCPPackage) -> VerifyResult:
+        # Level 1: Allowlist check
+        if not self.allowlist.contains(package.name, package.version):
+            return VerifyResult(
+                approved=False,
+                reason=f"Package '{package.name}@{package.version}' not in allowlist"
+            )
+
+        # Level 2: Hash verification
+        computed_hash = hashlib.sha256(package.binary).hexdigest()
+        if computed_hash != self.allowlist.get_hash(package.name, package.version):
+            return VerifyResult(
+                approved=False,
+                reason="Package hash mismatch — possible tampering"
+            )
+
+        # Level 3: Static analysis
+        analysis = await self.analyzer.scan(package)
+        if analysis.has_violations:
+            return VerifyResult(
+                approved=False,
+                reason=f"Static analysis violations: {analysis.violations}"
+            )
+
+        return VerifyResult(approved=True)</code></pre>
+
+        <h3>Fail-Closed Enforcement</h3>
+
+        <p>The verification system is fail-closed: if the allowlist is unavailable, if the hash check encounters an error, or if the static analyzer crashes, the package is rejected. This is the opposite of fail-open behavior where errors result in approval. Fail-closed means a verification infrastructure outage prevents new packages from being installed, which is an acceptable trade-off: it is better to delay a new MCP server connection than to load an unverified package.</p>
+
+        <h2>Agent Boundary Enforcement</h2>
+
+        <p>v0.8.2 introduces three-level agent boundary enforcement that prevents agents from exceeding their declared capabilities:</p>
+
+        <ol>
+          <li><strong>Task Scope Validation</strong> &mdash; When a task is assigned to an agent, the system validates that the task's requirements fall within the agent's registered capabilities. An agent registered for "code analysis" cannot be assigned a "database administration" task. The scope validation runs at task creation time, before any pipeline execution begins.</li>
+          <li><strong>Registration Checks</strong> &mdash; Agent capabilities are declared at registration time and can only be modified by platform administrators. An agent cannot self-modify its capability set. If an agent's LLM attempts to request additional tool access or modify its own configuration, the request is rejected at the API level with an authorization error.</li>
+          <li><strong>Capacity Limits</strong> &mdash; Each agent has configurable limits: maximum concurrent tasks, maximum tokens per task, maximum tool calls per execution, and maximum execution time. These limits are enforced at the pipeline level &mdash; exceeding any limit terminates the current execution and records the violation in the audit trail.</li>
+        </ol>
+
+        <p>The three levels create a defense-in-depth model. Task scope prevents misassignment. Registration checks prevent self-escalation. Capacity limits prevent resource exhaustion. All three must be satisfied for every execution, and a failure at any level is treated as a security event with full audit logging.</p>
+
+        <h2>EU AI Act Compliance</h2>
+
+        <p>v0.8.2 implements three specific articles from the EU AI Act that are relevant to AI orchestration platforms:</p>
+
+        <h3>Article 12: Record-Keeping</h3>
+
+        <p>Article 12 requires that high-risk AI systems maintain logs that enable tracing of the system's operation. OCCP's SHA-256 hash-chained audit trail satisfies this requirement by recording every pipeline stage execution with inputs, outputs, timestamps, durations, and the identity of the agent and user involved. The hash chain ensures that records cannot be modified after creation &mdash; any alteration breaks the chain and is detectable.</p>
+
+        <h3>Article 14: Human Oversight</h3>
+
+        <p>Article 14 requires that high-risk AI systems be designed to allow effective human oversight. OCCP implements this through the Gate stage of the Verified Autonomy Pipeline: every plan is evaluated by the policy engine before execution, and configurable approval workflows require human sign-off for high-risk tasks. The dashboard provides real-time visibility into pipeline execution, and the audit trail provides post-execution review capability.</p>
+
+        <h3>Article 19: Log Retention</h3>
+
+        <p>Article 19 requires automatic log generation and retention for a period appropriate to the system's purpose. OCCP v0.8.2 implements automated audit retention enforcement at application startup. When the server starts, it calculates the retention period (default: 2555 days / ~7 years) and marks expired entries for archival. The retention period is configurable through the settings system but enforces a minimum that satisfies the EU AI Act's requirements.</p>
+
+        <pre><code># Startup audit retention enforcement
+class AuditRetentionEnforcer:
+    async def enforce_at_startup(self):
+        retention_days = await self.settings.resolve("audit.retention_days")
+        cutoff_date = datetime.utcnow() - timedelta(days=retention_days)
+
+        # Archive entries older than retention period
+        archived = await self.audit_repo.archive_before(cutoff_date)
+        logger.info(f"Audit retention enforced: {archived} entries archived, "
+                     f"retention={retention_days}d, cutoff={cutoff_date.isoformat()}")</code></pre>
+
+        <h2>Upgrade Path from v0.8.0</h2>
+
+        <p>Upgrading to v0.8.2 requires three steps. First, set the <code>OCCP_MASTER_SECRET</code> environment variable &mdash; this is the master key for envelope encryption. Second, run <code>alembic upgrade head</code> to apply the new migration that adds encryption metadata columns to the settings table. Third, run <code>occp migrate-tokens</code> &mdash; a one-time command that encrypts existing plaintext tokens with the new envelope encryption scheme. After migration, the plaintext tokens are securely overwritten in the database.</p>
+
+        <p>The migration is backward-compatible: if <code>OCCP_MASTER_SECRET</code> is not set, the system falls back to the v0.8.0 obfuscation behavior with a warning log. This ensures that development environments and test suites are not broken by the upgrade, while production deployments get the full encryption protection.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>AES-256-GCM envelope encryption with HKDF key derivation protects LLM API tokens at rest</li>
+          <li>Envelope encryption enables zero-downtime key rotation by re-wrapping DEKs without re-encrypting tokens</li>
+          <li>Supply chain verification: allowlist + hash check + static analysis, fail-closed enforcement</li>
+          <li>Three-level agent boundaries: task scope validation, registration checks, capacity limits</li>
+          <li>EU AI Act Articles 12 (record-keeping), 14 (human oversight), 19 (log retention) implemented</li>
+          <li>Automated audit retention enforcement runs at application startup with configurable retention period</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="deployment-challenges.html">&larr; Deployment Challenges</a>
+        <a href="aes256-gcm-encryption.html">AES-256-GCM Encryption Deep Dive &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

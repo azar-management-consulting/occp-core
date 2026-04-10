@@ -18,6 +18,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     if (typeof window !== "undefined") {
       localStorage.removeItem("occp_token");
       localStorage.removeItem("occp_user");
+      localStorage.removeItem("occp_role");
       window.location.href = "/login";
     }
     throw new Error("Session expired");
@@ -112,22 +113,119 @@ export interface LLMHealthData {
   providers: Record<string, LLMProviderHealth>;
 }
 
+// ── V0.8.2 Users / Admin ──────────────────────────────────────
+
+export interface UserListItem {
+  id: string;
+  username: string;
+  role: string;
+  display_name: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OnboardingFunnelData {
+  landing: number;
+  running: number;
+  done: number;
+}
+
+export interface UserActivityData {
+  username: string;
+  role: string;
+  last_action: string;
+  last_seen: string;
+  onboarding_state: string;
+}
+
+export interface AdminStatsData {
+  users_total: number;
+  users_by_role: Record<string, number>;
+  registrations_last_7_days: number;
+  onboarding_funnel: OnboardingFunnelData;
+  user_activity: UserActivityData[];
+}
+
 // ── V0.8.0 Onboarding / MCP / Skills / LLM ──────────────────
 
 export interface OnboardingStatus {
+  user_id: string;
   token_present: boolean;
   wizard_state: string;
   current_step: number;
+  current_step_name: string;
   completed_steps: string[];
   total_steps: number;
+  steps: string[];
+  step_descriptions: Record<string, string>;
   run_id: string;
+  metadata: Record<string, unknown>;
 }
 
 export interface OnboardingStartResult {
   run_id: string;
   wizard_state: string;
   current_step: number;
+  current_step_name: string;
+  completed_steps: string[];
   steps: string[];
+}
+
+export interface OnboardingStepResult {
+  step: string;
+  step_index: number;
+  completed: boolean;
+  wizard_state: string;
+  next_step: string | null;
+  completed_steps: string[];
+  progress_pct: number;
+}
+
+export interface VerificationResult {
+  all_passed: boolean;
+  checks: { name: string; passed: boolean; detail: string }[];
+  total_checks: number;
+  passed_count: number;
+}
+
+export interface FirstTaskResult {
+  task_id: string;
+  success: boolean;
+  status: string;
+  evidence?: Record<string, unknown>;
+  error?: string;
+  note?: string;
+}
+
+// ── Token Management ──
+export interface TokenInfo {
+  id: string;
+  provider: string;
+  masked_value: string;
+  label: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TokenListResult {
+  tokens: TokenInfo[];
+  total: number;
+  has_anthropic: boolean;
+  has_openai: boolean;
+}
+
+export interface TokenStoreResult {
+  provider: string;
+  masked_value: string;
+  label: string;
+  stored: boolean;
+}
+
+export interface TokenCheckResult {
+  has_any: boolean;
+  providers: Record<string, boolean>;
 }
 
 export interface MCPConnector {
@@ -193,12 +291,35 @@ export const api = {
   deleteAgent: (agentType: string) =>
     apiFetch<void>(`/agents/${agentType}`, { method: "DELETE" }),
 
-  // ── V0.8.0 Onboarding ──
+  // ── V0.8.2 Onboarding (10-step wizard) ──
   onboardingStatus: () => apiFetch<OnboardingStatus>("/onboarding/status"),
   onboardingStart: () =>
     apiFetch<OnboardingStartResult>("/onboarding/start", { method: "POST" }),
   onboardingStep: (step: string) =>
-    apiFetch<Record<string, unknown>>(`/onboarding/step/${step}`, { method: "POST" }),
+    apiFetch<OnboardingStepResult>(`/onboarding/step/${step}`, { method: "POST" }),
+  onboardingVerify: () =>
+    apiFetch<VerificationResult>("/onboarding/verify", { method: "POST" }),
+  onboardingFirstTask: () =>
+    apiFetch<FirstTaskResult>("/onboarding/first-task", { method: "POST" }),
+
+  // ── V0.8.2 Token Management ──
+  storeToken: (provider: string, token: string, label?: string) =>
+    apiFetch<TokenStoreResult>("/tokens", {
+      method: "POST",
+      body: JSON.stringify({ provider, token, label: label || "" }),
+    }),
+  listTokens: () => apiFetch<TokenListResult>("/tokens"),
+  checkTokens: () => apiFetch<TokenCheckResult>("/tokens/check"),
+  validateToken: (provider: string) =>
+    apiFetch<{ provider: string; valid: boolean; detail: string }>(
+      `/tokens/${provider}/validate`,
+      { method: "POST" },
+    ),
+  revokeToken: (provider: string) =>
+    apiFetch<{ provider: string; revoked: boolean }>(
+      `/tokens/${provider}`,
+      { method: "DELETE" },
+    ),
 
   // ── V0.8.0 MCP ──
   mcpCatalog: () => apiFetch<{ connectors: MCPConnector[]; total: number }>("/mcp/catalog"),
@@ -218,4 +339,64 @@ export const api = {
 
   // ── V0.8.0 LLM v2 ──
   llmHealthV2: () => apiFetch<LLMHealthV2>("/llm/health"),
+
+  // ── V0.8.2 Auth / Users / Admin ──
+  me: () => apiFetch<{ username: string; role: string; display_name: string }>("/auth/me"),
+  listUsers: () =>
+    apiFetch<{ users: UserListItem[]; total: number }>("/users"),
+  adminStats: () => apiFetch<AdminStatsData>("/admin/stats"),
+
+  // ── V0.8.2 Registration ──
+  register: (username: string, password: string, displayName?: string) =>
+    apiFetch<{ access_token: string; token_type: string; role: string }>(
+      "/auth/register",
+      { method: "POST", body: JSON.stringify({ username, password, display_name: displayName || "" }) },
+    ),
+
+  // ── V0.9.0 L4 MCP Runtime Bridge ──
+  mcpBridgeTools: () =>
+    apiFetch<{
+      tools: string[];
+      stats: {
+        total: number;
+        ok: number;
+        error: number;
+        denied: number;
+        timeout: number;
+        tools_registered: number;
+        success_rate: number;
+      };
+    }>("/mcp-bridge/tools"),
+  mcpBridgeDispatch: (tool: string, params: Record<string, unknown>, agentId = "brain") =>
+    apiFetch<{
+      call_id: string;
+      tool: string;
+      status: string;
+      result: unknown;
+      error: string | null;
+      duration_ms: number;
+      timestamp: string;
+    }>("/mcp-bridge/dispatch", {
+      method: "POST",
+      body: JSON.stringify({ tool, params, agent_id: agentId }),
+    }),
+  dashboardOverview: () =>
+    apiFetch<{
+      brain: {
+        status: string;
+        active_conversations: number;
+        active_projects: number;
+        total_tasks_today: number;
+        total_tasks_completed: number;
+      };
+      agents: Array<{
+        id: string;
+        name: string;
+        status: string;
+        current_task: string;
+        tasks_today: number;
+        avg_quality_score: number;
+        last_active: string;
+      }>;
+    }>("/dashboard/overview"),
 };

@@ -13,7 +13,7 @@ from api.models import HealthCheck, HealthResponse, StatusResponse
 
 router = APIRouter(tags=["status"])
 
-_VERSION = "0.8.0"
+_VERSION = "0.9.0"
 
 
 @router.get("/status", response_model=StatusResponse)

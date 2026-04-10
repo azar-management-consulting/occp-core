@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCP Integration: Connecting AI Agents to External Tools — OCCP News</title>
+  <meta name="description" content="Implementing Model Context Protocol support to give OCCP agents secure access to external services, databases, and APIs.">
+  <meta name="keywords" content="OCCP, MCP, Model Context Protocol, tool integration, AI agents, JSON-RPC, external tools">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/mcp-integration.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/mcp-integration.html">
+  <meta property="og:title" content="MCP Integration: Connecting AI Agents to External Tools">
+  <meta property="og:description" content="Implementing Model Context Protocol support to give OCCP agents secure access to external services, databases, and APIs.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-20">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MCP Integration: Connecting AI Agents to External Tools">
+  <meta name="twitter:description" content="Implementing Model Context Protocol support to give OCCP agents secure access to external services, databases, and APIs.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "MCP Integration: Connecting AI Agents to External Tools",
+    "datePublished": "2026-02-20",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "Implementing Model Context Protocol support to give OCCP agents secure access to external services, databases, and APIs.",
+    "url": "https://news.occp.ai/articles/mcp-integration.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-20</span>
+          <span class="card-tag tag-architecture">Architecture</span>
+          <span class="card-version">v0.8.0</span>
+        </div>
+        <h1>MCP Integration: Connecting AI Agents to External Tools</h1>
+        <p class="lead">AI agents are only as useful as the tools they can access. The Model Context Protocol (MCP) provides a universal standard for connecting AI systems to external services &mdash; filesystems, databases, APIs, cloud providers. OCCP's MCP integration routes every tool call through the policy gate, turning an open protocol into a governed one.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>What Is MCP</h2>
+
+        <p>The Model Context Protocol is an open specification for connecting AI models to external tools and data sources. Developed by Anthropic in late 2024, MCP defines a standard interface for tool discovery, parameter validation, and result formatting. An MCP server exposes a set of tools &mdash; each with a name, description, and JSON Schema for its parameters &mdash; and an MCP client (the AI application) discovers and invokes those tools through a well-defined protocol.</p>
+
+        <p>The protocol uses JSON-RPC 2.0 as its message format, with two transport mechanisms: stdio (standard input/output for local processes) and HTTP with Server-Sent Events (for remote servers). This dual-transport design means MCP servers can run as local processes on the same machine as the AI application or as remote services accessed over the network.</p>
+
+        <pre><code>// MCP JSON-RPC request — listing available tools
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/list",
+  "params": {}
+}
+
+// MCP JSON-RPC response — tool definitions
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "tools": [
+      {
+        "name": "read_file",
+        "description": "Read the contents of a file at the given path",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "path": { "type": "string", "description": "Absolute file path" }
+          },
+          "required": ["path"]
+        }
+      }
+    ]
+  }
+}</code></pre>
+
+        <h2>OCCP's MCP Client Architecture</h2>
+
+        <p>OCCP implements an MCP client that manages connections to multiple MCP servers simultaneously. The client handles three core operations: server lifecycle management (start, connect, health check, reconnect), tool discovery (listing and caching available tools from each server), and tool execution (calling tools with validated parameters and processing results).</p>
+
+        <h3>Server Lifecycle Management</h3>
+
+        <p>Each MCP server connection is managed through a <code>MCPConnection</code> class that handles the transport-specific initialization. For stdio servers, the client spawns the server process and communicates through stdin/stdout. For HTTP+SSE servers, the client establishes an HTTP connection and opens an SSE stream for server-initiated messages.</p>
+
+        <pre><code># occp/mcp/connection.py — MCP server connection manager
+class MCPConnection:
+    def __init__(self, server_config: MCPServerConfig):
+        self.config = server_config
+        self.transport = None
+        self.tools: list[MCPTool] = []
+        self.status = "disconnected"
+
+    async def connect(self):
+        if self.config.transport == "stdio":
+            self.transport = await StdioTransport.create(
+                command=self.config.command,
+                args=self.config.args,
+                env=self.config.env,
+            )
+        elif self.config.transport == "sse":
+            self.transport = await SSETransport.create(
+                url=self.config.url,
+                headers=self.config.headers,
+            )
+        self.status = "connected"
+        await self.discover_tools()
+
+    async def discover_tools(self):
+        response = await self.transport.send({
+            "jsonrpc": "2.0",
+            "id": self._next_id(),
+            "method": "tools/list",
+            "params": {}
+        })
+        self.tools = [MCPTool(**t) for t in response["result"]["tools"]]</code></pre>
+
+        <h3>Tool Discovery and Registry</h3>
+
+        <p>When an MCP server connects, OCCP queries its available tools and registers them in a global tool registry. The registry maps tool names to their source server, parameter schema, and description. This registry is used by the skills system to resolve tool dependencies and by the policy engine to evaluate tool access permissions.</p>
+
+        <p>Tool names are namespaced by server to prevent collisions. A <code>read_file</code> tool from the filesystem server becomes <code>filesystem.read_file</code> in OCCP's registry, while a <code>read_file</code> tool from a different server would have its own namespace. This namespacing is transparent to the agent &mdash; the agent requests a tool by its fully qualified name, and the MCP client routes the call to the correct server.</p>
+
+        <h2>Tool Execution Through the Policy Gate</h2>
+
+        <p>This is where OCCP's MCP integration differs fundamentally from a standard MCP client. In a typical setup, an AI agent discovers MCP tools and calls them directly. In OCCP, every MCP tool call is routed through the Verified Autonomy Pipeline's Gate stage before execution.</p>
+
+        <pre><code># occp/mcp/executor.py — policy-gated tool execution
+class MCPExecutor:
+    def __init__(self, policy_engine: PolicyEngine, registry: ToolRegistry):
+        self.policy = policy_engine
+        self.registry = registry
+
+    async def execute_tool(self, tool_name: str, params: dict, agent_id: int) -> dict:
+        # 1. Resolve tool to its MCP server
+        tool = self.registry.get(tool_name)
+        if not tool:
+            raise ToolNotFoundError(f"Tool '{tool_name}' not registered")
+
+        # 2. Validate parameters against JSON Schema
+        validate(params, tool.input_schema)
+
+        # 3. Policy gate evaluation
+        policy_result = await self.policy.evaluate_tool_call(
+            tool_name=tool_name,
+            params=params,
+            agent_id=agent_id,
+        )
+        if not policy_result.allowed:
+            raise PolicyViolationError(policy_result.reason)
+
+        # 4. Execute through MCP transport
+        connection = self.registry.get_connection(tool.server_name)
+        result = await connection.call_tool(tool_name, params)
+
+        # 5. Output sanitization
+        sanitized = await self.policy.sanitize_output(result)
+
+        # 6. Audit logging
+        await self.audit.log_tool_call(
+            tool=tool_name, params=params, result=sanitized,
+            agent_id=agent_id, policy_result=policy_result,
+        )
+
+        return sanitized</code></pre>
+
+        <p>The six-step execution flow ensures that no MCP tool call bypasses governance. Parameter validation catches malformed inputs before they reach the external service. Policy evaluation checks the agent's permissions for the specific tool and the specific parameters. Output sanitization strips any sensitive data from the tool's response before it returns to the agent. Audit logging records the complete interaction.</p>
+
+        <blockquote>MCP without governance is a backdoor. Every tool an agent can call is a potential attack vector: filesystem access can leak data, database access can modify records, API access can consume resources. OCCP's contribution is not the MCP client itself &mdash; it is the policy gate that wraps it.</blockquote>
+
+        <h2>Integration with 22 MCP Servers</h2>
+
+        <p>OCCP ships with pre-configured connection profiles for 22 MCP servers, organized into five categories:</p>
+
+        <ul>
+          <li><strong>Development Tools</strong> &mdash; Filesystem (file read/write/search), GitHub (repos, PRs, issues, actions), Git (local repository operations).</li>
+          <li><strong>Databases</strong> &mdash; SQLite (local queries), PostgreSQL (production database), MySQL (legacy systems).</li>
+          <li><strong>Cloud Infrastructure</strong> &mdash; Hetzner Cloud (server management), Cloudflare (DNS, Workers, R2 storage), Hostinger (hosting management).</li>
+          <li><strong>Monitoring and Automation</strong> &mdash; Grafana (dashboards, alerts), n8n (workflow automation), Docker (container management).</li>
+          <li><strong>Security and Research</strong> &mdash; Semgrep (static analysis), Snyk (dependency scanning), GitGuardian (secret detection), web search, web scraping, documentation lookup.</li>
+        </ul>
+
+        <p>Each pre-configured profile includes the server command or URL, required environment variables, and a default policy configuration. Enabling a new MCP server in the dashboard automatically applies the appropriate policy rules: database servers get query-only access by default, filesystem servers get read-only access, and cloud infrastructure servers require explicit admin approval before write operations.</p>
+
+        <h2>Why MCP Is the Universal Standard</h2>
+
+        <p>Before MCP, every AI framework implemented its own tool integration mechanism. LangChain had Tools, CrewAI had Actions, AutoGen had Functions. Each required a different interface, different parameter format, and different error handling approach. A tool written for LangChain could not be used in CrewAI without a wrapper, and neither could be used outside their respective frameworks.</p>
+
+        <p>MCP solves this fragmentation by defining a single protocol that any AI system can implement. An MCP server written for Claude Desktop works in OCCP without modification. An MCP server built for another orchestration platform works in OCCP without modification. The protocol is the interface, not the framework. This is the same architectural insight that made HTTP, SMTP, and SQL successful: standardize the protocol, and the ecosystem builds itself.</p>
+
+        <p>OCCP's specific contribution is adding the governance layer. MCP defines how to call tools. OCCP defines the rules about whether you should call them, what to do with the results, and how to record that the call happened. Protocol standardization plus governance enforcement is the combination that makes MCP viable for enterprise AI deployments.</p>
+
+        <h2>Transport Security</h2>
+
+        <p>Stdio transport inherits the process-level isolation of the operating system &mdash; the MCP server runs as a child process with the same security context as OCCP. HTTP+SSE transport introduces network-level concerns: MCP calls over HTTP must use TLS, authentication tokens must be included in headers, and server certificates must be validated. OCCP's MCP client enforces TLS for all HTTP+SSE connections and stores authentication tokens using the same AES-256-GCM encryption used for LLM API keys.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>MCP provides a universal protocol for AI-to-tool communication via JSON-RPC 2.0 over stdio or HTTP+SSE</li>
+          <li>OCCP routes every MCP tool call through the policy gate: parameter validation, permission check, output sanitization, audit log</li>
+          <li>Tool names are namespaced by server to prevent collisions across 22+ integrated servers</li>
+          <li>Pre-configured server profiles apply default security policies: read-only filesystem, query-only database, admin-gated cloud infrastructure</li>
+          <li>MCP standardizes the protocol; OCCP adds the governance that makes it enterprise-viable</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="10-step-wizard.html">&larr; 10-Step Wizard</a>
+        <a href="skills-system-architecture.html">Skills System Architecture &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

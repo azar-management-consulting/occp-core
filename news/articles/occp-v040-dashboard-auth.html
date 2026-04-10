@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OCCP v0.4.0: Dashboard Authentication and the Next.js 15 Migration — OCCP News</title>
+  <meta name="description" content="JWT authentication in the browser, AuthGuard route protection, and the migration to Next.js 15 with React 19 server components.">
+  <meta name="keywords" content="OCCP v0.4.0, JWT authentication, Next.js 15, React 19, AuthGuard, dashboard auth, OCCP">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/occp-v040-dashboard-auth.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/occp-v040-dashboard-auth.html">
+  <meta property="og:title" content="OCCP v0.4.0: Dashboard Authentication and the Next.js 15 Migration">
+  <meta property="og:description" content="JWT authentication in the browser, AuthGuard route protection, and migration to Next.js 15 + React 19.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-01-08">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="OCCP v0.4.0: Dashboard Authentication and the Next.js 15 Migration">
+  <meta name="twitter:description" content="JWT authentication in the browser, AuthGuard route protection, and Next.js 15 migration.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "OCCP v0.4.0: Dashboard Authentication and the Next.js 15 Migration",
+    "description": "JWT authentication in the browser, AuthGuard route protection, and the migration to Next.js 15 + React 19.",
+    "datePublished": "2026-01-08",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "url": "https://news.occp.ai/articles/occp-v040-dashboard-auth.html",
+    "mainEntityOfPage": "https://news.occp.ai/articles/occp-v040-dashboard-auth.html",
+    "proficiencyLevel": "Advanced",
+    "dependencies": "Next.js 15, React 19, JWT"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo">OCCP <span>// news</span></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="https://news.occp.ai/" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+
+    <!-- Article Header -->
+    <header class="article-header">
+      <div class="card-meta">
+        <span class="card-date">2026-01-08</span>
+        <span class="card-tag tag-milestone">Milestone</span>
+        <span class="card-version">v0.4.0</span>
+      </div>
+      <h1>OCCP v0.4.0: Dashboard Authentication and the Next.js 15 Migration</h1>
+      <p class="lead">Version 0.4.0 brought two significant changes: JWT-based authentication in the browser dashboard, and a migration from Next.js 14 to Next.js 15 with React 19. Together, these changes transformed the dashboard from a read-only monitoring tool into a secured operations interface.</p>
+    </header>
+
+    <!-- Article Body -->
+    <div class="article-body">
+
+      <h2>What Changed in v0.4.0</h2>
+
+      <p>The v0.3.0 dashboard could display pipeline status and agent monitoring, but it had no concept of user identity. Anyone who could reach <code>dash.occp.ai</code> could see everything. For an internal tool during early development, this was acceptable. As OCCP moved toward production deployment with real LLM API calls (and real costs), authentication became non-negotiable.</p>
+
+      <p>Version 0.4.0 introduced:</p>
+
+      <ul>
+        <li><strong>JWT login flow</strong> -- username/password authentication against the FastAPI backend, with token storage in the browser</li>
+        <li><strong>AuthGuard component</strong> -- a React wrapper that redirects unauthenticated users to the login page</li>
+        <li><strong>Automatic token refresh</strong> -- seamless re-authentication before tokens expire</li>
+        <li><strong>Next.js 15 + React 19 migration</strong> -- server components for initial load performance, client components for interactive elements</li>
+      </ul>
+
+      <h2>JWT Authentication in the Browser</h2>
+
+      <h3>The Login Flow</h3>
+
+      <p>Authentication follows a standard JWT flow with one OCCP-specific addition: the audit hash. Every authentication event is recorded in the SHA-256 hash chain, creating a cryptographic record of who accessed the platform and when.</p>
+
+      <pre><code>// Login request
+const response = await fetch("https://api.occp.ai/api/v1/auth/login", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ username, password }),
+});
+
+// Response includes JWT and audit reference
+const { access_token, refresh_token, expires_in, audit_hash } = await response.json();
+
+// Store tokens
+localStorage.setItem("occp_access_token", access_token);
+localStorage.setItem("occp_refresh_token", refresh_token);
+localStorage.setItem("occp_token_expiry", String(Date.now() + expires_in * 1000));</code></pre>
+
+      <h3>Token Storage Decision</h3>
+
+      <p>We chose <code>localStorage</code> over cookies for token storage. This decision is often debated in the web security community. Our reasoning:</p>
+
+      <ul>
+        <li><strong>The dashboard is a single-page application.</strong> There are no server-rendered pages that need automatic cookie attachment. Every API call is made explicitly with <code>fetch</code>, where we control the Authorization header.</li>
+        <li><strong>CSRF is eliminated.</strong> Cookies are automatically sent with every request to the cookie's domain, making CSRF attacks possible. Tokens in localStorage are never sent automatically -- they must be explicitly attached to each request.</li>
+        <li><strong>XSS is the real risk.</strong> localStorage is vulnerable to XSS attacks. We mitigate this through strict Content-Security-Policy headers (blocking inline scripts from untrusted sources) and output sanitization in both the API and the dashboard.</li>
+      </ul>
+
+      <blockquote>There is no perfectly secure token storage mechanism in browsers. localStorage trades CSRF immunity for XSS vulnerability. HttpOnly cookies trade XSS immunity for CSRF vulnerability. We chose the trade-off that aligns with our architecture: a CSP-hardened SPA where every API call is explicit.</blockquote>
+
+      <h3>Automatic Token Refresh</h3>
+
+      <p>JWT access tokens have a 15-minute lifetime. The refresh token, stored alongside the access token, has a 7-day lifetime. An interceptor runs before every API call to check the token expiry and refresh proactively:</p>
+
+      <pre><code>class AuthenticatedClient {
+  private async ensureValidToken(): Promise&lt;string&gt; {
+    const expiry = Number(localStorage.getItem("occp_token_expiry"));
+    const buffer = 60_000; // Refresh 60s before expiry
+
+    if (Date.now() + buffer &lt; expiry) {
+      return localStorage.getItem("occp_access_token")!;
+    }
+
+    // Token is expired or about to expire -- refresh
+    const refreshToken = localStorage.getItem("occp_refresh_token");
+    if (!refreshToken) {
+      throw new AuthenticationError("No refresh token available");
+    }
+
+    const response = await fetch("https://api.occp.ai/api/v1/auth/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (!response.ok) {
+      // Refresh failed -- force re-login
+      this.logout();
+      throw new AuthenticationError("Session expired");
+    }
+
+    const { access_token, expires_in } = await response.json();
+    localStorage.setItem("occp_access_token", access_token);
+    localStorage.setItem("occp_token_expiry", String(Date.now() + expires_in * 1000));
+    return access_token;
+  }
+
+  async fetch(url: string, options: RequestInit = {}): Promise&lt;Response&gt; {
+    const token = await this.ensureValidToken();
+    return fetch(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  }
+}</code></pre>
+
+      <p>The 60-second buffer ensures the token is refreshed before it actually expires, preventing a brief window where API calls fail with 401 errors. The refresh is transparent to the calling code -- it simply uses <code>client.fetch()</code> and the authentication is handled automatically.</p>
+
+      <h2>The AuthGuard Component</h2>
+
+      <p>The AuthGuard is a React component that wraps protected routes. If the user is not authenticated, they are redirected to the login page. If they are authenticated, the wrapped content renders normally:</p>
+
+      <pre><code>"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+export function AuthGuard({ children }: { children: React.ReactNode }) {
+  const [isAuthenticated, setIsAuthenticated] = useState&lt;boolean | null&gt;(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("occp_access_token");
+    const expiry = Number(localStorage.getItem("occp_token_expiry"));
+
+    if (!token || Date.now() &gt; expiry) {
+      router.replace("/login");
+      return;
+    }
+
+    // Verify token with server
+    fetch("https://api.occp.ai/api/v1/auth/verify", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) =&gt; {
+        if (res.ok) setIsAuthenticated(true);
+        else router.replace("/login");
+      })
+      .catch(() =&gt; router.replace("/login"));
+  }, [router]);
+
+  if (isAuthenticated === null) {
+    return &lt;div className="loading-screen"&gt;Verifying...&lt;/div&gt;;
+  }
+
+  return &lt;&gt;{children}&lt;/&gt;;
+}</code></pre>
+
+      <p>The three-state pattern (<code>null</code>, <code>true</code>, <code>false</code>) prevents the protected content from flashing briefly before the redirect. While authentication is being verified, a loading indicator is shown. Only after server-side token verification completes does the content render.</p>
+
+      <h2>Next.js 15 + React 19 Migration</h2>
+
+      <h3>Why Migrate During a Security Release?</h3>
+
+      <p>The timing was deliberate. Adding authentication required significant changes to the component architecture (new client components for login forms, context providers for auth state, route guards). Making these changes in a Next.js 14 codebase and then migrating to 15 would mean touching the same code twice. We chose to migrate first, then build auth into the new architecture.</p>
+
+      <h3>Server Components for Initial Load</h3>
+
+      <p>React 19 server components enabled us to render the initial dashboard state on the server. The task list, agent panel, and pipeline overview are server-rendered with fresh data, then hydrated on the client for interactivity. This reduced the time-to-first-meaningful-paint from 2.8 seconds (v0.3.0, full client-side render) to 1.1 seconds (v0.4.0, server-rendered with streaming).</p>
+
+      <pre><code>// Server component: loads data at request time
+// app/dashboard/page.tsx
+export default async function DashboardPage() {
+  const tasks = await fetchTasks(); // Runs on server
+  const agents = await fetchAgents(); // Runs on server
+
+  return (
+    &lt;AuthGuard&gt;
+      &lt;DashboardLayout&gt;
+        &lt;TaskList initialTasks={tasks} /&gt;
+        &lt;AgentPanel initialAgents={agents} /&gt;
+        &lt;PipelineOverview /&gt;
+      &lt;/DashboardLayout&gt;
+    &lt;/AuthGuard&gt;
+  );
+}</code></pre>
+
+      <h3>The Client/Server Boundary</h3>
+
+      <p>The migration required careful decisions about which components are server and which are client. The rule we established: if a component needs browser APIs (localStorage, WebSocket, event handlers), it is a client component marked with <code>"use client"</code>. Everything else defaults to server.</p>
+
+      <p>This boundary is particularly interesting for the dashboard because authentication state lives in the browser (localStorage), but initial data loading benefits from the server. The AuthGuard is a client component that wraps server-rendered content, creating a clean separation between the auth layer and the data layer.</p>
+
+      <h2>Metrics from the Release</h2>
+
+      <p>The v0.4.0 release added 23 new tests (authentication flows, token refresh, AuthGuard behavior), bringing the total to 107. The Next.js migration changed 34 files but required no changes to the API backend -- the dashboard is a pure consumer of the REST API, so backend changes were isolated to adding the <code>/auth/login</code>, <code>/auth/refresh</code>, and <code>/auth/verify</code> endpoints.</p>
+
+      <p>Bundle size decreased by 18% after the migration to React 19, primarily due to server components eliminating client-side JavaScript for the initial data fetching layer. The dashboard's Lighthouse performance score improved from 62 to 84.</p>
+
+    </div>
+
+    <!-- Summary Box -->
+    <div class="summary-box">
+      <h3>// Key Takeaways</h3>
+      <ul>
+        <li>JWT authentication with localStorage storage eliminates CSRF; CSP headers mitigate XSS</li>
+        <li>Automatic token refresh with 60-second buffer prevents expired-token API failures</li>
+        <li>AuthGuard uses three-state rendering (null/true/false) to prevent content flash</li>
+        <li>Next.js 15 migration was timed to coincide with auth work to avoid double-touching code</li>
+        <li>Server components reduced time-to-first-meaningful-paint from 2.8s to 1.1s</li>
+        <li>Client/server boundary rule: browser APIs = client component, everything else = server</li>
+      </ul>
+    </div>
+
+    <!-- Article Navigation -->
+    <nav class="article-nav">
+      <a href="reverse-proxy-architecture.html">&larr; #018 Reverse Proxy Architecture</a>
+      <a href="retro-terminal-aesthetics.html">#020 Retro-Terminal Aesthetics &rarr;</a>
+    </nav>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP — OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

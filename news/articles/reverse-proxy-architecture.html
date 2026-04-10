@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reverse Proxy Architecture: Routing AI Traffic at Scale — OCCP News</title>
+  <meta name="description" content="Apache2 reverse proxy setup for multi-service AI platforms: routing API, dashboard, and documentation traffic with SSL and security headers.">
+  <meta name="keywords" content="reverse proxy, Apache2, SSL termination, security headers, HSTS, CSP, ProxyPass, OCCP">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/reverse-proxy-architecture.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/reverse-proxy-architecture.html">
+  <meta property="og:title" content="Reverse Proxy Architecture: Routing AI Traffic at Scale">
+  <meta property="og:description" content="Apache2 reverse proxy configuration for multi-service AI platforms with SSL termination and security headers.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-01-05">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Reverse Proxy Architecture: Routing AI Traffic at Scale">
+  <meta name="twitter:description" content="Apache2 reverse proxy for multi-service AI platforms with SSL and security headers.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Reverse Proxy Architecture: Routing AI Traffic at Scale",
+    "description": "Apache2 reverse proxy setup for multi-service AI platforms with SSL termination and security headers.",
+    "datePublished": "2026-01-05",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "url": "https://news.occp.ai/articles/reverse-proxy-architecture.html",
+    "mainEntityOfPage": "https://news.occp.ai/articles/reverse-proxy-architecture.html",
+    "proficiencyLevel": "Advanced",
+    "dependencies": "Apache2, mod_proxy, Let's Encrypt"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo">OCCP <span>// news</span></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="https://news.occp.ai/" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+
+    <!-- Article Header -->
+    <header class="article-header">
+      <div class="card-meta">
+        <span class="card-date">2026-01-05</span>
+        <span class="card-tag tag-infra">Infrastructure</span>
+        <span class="card-version">v0.3.0</span>
+      </div>
+      <h1>Reverse Proxy Architecture: Routing AI Traffic at Scale</h1>
+      <p class="lead">The OCCP platform runs three subdomains -- occp.ai, api.occp.ai, and dash.occp.ai -- each pointing to a different backend service on the same host. Apache2 sits in front, handling SSL termination, security headers, and traffic routing. This article details the configuration and the reasoning behind it.</p>
+    </header>
+
+    <!-- Article Body -->
+    <div class="article-body">
+
+      <h2>Why a Reverse Proxy?</h2>
+
+      <p>Without a reverse proxy, each service would need its own public IP address or run on non-standard ports. Users would access the API at <code>occp.ai:8000</code> and the dashboard at <code>occp.ai:3000</code>. Beyond the usability problem, this exposes each service directly to the internet, making every service responsible for its own SSL, security headers, and rate limiting.</p>
+
+      <p>A reverse proxy centralizes these concerns. Apache2 handles SSL for all services, injects security headers uniformly, and routes traffic based on the requested subdomain. The backend services (FastAPI on port 8000, Next.js on port 3000) bind only to localhost and never see external traffic directly.</p>
+
+      <h2>The Routing Architecture</h2>
+
+      <p>The OCCP domain structure routes three distinct traffic patterns:</p>
+
+      <ul>
+        <li><strong>occp.ai</strong> -- Landing page and documentation. Static HTML served directly by Apache from the filesystem.</li>
+        <li><strong>api.occp.ai</strong> -- FastAPI REST API. Proxied to the Docker container on port 8000. Handles JSON payloads and WebSocket connections.</li>
+        <li><strong>dash.occp.ai</strong> -- Next.js dashboard. Proxied to the Docker container on port 3000. Serves the React application and its assets.</li>
+      </ul>
+
+      <h3>Virtual Host Configuration</h3>
+
+      <p>Each subdomain has its own Apache virtual host. The API virtual host illustrates the core pattern:</p>
+
+      <pre><code>&lt;VirtualHost *:443&gt;
+    ServerName api.occp.ai
+
+    SSLEngine on
+    SSLCertificateFile /etc/letsencrypt/live/api.occp.ai/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/api.occp.ai/privkey.pem
+
+    # Security headers
+    Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Proxy configuration
+    ProxyPreserveHost On
+    ProxyPass / http://127.0.0.1:8000/
+    ProxyPassReverse / http://127.0.0.1:8000/
+
+    # WebSocket proxy
+    RewriteEngine On
+    RewriteCond %{HTTP:Upgrade} websocket [NC]
+    RewriteCond %{HTTP:Connection} upgrade [NC]
+    RewriteRule ^/?(.*) ws://127.0.0.1:8000/$1 [P,L]
+
+    # Request size limit (AI payloads can be large)
+    LimitRequestBody 10485760
+
+    # Logging
+    ErrorLog ${APACHE_LOG_DIR}/api.occp.ai-error.log
+    CustomLog ${APACHE_LOG_DIR}/api.occp.ai-access.log combined
+&lt;/VirtualHost&gt;</code></pre>
+
+      <p>The <code>ProxyPreserveHost On</code> directive forwards the original Host header to the backend. Without this, FastAPI would see all requests as coming from <code>127.0.0.1:8000</code>, breaking CORS validation and any host-based routing logic in the application.</p>
+
+      <h2>SSL Termination with Let's Encrypt</h2>
+
+      <p>SSL certificates are provisioned and renewed automatically using Certbot with the Apache plugin. Each subdomain has its own certificate, allowing independent renewal and avoiding the complexity of wildcard certificates (which require DNS challenge validation):</p>
+
+      <pre><code># Initial certificate provisioning
+certbot --apache -d occp.ai -d www.occp.ai
+certbot --apache -d api.occp.ai
+certbot --apache -d dash.occp.ai
+
+# Automatic renewal (cron, twice daily)
+0 */12 * * * certbot renew --quiet --deploy-hook "systemctl reload apache2"</code></pre>
+
+      <p>The <code>--deploy-hook</code> reloads Apache after a successful renewal, ensuring the new certificate is picked up without a full restart. The twice-daily cron schedule follows Let's Encrypt's recommendation: certificates are renewed when they have 30 days remaining, and the frequent check ensures timely renewal even if the first attempt fails.</p>
+
+      <h2>Security Headers in Detail</h2>
+
+      <h3>Strict-Transport-Security (HSTS)</h3>
+
+      <p>The HSTS header with <code>max-age=63072000</code> (two years) tells browsers to always use HTTPS for this domain. The <code>includeSubDomains</code> directive extends this to all subdomains, preventing mixed-content issues. The <code>preload</code> flag declares intent to be included in browser HSTS preload lists, though actual submission to the preload list is a separate process.</p>
+
+      <h3>Content-Security-Policy (CSP)</h3>
+
+      <p>The dashboard virtual host includes a Content-Security-Policy header that restricts resource loading. This is the most complex security header because it must balance security with functionality:</p>
+
+      <pre><code># Dashboard CSP
+Header always set Content-Security-Policy "\
+  default-src 'self'; \
+  script-src 'self' 'unsafe-inline'; \
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; \
+  font-src 'self' https://fonts.gstatic.com; \
+  connect-src 'self' https://api.occp.ai wss://api.occp.ai; \
+  img-src 'self' data:; \
+  frame-ancestors 'none';"</code></pre>
+
+      <p>The <code>connect-src</code> directive explicitly allows connections to <code>api.occp.ai</code> and its WebSocket endpoint (<code>wss://api.occp.ai</code>). Without this, the dashboard's API calls and real-time updates would be blocked by the browser. The <code>frame-ancestors 'none'</code> prevents the dashboard from being embedded in iframes, complementing the <code>X-Frame-Options: DENY</code> header.</p>
+
+      <h3>X-Content-Type-Options</h3>
+
+      <p>The <code>nosniff</code> value prevents browsers from MIME-type sniffing. Without this header, a browser might interpret a JSON API response as HTML if the content looks HTML-like, potentially executing embedded scripts. For an API that processes user-generated content through LLMs, this is essential.</p>
+
+      <h2>WebSocket Proxying</h2>
+
+      <p>The dashboard's real-time pipeline visualization depends on WebSocket connections to the API server. Standard HTTP proxy directives do not handle WebSocket upgrades. Apache requires explicit rewrite rules to detect the <code>Upgrade: websocket</code> header and route the connection using the <code>ws://</code> protocol:</p>
+
+      <pre><code>RewriteEngine On
+RewriteCond %{HTTP:Upgrade} websocket [NC]
+RewriteCond %{HTTP:Connection} upgrade [NC]
+RewriteRule ^/?(.*) ws://127.0.0.1:8000/$1 [P,L]</code></pre>
+
+      <p>The <code>[NC]</code> flag makes the header check case-insensitive, handling browsers that send <code>Websocket</code>, <code>websocket</code>, or <code>WebSocket</code>. The <code>[P]</code> flag in the rewrite rule forces proxy behavior rather than redirect behavior, which is essential for maintaining the WebSocket connection.</p>
+
+      <blockquote>WebSocket proxying is the configuration most frequently broken during Apache upgrades. After any Apache update, the first thing we verify is that WebSocket connections from the dashboard still connect. A broken WebSocket does not produce an error in the dashboard -- it silently falls back to no real-time updates, which is worse than an obvious failure.</blockquote>
+
+      <h2>HTTP to HTTPS Redirect</h2>
+
+      <p>Every domain has a companion port 80 virtual host that redirects all traffic to HTTPS:</p>
+
+      <pre><code>&lt;VirtualHost *:80&gt;
+    ServerName api.occp.ai
+    RewriteEngine On
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}$1 [R=301,L]
+&lt;/VirtualHost&gt;</code></pre>
+
+      <p>The redirect uses a 301 (permanent) status code, telling browsers and search engines to always use the HTTPS version. Combined with HSTS, this ensures that after the first visit, all subsequent connections go directly to HTTPS without the redirect roundtrip.</p>
+
+      <h2>Request Size Limits</h2>
+
+      <p>The API virtual host sets <code>LimitRequestBody 10485760</code> (10MB). AI workloads can involve large payloads -- document uploads for analysis, code repositories for scanning, or batch task submissions. The 10MB limit balances functionality with protection against denial-of-service through oversized requests. The dashboard virtual host uses a smaller limit (1MB) since it only submits form data and API calls.</p>
+
+      <h2>Performance Considerations</h2>
+
+      <h3>Keep-Alive Settings</h3>
+
+      <p>Connection keep-alive is enabled for both the client-to-proxy and proxy-to-backend connections. This is critical for the dashboard, which makes multiple API calls on each page load (task list, agent status, pipeline states). Without keep-alive, each API call would require a new TCP connection and TLS handshake, adding 50-100ms of latency per request.</p>
+
+      <pre><code># Backend keep-alive
+ProxyPass / http://127.0.0.1:8000/ keepalive=On
+SetEnv proxy-nokeepalive 0</code></pre>
+
+      <h3>Compression</h3>
+
+      <p>Apache's <code>mod_deflate</code> compresses JSON responses from the API and HTML/CSS/JS from the dashboard. API responses (JSON task lists, audit logs) compress well -- typically 70-80% reduction. This reduces bandwidth usage and improves response times, particularly for operators on slower connections.</p>
+
+      <pre><code>AddOutputFilterByType DEFLATE application/json
+AddOutputFilterByType DEFLATE text/html text/css application/javascript</code></pre>
+
+      <p>Compression is applied at the proxy level rather than in the backend services, keeping the application code focused on business logic rather than transport optimization.</p>
+
+    </div>
+
+    <!-- Summary Box -->
+    <div class="summary-box">
+      <h3>// Key Takeaways</h3>
+      <ul>
+        <li>Reverse proxy centralizes SSL, security headers, and routing for all OCCP services</li>
+        <li>Three subdomains route to different backends: static site, FastAPI API, Next.js dashboard</li>
+        <li>HSTS with includeSubDomains and preload enforces HTTPS across the entire domain</li>
+        <li>WebSocket proxy requires explicit rewrite rules; standard ProxyPass does not handle upgrades</li>
+        <li>Content-Security-Policy must explicitly allow API and WebSocket connections for the dashboard</li>
+        <li>Backend services bind to localhost only, never exposed directly to the internet</li>
+      </ul>
+    </div>
+
+    <!-- Article Navigation -->
+    <nav class="article-nav">
+      <a href="dashboard-design-language.html">&larr; #017 Dashboard Design Language</a>
+      <a href="occp-v040-dashboard-auth.html">#019 OCCP v0.4.0: Dashboard Auth &rarr;</a>
+    </nav>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP — OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

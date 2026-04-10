@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Designing the Verified Autonomy Pipeline: First Principles — OCCP News</title>
+  <meta name="description" content="The five-stage pipeline that ensures no AI action executes without verification: Plan, Gate, Execute, Validate, Ship.">
+  <meta name="keywords" content="OCCP, Verified Autonomy Pipeline, VAP, AI pipeline, AI governance architecture">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/designing-verified-autonomy-pipeline.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/designing-verified-autonomy-pipeline.html">
+  <meta property="og:title" content="Designing the Verified Autonomy Pipeline: First Principles">
+  <meta property="og:description" content="The five-stage pipeline that ensures no AI action executes without verification: Plan, Gate, Execute, Validate, Ship.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2025-10-22">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Designing the Verified Autonomy Pipeline: First Principles">
+  <meta name="twitter:description" content="The five-stage pipeline that ensures no AI action executes without verification: Plan, Gate, Execute, Validate, Ship.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Designing the Verified Autonomy Pipeline: First Principles",
+    "datePublished": "2025-10-22",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "The five-stage pipeline that ensures no AI action executes without verification: Plan, Gate, Execute, Validate, Ship.",
+    "url": "https://news.occp.ai/articles/designing-verified-autonomy-pipeline.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2025-10-22</span>
+          <span class="card-tag tag-architecture">Architecture</span>
+        </div>
+        <h1>Designing the Verified Autonomy Pipeline: First Principles</h1>
+        <p class="lead">The Verified Autonomy Pipeline (VAP) is OCCP's core architectural concept: a five-stage pipeline where every AI action is planned, policy-checked, sandboxed, validated, and audited before reaching production. This article details the design decisions behind each stage.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Pipeline as an Invariant</h2>
+
+        <p>Most AI frameworks treat processing pipelines as flexible sequences: you can add stages, remove stages, reorder stages. This flexibility is a feature for orchestration, but a liability for governance. If a developer can remove the policy-checking stage, governance is advisory, not enforced.</p>
+
+        <p>The VAP is designed as an <strong>invariant</strong>, not a configurable pipeline. The five stages always execute in order. Stages cannot be removed, skipped, or reordered. Individual stages can be extended with additional checks, but the base pipeline is immutable. This design choice means that governance is a structural property of the system, not a runtime configuration.</p>
+
+        <blockquote>A governance pipeline that can be bypassed is not a governance pipeline. It is a suggestion.</blockquote>
+
+        <h2>Stage 1: Plan</h2>
+
+        <h3>Inputs and Outputs</h3>
+
+        <p>The Plan stage receives a raw task description from the user or calling system. Its output is a structured <code>TaskPlan</code> object containing: the decomposed subtasks, the selected execution strategy, a risk classification (low, medium, high, critical), estimated resource requirements (token budget, timeout), and the set of capabilities required to execute the task.</p>
+
+        <pre><code># TaskPlan structure
+{
+  "task_id": "tsk_a1b2c3",
+  "subtasks": [
+    {"id": "sub_01", "action": "analyze_input", "risk": "low"},
+    {"id": "sub_02", "action": "generate_response", "risk": "medium"}
+  ],
+  "strategy": "sequential",
+  "risk_level": "medium",
+  "token_budget": 4096,
+  "timeout_seconds": 30,
+  "required_capabilities": ["llm_call", "text_analysis"]
+}</code></pre>
+
+        <h3>Task Decomposition</h3>
+
+        <p>Complex tasks are decomposed into atomic subtasks, each with its own risk classification. This decomposition serves two purposes. First, it enables granular policy evaluation: a task with one high-risk subtask and five low-risk subtasks does not need blanket high-risk treatment. Second, it enables partial execution: if the high-risk subtask is denied at the Gate, the low-risk subtasks can still proceed.</p>
+
+        <h3>Strategy Selection</h3>
+
+        <p>The Plan stage selects an execution strategy based on the task structure: <code>sequential</code> for ordered subtasks with dependencies, <code>parallel</code> for independent subtasks that can execute concurrently, or <code>conditional</code> for subtasks where later stages depend on the output of earlier stages. The strategy determines how the Execute stage processes the subtask list.</p>
+
+        <h2>Stage 2: Gate</h2>
+
+        <h3>Policy Evaluation</h3>
+
+        <p>The Gate stage evaluates every subtask against the active policy set. Policies are defined as code, not configuration, and follow a deny-by-default model: a subtask must pass all policies to proceed. If any policy denies the subtask, execution halts and the denial reason is recorded in the audit trail.</p>
+
+        <pre><code># Gate evaluation pseudocode
+def gate_evaluate(subtask, policies):
+    results = []
+    for policy in policies:
+        result = policy.evaluate(subtask)
+        results.append(result)
+        if result.denied:
+            audit_log("GATE_DENIED", subtask, policy, result.reason)
+            return GateResult(allowed=False, reason=result.reason)
+    audit_log("GATE_PASSED", subtask, results)
+    return GateResult(allowed=True)</code></pre>
+
+        <h3>PII Scanning</h3>
+
+        <p>The Gate runs PII detection on all input text before it reaches the LLM. The initial implementation uses regex-based pattern matching for email addresses, phone numbers, social security numbers, and credit card numbers. Each detected PII element triggers a policy evaluation: the PII policy can deny the request, redact the PII, or allow it with a warning depending on the configured sensitivity level.</p>
+
+        <h3>Injection Detection</h3>
+
+        <p>Prompt injection detection runs as a separate Gate sub-stage. The detector scans for known injection patterns: role override attempts (<code>"ignore all previous instructions"</code>), delimiter-based attacks (<code>"---\nSYSTEM:"</code>), encoding-based evasion (base64-encoded instructions), and context manipulation. When an injection pattern is detected, the subtask is denied unconditionally &mdash; there is no sensitivity level for injection, only deny.</p>
+
+        <h2>Stage 3: Execute</h2>
+
+        <h3>Sandboxed Execution</h3>
+
+        <p>The Execute stage runs the approved subtask in an isolated environment. For LLM calls, this means a controlled API invocation with enforced token limits and timeout constraints. For code execution tasks, this means running the generated code in a sandboxed environment with restricted filesystem access, no network access, and memory limits.</p>
+
+        <p>The sandbox boundary is a critical security primitive. Code generated by an LLM is untrusted by definition: it has not been reviewed, tested, or verified. The Execute stage treats all LLM-generated artifacts as untrusted inputs, regardless of the model's reputation or the prompt's specificity.</p>
+
+        <h3>Resource Enforcement</h3>
+
+        <p>During execution, the system enforces the resource limits specified in the TaskPlan. If an LLM call exceeds its token budget, the call is terminated. If a code execution exceeds its timeout, the process is killed. If a subtask attempts to make more API calls than its plan allows, the additional calls are blocked. Resource enforcement is not advisory; it is a hard limit enforced by the Execute stage.</p>
+
+        <h2>Stage 4: Validate</h2>
+
+        <h3>Output Verification</h3>
+
+        <p>The Validate stage examines the output of the Execute stage before it proceeds to delivery. Validation includes: output PII scanning (to catch PII generated by the LLM, not just PII in the input), output format verification (does the output match the expected schema), constraint checking (does the output satisfy the task's stated requirements), and coherence checking (is the output internally consistent).</p>
+
+        <pre><code># Validation chain
+validators = [
+    OutputPIIScanner(),
+    SchemaValidator(expected_schema),
+    ConstraintChecker(task_constraints),
+    CoherenceValidator()
+]
+
+for validator in validators:
+    result = validator.validate(output)
+    if not result.valid:
+        audit_log("VALIDATE_FAILED", validator.name, result.issues)
+        return ValidationResult(passed=False, issues=result.issues)</code></pre>
+
+        <h3>Constraint Checking</h3>
+
+        <p>Task constraints are defined at the Plan stage and verified at the Validate stage. Examples include: maximum output length, required output format (JSON, markdown, plain text), prohibited content categories, and required content elements. Constraint checking ensures that the LLM's output meets the task's specifications, not just the model's preferences.</p>
+
+        <h2>Stage 5: Ship</h2>
+
+        <h3>Audit Logging</h3>
+
+        <p>The Ship stage writes a complete audit entry for the task, including: the original request, the task plan, all Gate evaluation results, the execution output, all validation results, the final result, and a SHA-256 hash linking this entry to the previous entry in the audit chain. The audit entry is immutable once written &mdash; it cannot be modified, deleted, or overwritten.</p>
+
+        <h3>Result Delivery</h3>
+
+        <p>After the audit entry is committed, the Ship stage delivers the validated result to the calling system. Delivery can take multiple forms: a direct API response, a webhook callback, a message queue event, or a file write. The delivery method is specified in the original task request and is itself subject to policy evaluation &mdash; a policy can restrict which delivery methods are available for different risk levels.</p>
+
+        <h2>Failure Modes and Recovery</h2>
+
+        <p>Each stage has defined failure modes. Plan failure (invalid task description) returns a 400-level error. Gate denial returns a 403-level response with the denial reason. Execute failure (timeout, API error) returns a 500-level error with retry eligibility. Validate failure (output does not meet constraints) returns the validation issues for correction. Ship failure (audit write error) blocks delivery until the audit entry is committed &mdash; results are never delivered without an audit record.</p>
+
+        <p>This failure mode design ensures that the pipeline degrades predictably. A failure at any stage produces a clear, actionable error message, and the audit trail records where and why the pipeline stopped.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>The VAP is an immutable five-stage pipeline: Plan, Gate, Execute, Validate, Ship &mdash; no stages can be skipped or reordered</li>
+          <li>Plan stage decomposes tasks into atomic subtasks with individual risk classifications and resource budgets</li>
+          <li>Gate stage enforces deny-by-default policies including PII detection and prompt injection blocking</li>
+          <li>Execute stage runs all LLM calls in sandboxed environments with hard resource limits</li>
+          <li>Validate stage verifies outputs against schema, constraints, and PII scanning before delivery</li>
+          <li>Ship stage commits an immutable SHA-256 audit entry before delivering any result</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="why-we-built-occp.html">&larr; Why We Built OCCP</a>
+        <a href="beyond-prompt-engineering.html">Beyond Prompt Engineering &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>

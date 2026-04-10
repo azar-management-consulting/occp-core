@@ -51,7 +51,7 @@ class TestStatus:
         assert resp.status_code == 200
         data = resp.json()
         assert data["platform"] == "OCCP"
-        assert data["version"] == "0.8.0"
+        assert data["version"] == "0.9.0"
         assert data["status"] == "running"
 
 
@@ -158,7 +158,7 @@ class TestPipeline:
         token = await _get_token(client)
         resp = await client.post("/api/v1/tasks", json={
             "name": "pipeline-test",
-            "description": "Run through VAP",
+            "description": "Run through Verified Autonomy Pipeline",
             "agent_type": "demo",
             "risk_level": "low",
         }, headers=_auth(token))
@@ -257,3 +257,112 @@ class TestAudit:
         assert "entries" in data
         assert "chain_valid" in data
         assert isinstance(data["total"], int)
+
+
+class TestAuthMe:
+    @pytest.mark.asyncio
+    async def test_me_authenticated(self, client: AsyncClient) -> None:
+        token = await _get_token(client)
+        resp = await client.get("/api/v1/auth/me", headers=_auth(token))
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["username"] == "testadmin"
+        assert data["role"] == "system_admin"
+        assert "display_name" in data
+
+    @pytest.mark.asyncio
+    async def test_me_no_token(self, client: AsyncClient) -> None:
+        resp = await client.get("/api/v1/auth/me")
+        assert resp.status_code == 401
+
+
+class TestAuthRegister:
+    @pytest.mark.asyncio
+    async def test_self_register_success(self, client: AsyncClient) -> None:
+        resp = await client.post("/api/v1/auth/register", json={
+            "username": "newuser",
+            "password": "securepass123",
+            "display_name": "New User",
+        })
+        assert resp.status_code == 201
+        data = resp.json()
+        assert "access_token" in data
+        assert data["role"] == "viewer"
+
+    @pytest.mark.asyncio
+    async def test_self_register_duplicate(self, client: AsyncClient) -> None:
+        await client.post("/api/v1/auth/register", json={
+            "username": "dupuser",
+            "password": "securepass123",
+        })
+        resp = await client.post("/api/v1/auth/register", json={
+            "username": "dupuser",
+            "password": "otherpass456",
+        })
+        assert resp.status_code == 409
+
+    @pytest.mark.asyncio
+    async def test_admin_register_with_role(self, client: AsyncClient) -> None:
+        token = await _get_token(client)
+        resp = await client.post("/api/v1/auth/register/admin", json={
+            "username": "operator1",
+            "password": "operatorpass123",
+            "role": "operator",
+        }, headers=_auth(token))
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["role"] == "operator"
+
+
+class TestUsers:
+    @pytest.mark.asyncio
+    async def test_list_users_admin(self, client: AsyncClient) -> None:
+        token = await _get_token(client)
+        resp = await client.get("/api/v1/users", headers=_auth(token))
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "users" in data
+        assert "total" in data
+        assert data["total"] >= 1
+        usernames = [u["username"] for u in data["users"]]
+        assert "testadmin" in usernames
+
+    @pytest.mark.asyncio
+    async def test_list_users_no_token(self, client: AsyncClient) -> None:
+        resp = await client.get("/api/v1/users")
+        assert resp.status_code == 401
+
+
+class TestAdminStats:
+    @pytest.mark.asyncio
+    async def test_admin_stats_admin(self, client: AsyncClient) -> None:
+        token = await _get_token(client)
+        resp = await client.get("/api/v1/admin/stats", headers=_auth(token))
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "users_total" in data
+        assert "users_by_role" in data
+        assert "registrations_last_7_days" in data
+        assert "onboarding_funnel" in data
+        assert "user_activity" in data
+        assert data["users_total"] >= 1
+
+    @pytest.mark.asyncio
+    async def test_admin_stats_no_token(self, client: AsyncClient) -> None:
+        resp = await client.get("/api/v1/admin/stats")
+        assert resp.status_code == 401
+
+
+class TestLoginAudit:
+    @pytest.mark.asyncio
+    async def test_login_creates_audit_entry(self, client: AsyncClient) -> None:
+        await client.post("/api/v1/auth/login", json={
+            "username": "testadmin",
+            "password": "testpass123",
+        })
+        token = await _get_token(client)
+        resp = await client.get("/api/v1/audit", headers=_auth(token))
+        assert resp.status_code == 200
+        data = resp.json()
+        login_entries = [e for e in data["entries"] if e["action"] == "auth.login"]
+        assert len(login_entries) >= 1

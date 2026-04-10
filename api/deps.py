@@ -14,12 +14,16 @@ from config.settings import Settings
 
 if TYPE_CHECKING:
     from orchestrator.adapter_registry import AdapterRegistry
+    from orchestrator.project_manager import ProjectManager
     from store.database import Database
     from store.task_store import TaskStore
     from store.audit_store import AuditStore
     from store.agent_store import AgentStore
     from store.user_store import UserStore
     from store.onboarding_store import OnboardingStore
+    from store.token_store import TokenStore
+    from store.workflow_store import WorkflowStore
+    from security.encryption import TokenEncryptor
 
 
 class AppState:
@@ -39,7 +43,11 @@ class AppState:
         self.scheduler: Scheduler = Scheduler()
         self.ws_manager: ConnectionManager = ConnectionManager()
         self.onboarding_store: OnboardingStore | None = None
+        self.token_store: TokenStore | None = None
+        self.token_encryptor: TokenEncryptor | None = None
+        self.workflow_store: WorkflowStore | None = None
         self.multi_planner: Any = None  # MultiLLMPlanner (set in lifespan)
+        self.project_manager: ProjectManager | None = None
 
     # -- Task helpers (async, with store-or-dict fallback) --
 

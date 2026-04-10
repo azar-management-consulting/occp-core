@@ -103,7 +103,7 @@ class TestHealthEndpoint:
         resp = await client.get("/api/v1/health")
         data = resp.json()
         assert data["status"] == "healthy"
-        assert data["version"] == "0.8.0"
+        assert data["version"] == "0.9.0"
 
     async def test_health_db_check_present(self, client: AsyncClient) -> None:
         resp = await client.get("/api/v1/health")
@@ -135,7 +135,7 @@ class TestHealthEndpoint:
 class TestStatusVersion:
     async def test_status_version_070(self, client: AsyncClient) -> None:
         resp = await client.get("/api/v1/status")
-        assert resp.json()["version"] == "0.8.0"
+        assert resp.json()["version"] == "0.9.0"
 
 
 # ---------------------------------------------------------------------------
@@ -231,14 +231,14 @@ class TestHealthModels:
     def test_health_response_model(self) -> None:
         resp = HealthResponse(
             status="healthy",
-            version="0.8.0",
+            version="0.9.0",
             checks=[HealthCheck(name="db", status="ok")],
         )
         assert resp.status == "healthy"
         assert len(resp.checks) == 1
 
     def test_health_response_empty_checks(self) -> None:
-        resp = HealthResponse(status="unhealthy", version="0.8.0")
+        resp = HealthResponse(status="unhealthy", version="0.9.0")
         assert resp.checks == []
 
 

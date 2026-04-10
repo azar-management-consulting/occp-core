@@ -18,7 +18,7 @@
 
 **Két fázis javaslat**:
 - **Phase A**: Dashboard MCP katalógus — top 100 listázás, Copy config, linkek (UI only)
-- **Phase B**: OCCP agentek MCP client-ként — pipeline adapter, hogy a VAP használhassa az MCP toolokat
+- **Phase B**: OCCP agentek MCP client-ként — pipeline adapter, hogy a Verified Autonomy Pipeline használhassa az MCP toolokat
 
 ---
 

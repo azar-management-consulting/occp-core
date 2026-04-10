@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from policy_engine.models import AuditEntry
@@ -60,6 +60,21 @@ class AuditStore:
         if row is None:
             return None
         return self._row_to_entry(row)
+
+    async def prune_before(self, cutoff_iso: str) -> int:
+        """Delete audit entries older than *cutoff_iso* (ISO-8601 string).
+
+        Safe & idempotent — returns the number of pruned rows.
+        Uses string comparison on the ISO timestamp column which is
+        lexicographically equivalent to chronological order.
+        """
+        stmt = (
+            delete(AuditEntryRow)
+            .where(AuditEntryRow.timestamp < cutoff_iso)
+        )
+        result = await self._session.execute(stmt)
+        await self._session.commit()
+        return result.rowcount  # type: ignore[return-value]
 
     @staticmethod
     def _row_to_entry(row: AuditEntryRow) -> AuditEntry:

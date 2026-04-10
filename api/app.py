@@ -22,10 +22,12 @@ from adapters.mock_executor import MockExecutor
 from adapters.sandbox_executor import SandboxBackend, SandboxConfig, SandboxExecutor
 from adapters.basic_validator import BasicValidator
 from adapters.log_shipper import LogShipper
+from adapters.event_bridge import EventBridge
 
 from orchestrator.adapter_registry import AdapterRegistry
 from orchestrator.models import AgentConfig
 from orchestrator.pipeline import Pipeline
+from orchestrator.project_manager import ProjectManager
 from policy_engine.engine import PolicyEngine
 
 from store.database import Database
@@ -34,11 +36,27 @@ from store.audit_store import AuditStore
 from store.agent_store import AgentStore
 from store.user_store import UserStore
 from store.onboarding_store import OnboardingStore
+from store.token_store import TokenStore
+
+from security.encryption import TokenEncryptor
+from security.agent_allowlist import AgentToolGuard
+from security.channel_auth import ChannelAuthenticator
+from store.conversation_store import ConversationStore
+from store.approval_store import ApprovalStore
+from adapters.confirmation_gate import ConfirmationGate
+from orchestrator.brain_flow import BrainFlowEngine
 
 from api.deps import AppState, set_state
 from api.ws_manager import ConnectionManager
-from api.routes import agents, audit, auth, pipeline, policy, status, tasks, ws
-from api.routes import onboarding, mcp, skills, llm
+from api.routes import agents, audit, auth, brain, dashboard, pipeline, policy, status, tasks, ws
+from api.routes import onboarding, mcp, skills, llm, tokens
+from api.routes import users, admin, projects, quality
+from api.routes import cloudcode, bridge, voice
+from api.routes import mcp_bridge as mcp_bridge_route
+from api.routes import observability as observability_route
+from api.routes import governance as governance_route
+from api.routes import autodev as autodev_route
+from api.routes import daily_check as daily_check_route
 from config.settings import Settings
 
 logger = logging.getLogger(__name__)
@@ -66,6 +84,20 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     if last_audit:
         engine.set_chain_head(last_audit)
 
+    # ── Audit retention enforcement (EU AI Act Art. 19) ───────────
+    if settings.audit_retention_days > 0:
+        from datetime import datetime, timedelta, timezone
+
+        cutoff = datetime.now(timezone.utc) - timedelta(days=settings.audit_retention_days)
+        cutoff_iso = cutoff.isoformat()
+        pruned = await audit_store.prune_before(cutoff_iso)
+        if pruned:
+            logger.info(
+                "Audit retention: pruned %d entries older than %d days",
+                pruned,
+                settings.audit_retention_days,
+            )
+
     agent_store = AgentStore(session)
     user_store = UserStore(session)
 
@@ -86,6 +118,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
             await user_store.update_password(settings.admin_user, settings.admin_password)
             logger.info("Admin password synced from environment")
 
+    # Token encryption (AES-256-GCM envelope encryption)
+    encryptor = TokenEncryptor(settings.encryption_key)
+    token_store = TokenStore(session, encryptor)
+
     state = AppState(settings=settings)
     state.db = db
     state.task_store = task_store
@@ -93,6 +129,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     state.agent_store = agent_store
     state.user_store = user_store
     state.onboarding_store = OnboardingStore(session)
+    state.token_store = token_store
+    state.token_encryptor = encryptor
 
     # Multi-LLM planner with automatic failover chain
     multi_planner = MultiLLMPlanner()
@@ -162,6 +200,60 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     adapter_registry.register("demo", executor=mock_executor)
     state.adapter_registry = adapter_registry
 
+    # -------------------------------------------------------------------
+    # OpenClaw Gateway bridge (optional — only if URL is configured)
+    # -------------------------------------------------------------------
+    openclaw_executor = None
+    if getattr(settings, "has_openclaw", False):
+        try:
+            from adapters.openclaw_executor import OpenClawConfig, OpenClawExecutor
+            from adapters.openclaw_planner import OpenClawPlanner
+
+            oc_config = OpenClawConfig(
+                gateway_url=settings.openclaw_gateway_url,
+                gateway_token=settings.openclaw_gateway_token,
+                hmac_secret=settings.openclaw_hmac_secret,
+                connect_timeout=settings.openclaw_connect_timeout,
+                execute_timeout=settings.openclaw_execute_timeout,
+            )
+            openclaw_executor = OpenClawExecutor(config=oc_config)
+            openclaw_planner = OpenClawPlanner(openclaw_executor)
+
+            adapter_registry.register(
+                "openclaw", planner=openclaw_planner, executor=openclaw_executor,
+            )
+            # ALL agent types → OpenClaw planner + executor (real Claude execution)
+            # Previously only "general", "code-reviewer", "main" were registered
+            # which caused wp-web, infra-ops etc. to fall back to sandbox/bwrap
+            # (which returned "No executable command"). ISS-001 root cause.
+            for _at in (
+                "general", "code-reviewer", "main",
+                # 8 specialist agents — MUST use OpenClaw for real work
+                "eng-core", "wp-web", "infra-ops", "design-lab",
+                "content-forge", "social-growth", "intel-research", "biz-strategy",
+                # Pipeline internal
+                "onboarding-wizard", "mcp-installer", "llm-setup",
+                "skills-manager", "session-policy", "ux-copy",
+            ):
+                adapter_registry.register(
+                    _at, planner=openclaw_planner, executor=openclaw_executor,
+                )
+            adapter_registry.register("remote-agent", executor=openclaw_executor)
+            multi_planner.add_provider("openclaw", openclaw_planner, priority=5)
+
+            await openclaw_executor.startup()
+            event_bridge = EventBridge(executor=openclaw_executor)
+            event_bridge.start()
+            state.event_bridge = event_bridge
+
+            logger.info("OpenClaw bridge: active (url=%s)", settings.openclaw_gateway_url)
+        except ImportError:
+            logger.warning("websockets not installed — OpenClaw bridge disabled")
+        except Exception as exc:
+            logger.error("OpenClaw bridge init failed: %s", exc)
+
+    agent_tool_guard = AgentToolGuard()
+    state.agent_tool_guard = agent_tool_guard
     state.pipeline = Pipeline(
         planner=multi_planner,
         policy_engine=engine,
@@ -169,7 +261,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         validator=basic_validator,
         shipper=log_shipper,
         adapter_registry=adapter_registry,
+        agent_tool_guard=agent_tool_guard,
     )
+    # Connect pipeline to EventBridge for Brain routing
+    if getattr(state, "event_bridge", None) is not None:
+        state.event_bridge.set_pipeline(pipeline=state.pipeline, task_store=state.task_store)
     state.policy_engine = engine
 
     # Seed default agent configs (idempotent upsert)
@@ -221,16 +317,135 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
             display_name="UX Copy Agent",
             capabilities=["ui-text", "i18n", "crt-style"],
         ),
+        AgentConfig(
+            agent_type="openclaw",
+            display_name="OpenClaw Remote Agent",
+            capabilities=["remote-execution", "agent-dispatch", "llm-routing"],
+            max_concurrent=5, timeout_seconds=120,
+        ),
+        AgentConfig(
+            agent_type="remote-agent",
+            display_name="Remote Agent (OpenClaw)",
+            capabilities=["remote-execution"],
+            max_concurrent=5, timeout_seconds=120,
+        ),
     ]
     for agent_cfg in _DEFAULT_AGENTS:
         await agent_store.upsert(agent_cfg)
     logger.info("Seeded %d default agent configs", len(_DEFAULT_AGENTS))
+
+    # Project manager — 10-project concurrent routing
+    project_manager = ProjectManager(max_projects=10)
+    await project_manager.seed_defaults()
+    state.project_manager = project_manager
+    logger.info("ProjectManager initialized with %d default projects", project_manager.project_count)
+
+    # ── Persistence stores ──────────────────────────────────────────
+    conversation_store = ConversationStore(db.session_factory)
+    state.conversation_store = conversation_store
+
+    approval_store = ApprovalStore(db.session_factory)
+    state.approval_store = approval_store
+
+    # ── ChannelAuth ───────────────────────────────────────────────
+    import os
+    owner_tg_id = int(os.getenv("OCCP_VOICE_TELEGRAM_OWNER_CHAT_ID", "0") or "0")
+    if settings.has_voice and owner_tg_id == 0:
+        logger.warning(
+            "OCCP_VOICE_TELEGRAM_OWNER_CHAT_ID not set — Telegram strict auth "
+            "will reject all messages. Set it to Henry's chat_id."
+        )
+    allowed_ids = set(settings.voice_allowed_ids or [])
+    channel_auth = ChannelAuthenticator(
+        jwt_secret=settings.jwt_secret,
+        webhook_secret=getattr(settings, "webhook_secret", ""),
+        owner_telegram_id=owner_tg_id,
+        allowed_telegram_ids=allowed_ids,
+    )
+    state.channel_auth = channel_auth
+
+    # ── ConfirmationGate with ApprovalStore ───────────────────────
+    confirmation_gate = ConfirmationGate(approval_store=approval_store)
+    await confirmation_gate.load_pending_from_db()
+    state.confirmation_gate = confirmation_gate
+
+    # ── BrainFlowEngine with ConversationStore ────────────────────
+    from orchestrator.task_router import TaskRouter
+    from orchestrator.quality_gate import QualityGate
+    task_router = TaskRouter()
+    quality_gate = QualityGate()
+    brain_flow = BrainFlowEngine(
+        task_router=task_router,
+        quality_gate=quality_gate,
+        project_manager=project_manager,
+        confirmation_gate=confirmation_gate,
+        conversation_store=conversation_store,
+        approval_store=approval_store,
+        pipeline=state.pipeline,
+        task_store=task_store,
+    )
+    # Also set state.brain_flow so /brain/message endpoint can find it
+    state.brain_flow = brain_flow
+    loaded = await brain_flow.load_active_conversations()
+    state.brain_flow = brain_flow
+    logger.info("BrainFlowEngine initialized (%d conversations loaded)", loaded)
+
+    # -------------------------------------------------------------------
+    # Voice command pipeline (optional — only if enabled + token set)
+    # -------------------------------------------------------------------
+    voice_bot = None
+    if getattr(settings, "has_voice", False):
+        try:
+            from adapters.telegram_voice_bot import TelegramVoiceBot
+            from adapters.whisper_client import WhisperClient
+            from adapters.intent_router import IntentRouter
+            from adapters.voice_handler import VoiceCommandHandler
+
+            whisper = WhisperClient(
+                timeout=60.0,
+                api_key=settings.openai_api_key,
+                language=getattr(settings, "voice_default_language", "hu"),
+            )
+            intent_router = IntentRouter(
+                anthropic_api_key=getattr(settings, "anthropic_api_key", ""),
+                openai_api_key=settings.openai_api_key,
+                anthropic_model=getattr(settings, "anthropic_model", ""),
+            )
+            voice_handler = VoiceCommandHandler(
+                whisper=whisper,
+                intent_router=intent_router,
+                pipeline=state.pipeline,
+                task_store=task_store,
+                audit_store=audit_store,
+                confirmation_gate=confirmation_gate,
+                brain_flow=brain_flow,
+                channel_auth=channel_auth,
+            )
+            voice_bot = TelegramVoiceBot(
+                token=settings.voice_telegram_bot_token,
+                handler=voice_handler,
+                owner_chat_id=int(getattr(settings, "voice_telegram_owner_chat_id", 0) or 0),
+            )
+            voice_handler.set_bot(voice_bot)
+            await voice_bot.start()
+
+            state.voice_bot = voice_bot
+            state.voice_handler = voice_handler
+            logger.info("Voice pipeline: started (lang=%s)", getattr(settings, "voice_default_language", "hu"))
+        except Exception as exc:
+            logger.error("Voice pipeline init failed: %s", exc)
 
     set_state(state)
     logger.info("OCCP API started (env=%s, db=%s)", settings.occp_env, settings.database_url)
     yield
 
     # Cleanup
+    if voice_bot is not None:
+        await voice_bot.stop()
+        logger.info("Voice bot: shut down")
+    if openclaw_executor is not None:
+        await openclaw_executor.close()
+        logger.info("OpenClaw bridge: shut down")
     await db.close()
     logger.info("OCCP API shutdown complete")
 
@@ -238,7 +453,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 def create_app() -> FastAPI:
     app = FastAPI(
         title="OCCP – OpenCloud Control Plane",
-        version="0.8.0",
+        version="0.9.0",
         description="Agent Control Plane with Verified Autonomy Pipeline",
         lifespan=lifespan,
     )
@@ -283,6 +498,7 @@ def create_app() -> FastAPI:
     app.include_router(tasks.router, prefix=prefix)
     app.include_router(pipeline.router, prefix=prefix)
     app.include_router(policy.router, prefix=prefix)
+    app.include_router(brain.router, prefix=prefix)
     app.include_router(agents.router, prefix=prefix)
     app.include_router(audit.router, prefix=prefix)
     app.include_router(ws.router, prefix=prefix)
@@ -290,6 +506,20 @@ def create_app() -> FastAPI:
     app.include_router(mcp.router, prefix=prefix)
     app.include_router(skills.router, prefix=prefix)
     app.include_router(llm.router, prefix=prefix)
+    app.include_router(tokens.router, prefix=prefix)
+    app.include_router(users.router, prefix=prefix)
+    app.include_router(quality.router, prefix=prefix)
+    app.include_router(admin.router, prefix=prefix)
+    app.include_router(projects.router, prefix=prefix)
+    app.include_router(dashboard.router, prefix=prefix)
+    app.include_router(cloudcode.router, prefix=prefix)
+    app.include_router(bridge.router, prefix=prefix)
+    app.include_router(voice.router, prefix=prefix)
+    app.include_router(mcp_bridge_route.router, prefix=prefix)
+    app.include_router(observability_route.router, prefix=prefix)
+    app.include_router(governance_route.router, prefix=prefix)
+    app.include_router(autodev_route.router, prefix=prefix)
+    app.include_router(daily_check_route.router, prefix=prefix)
 
     return app
 

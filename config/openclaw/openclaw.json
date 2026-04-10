@@ -1,0 +1,310 @@
+{
+  "$schema": "https://openclaw.dev/schema/config/v2.json",
+  "version": "2026.3.26",
+  "gateway": {
+    "host": "0.0.0.0",
+    "port": 8080,
+    "maxConcurrent": 8,
+    "webhookSecret": "${OCCP_WEBHOOK_SECRET}",
+    "callbackUrl": "https://api.occp.ai/api/v1/agents/{agent_id}/callback",
+    "cors": {
+      "origins": ["https://dash.occp.ai", "https://occp.ai"],
+      "methods": ["GET", "POST", "PUT", "DELETE"],
+      "credentials": true
+    },
+    "rateLimit": {
+      "windowMs": 60000,
+      "maxRequests": 120
+    }
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "token": "${TELEGRAM_BOT_TOKEN}",
+      "allowedChats": "${TELEGRAM_ALLOWED_CHATS}",
+      "webhook": "/hooks/telegram"
+    },
+    "slack": {
+      "enabled": false,
+      "token": "${SLACK_BOT_TOKEN}",
+      "signingSecret": "${SLACK_SIGNING_SECRET}",
+      "webhook": "/hooks/slack"
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "google/gemini-2.5-pro",
+        "fallback": ["openai/gpt-4.1", "anthropic/claude-sonnet-4-6"],
+        "thinking": "medium",
+        "temperature": 0.3,
+        "maxTokens": 16384
+      },
+      "subagents": {
+        "model": "google/gemini-2.5-pro",
+        "fallbackModel": "openai/gpt-4.1",
+        "maxSpawnDepth": 2,
+        "maxChildrenPerAgent": 5,
+        "timeout": 120000
+      },
+      "sandbox": {
+        "enabled": true,
+        "timeout": 120000,
+        "maxMemoryMB": 2048,
+        "networkAccess": true
+      }
+    },
+    "list": [
+      {
+        "id": "eng-core",
+        "name": "Engineering Agent",
+        "identity": {
+          "displayName": "EngCore",
+          "theme": "engineering",
+          "emoji": "🔧"
+        },
+        "model": {
+          "primary": "google/gemini-2.5-pro",
+          "fallback": ["openai/gpt-4.1", "anthropic/claude-sonnet-4-6"]
+        },
+        "bindings": [
+          { "sessionKey": "pipeline:*:engineering" },
+          { "sessionKey": "task:*:code" },
+          { "sessionKey": "task:*:api" }
+        ],
+        "workspace": "/home/openclawadmin/.openclaw/workspaces/eng-core",
+        "tools": ["bash", "read", "write", "edit", "browser"],
+        "subagents": {
+          "model": "google/gemini-2.5-pro",
+          "allowed": ["frontend-ui", "backend-api", "database-data", "qa-test", "code-review"]
+        }
+      },
+      {
+        "id": "wp-web",
+        "name": "Web/WordPress Agent",
+        "identity": {
+          "displayName": "WpWeb",
+          "theme": "wordpress",
+          "emoji": "🌐"
+        },
+        "model": {
+          "primary": "google/gemini-2.5-pro",
+          "fallback": ["openai/gpt-4.1", "anthropic/claude-sonnet-4-6"]
+        },
+        "bindings": [
+          { "sessionKey": "pipeline:*:wordpress" },
+          { "sessionKey": "task:*:elementor" },
+          { "sessionKey": "task:*:landing" }
+        ],
+        "workspace": "/home/openclawadmin/.openclaw/workspaces/wp-web",
+        "tools": ["bash", "read", "write", "edit", "browser"],
+        "subagents": {
+          "model": "google/gemini-2.5-pro",
+          "allowed": ["elementor-builder", "wp-plugin-dev", "seo-page-optimizer", "conversion-page-builder", "wp-debugger"]
+        }
+      },
+      {
+        "id": "infra-ops",
+        "name": "Infra/Deploy Agent",
+        "identity": {
+          "displayName": "InfraOps",
+          "theme": "infrastructure",
+          "emoji": "🏗️"
+        },
+        "model": {
+          "primary": "google/gemini-2.5-pro",
+          "fallback": ["openai/gpt-4.1", "anthropic/claude-sonnet-4-6"]
+        },
+        "bindings": [
+          { "sessionKey": "pipeline:*:infrastructure" },
+          { "sessionKey": "task:*:deploy" },
+          { "sessionKey": "task:*:server" }
+        ],
+        "workspace": "/home/openclawadmin/.openclaw/workspaces/infra-ops",
+        "tools": ["bash", "read", "exec"],
+        "sandbox": {
+          "enabled": true,
+          "timeout": 180000,
+          "maxMemoryMB": 1024,
+          "networkAccess": true,
+          "prodSafe": true,
+          "confirmDestructive": true,
+          "blockedCommands": ["rm -rf /", "mkfs", "dd if=", "shutdown", "reboot", "init 0"]
+        },
+        "subagents": {
+          "model": "google/gemini-2.5-pro",
+          "allowed": ["server-provision", "docker-stack", "apache-nginx-proxy", "ssl-dns-mail", "live-verifier"]
+        }
+      },
+      {
+        "id": "design-lab",
+        "name": "Design/UI Agent",
+        "identity": {
+          "displayName": "DesignLab",
+          "theme": "design",
+          "emoji": "🎨"
+        },
+        "model": {
+          "primary": "google/gemini-2.5-pro",
+          "fallback": ["openai/gpt-4.1", "anthropic/claude-sonnet-4-6"]
+        },
+        "bindings": [
+          { "sessionKey": "pipeline:*:design" },
+          { "sessionKey": "task:*:ui" },
+          { "sessionKey": "task:*:visual" }
+        ],
+        "workspace": "/home/openclawadmin/.openclaw/workspaces/design-lab",
+        "tools": ["read", "write", "browser"],
+        "subagents": {
+          "model": "google/gemini-2.5-pro",
+          "allowed": ["ui-layout", "brand-visual", "ad-creative", "presentation-visual"]
+        }
+      },
+      {
+        "id": "content-forge",
+        "name": "Content/Copy Agent",
+        "identity": {
+          "displayName": "ContentForge",
+          "theme": "content",
+          "emoji": "✍️"
+        },
+        "model": {
+          "primary": "google/gemini-2.5-pro",
+          "fallback": ["openai/gpt-4.1", "anthropic/claude-sonnet-4-6"]
+        },
+        "bindings": [
+          { "sessionKey": "pipeline:*:content" },
+          { "sessionKey": "task:*:copy" },
+          { "sessionKey": "task:*:seo" }
+        ],
+        "workspace": "/home/openclawadmin/.openclaw/workspaces/content-forge",
+        "tools": ["read", "write", "browser"],
+        "subagents": {
+          "model": "google/gemini-2.5-pro",
+          "allowed": ["seo-copy", "sales-copy", "executive-copy", "email-copy"]
+        }
+      },
+      {
+        "id": "social-growth",
+        "name": "Social Media Agent",
+        "identity": {
+          "displayName": "SocialGrowth",
+          "theme": "social",
+          "emoji": "📱"
+        },
+        "model": {
+          "primary": "google/gemini-2.5-pro",
+          "fallback": ["openai/gpt-4.1", "anthropic/claude-sonnet-4-6"]
+        },
+        "bindings": [
+          { "sessionKey": "pipeline:*:social" },
+          { "sessionKey": "task:*:facebook" },
+          { "sessionKey": "task:*:instagram" }
+        ],
+        "workspace": "/home/openclawadmin/.openclaw/workspaces/social-growth",
+        "tools": ["read", "write", "browser"],
+        "subagents": {
+          "model": "google/gemini-2.5-pro",
+          "allowed": ["facebook-ads", "instagram-ads", "tiktok-script", "lead-magnet-social"]
+        }
+      },
+      {
+        "id": "intel-research",
+        "name": "Research/Intelligence Agent",
+        "identity": {
+          "displayName": "IntelResearch",
+          "theme": "research",
+          "emoji": "🔬"
+        },
+        "model": {
+          "primary": "anthropic/claude-opus-4-6",
+          "fallback": ["google/gemini-2.5-pro", "openai/gpt-4.1"],
+          "thinking": "high",
+          "temperature": 0.2,
+          "maxTokens": 32768
+        },
+        "bindings": [
+          { "sessionKey": "pipeline:*:research" },
+          { "sessionKey": "task:*:analysis" },
+          { "sessionKey": "task:*:competitor" }
+        ],
+        "workspace": "/home/openclawadmin/.openclaw/workspaces/intel-research",
+        "tools": ["read", "browser", "exec"],
+        "sandbox": {
+          "enabled": true,
+          "timeout": 300000,
+          "maxMemoryMB": 4096,
+          "networkAccess": true,
+          "readOnlyWorkspace": true
+        },
+        "subagents": {
+          "model": "google/gemini-2.5-pro",
+          "allowed": ["market-research", "competitor-scan", "tech-radar", "fact-check", "procurement-scan"]
+        }
+      },
+      {
+        "id": "biz-strategy",
+        "name": "Business/Proposal Agent",
+        "identity": {
+          "displayName": "BizStrategy",
+          "theme": "business",
+          "emoji": "📊"
+        },
+        "model": {
+          "primary": "anthropic/claude-opus-4-6",
+          "fallback": ["google/gemini-2.5-pro", "openai/gpt-4.1"],
+          "thinking": "high",
+          "temperature": 0.2,
+          "maxTokens": 32768
+        },
+        "bindings": [
+          { "sessionKey": "pipeline:*:business" },
+          { "sessionKey": "task:*:proposal" },
+          { "sessionKey": "task:*:pricing" }
+        ],
+        "workspace": "/home/openclawadmin/.openclaw/workspaces/biz-strategy",
+        "tools": ["read", "write", "browser"],
+        "subagents": {
+          "model": "google/gemini-2.5-pro",
+          "allowed": ["proposal-writer", "pricing-architect", "pitch-structurer", "partnership-mapper"]
+        }
+      }
+    ]
+  },
+  "skills": {
+    "directory": "/home/openclawadmin/.openclaw/skills",
+    "shared": [
+      "task-router",
+      "approval-gate",
+      "risk-check",
+      "multi-agent-planner",
+      "final-synthesis"
+    ]
+  },
+  "storage": {
+    "sessions": {
+      "backend": "sqlite",
+      "path": "/home/openclawadmin/.openclaw/data/sessions.db",
+      "compaction": {
+        "enabled": true,
+        "strategy": "summary",
+        "maxTokens": 100000
+      }
+    },
+    "memory": {
+      "backend": "hybrid",
+      "sqlite": "/home/openclawadmin/.openclaw/data/memory.db",
+      "vectorDimension": 1536
+    }
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "output": "/home/openclawadmin/.openclaw/logs/openclaw.log",
+    "audit": {
+      "enabled": true,
+      "merkleChain": true,
+      "output": "/home/openclawadmin/.openclaw/logs/audit.jsonl"
+    }
+  }
+}

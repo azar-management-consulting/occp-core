@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Key Rotation Architecture: Zero-Downtime Credential Management — OCCP News</title>
+  <meta name="description" content="How OCCP handles cryptographic key rotation without service interruption, using dual-key windows, graceful fallback, and audit-logged rotation events.">
+  <meta name="keywords" content="OCCP, key rotation, zero-downtime, credential management, dual-key, cryptographic rotation, enterprise security">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://news.occp.ai/articles/key-rotation-architecture.html">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://news.occp.ai/articles/key-rotation-architecture.html">
+  <meta property="og:title" content="Key Rotation Architecture: Zero-Downtime Credential Management">
+  <meta property="og:description" content="How OCCP handles cryptographic key rotation without service interruption, using dual-key windows, graceful fallback, and audit-logged rotation events.">
+  <meta property="og:image" content="https://occp.ai/og-image.png">
+  <meta property="og:site_name" content="OCCP">
+  <meta property="article:published_time" content="2026-02-26">
+  <meta property="article:author" content="OCCP Engineering">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Key Rotation Architecture: Zero-Downtime Credential Management">
+  <meta name="twitter:description" content="How OCCP handles cryptographic key rotation without service interruption, using dual-key windows, graceful fallback, and audit-logged rotation events.">
+  <meta name="twitter:image" content="https://occp.ai/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><text x='2' y='24' font-family='monospace' font-size='20' fill='%2333ff33'>&#62;_</text></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Key Rotation Architecture: Zero-Downtime Credential Management",
+    "datePublished": "2026-02-26",
+    "author": {
+      "@type": "Organization",
+      "name": "OCCP Engineering"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OCCP — OpenCloud Control Plane",
+      "url": "https://occp.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://occp.ai/og-image.png"
+      }
+    },
+    "description": "How OCCP handles cryptographic key rotation without service interruption, using dual-key windows, graceful fallback, and audit-logged rotation events.",
+    "url": "https://news.occp.ai/articles/key-rotation-architecture.html",
+    "inLanguage": "en"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-logo"><a href="../index.html" style="color:inherit;text-decoration:none;">OCCP <span>// news</span></a></div>
+      <nav>
+        <a href="https://occp.ai">Platform</a>
+        <a href="../index.html" class="active">News</a>
+        <a href="https://occp.ai/#docs">Docs</a>
+        <a href="https://dash.occp.ai">Dashboard</a>
+        <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article>
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="card-meta">
+          <span class="card-date">2026-02-26</span>
+          <span class="card-tag tag-security">Security</span>
+          <span class="card-version">v0.8.2</span>
+        </div>
+        <h1>Key Rotation Architecture: Zero-Downtime Credential Management</h1>
+        <p class="lead">Cryptographic key rotation is a compliance requirement for every enterprise security standard: PCI DSS, SOC 2, ISO 27001, and the EU AI Act's record-keeping provisions all mandate periodic key rotation. The engineering challenge is performing rotation without service interruption &mdash; every encrypted credential must remain accessible throughout the rotation process. OCCP's dual-key rotation architecture solves this problem.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="article-body">
+        <h2>The Key Rotation Challenge</h2>
+
+        <p>In a system using envelope encryption (as described in the AES-256-GCM article), the key encryption key (KEK) wraps the master key, which seeds the HKDF derivation for per-token data encryption keys. When the KEK must be rotated, the straightforward approach is: decrypt the master key with the old KEK, re-encrypt it with the new KEK, and update the stored record. This sounds simple until you consider the operational constraints.</p>
+
+        <p>The system is serving requests while rotation occurs. Multiple application instances may be running behind a load balancer. Each instance has the current KEK cached in memory. The rotation must propagate to all instances without requiring a synchronized restart. And throughout this process, every stored credential must remain decryptable &mdash; a customer's LLM API call must not fail because the platform is rotating its internal keys.</p>
+
+        <blockquote>Key rotation is not a cryptographic challenge. It is a distributed systems challenge that happens to involve cryptography.</blockquote>
+
+        <h2>Dual-Key Support During Rotation Windows</h2>
+
+        <h3>The Key Version Registry</h3>
+
+        <p>OCCP maintains a key version registry that maps version identifiers to their corresponding KEKs. At any point in time, the registry contains at most two active versions: the current version (used for new encryptions) and the previous version (accepted for decryption of existing records). The registry is stored in the application's configuration and loaded into memory at startup.</p>
+
+        <pre><code># Key version registry structure
+{
+    "current_version": "kek-2026-02",
+    "previous_version": "kek-2025-11",
+    "versions": {
+        "kek-2026-02": {
+            "status": "current",
+            "activated_at": "2026-02-15T00:00:00Z",
+            "source": "env:OCCP_KEK_CURRENT"
+        },
+        "kek-2025-11": {
+            "status": "previous",
+            "activated_at": "2025-11-01T00:00:00Z",
+            "retire_after": "2026-05-15T00:00:00Z",
+            "source": "env:OCCP_KEK_PREVIOUS"
+        }
+    }
+}</code></pre>
+
+        <h3>Encryption: Always Use Current</h3>
+
+        <p>When encrypting a new credential or re-encrypting an existing one, the system always uses the current KEK version. The version identifier is stored alongside the encrypted record, creating a binding between the ciphertext and the key that produced it. This binding is critical for the decryption path.</p>
+
+        <h3>Decryption: Try Current, Fall Back to Previous</h3>
+
+        <p>When decrypting a credential, the system reads the <code>kek_version</code> field from the stored record. If the version matches the current KEK, decryption proceeds normally. If the version matches the previous KEK, decryption uses the previous key. If the version matches neither (an unknown or retired version), decryption fails with an explicit error rather than trying every key in the system.</p>
+
+        <pre><code>def decrypt_credential(record: EncryptedRecord) -> bytes:
+    """Decrypt with dual-key fallback."""
+    kek_version = record.kek_version
+    registry = get_key_registry()
+
+    if kek_version == registry.current_version:
+        kek = registry.get_key(registry.current_version)
+    elif kek_version == registry.previous_version:
+        kek = registry.get_key(registry.previous_version)
+        # Log that this record uses the old key
+        audit_log("KEY_FALLBACK", record_id=record.id,
+                  version=kek_version)
+    else:
+        audit_log("KEY_VERSION_UNKNOWN", record_id=record.id,
+                  version=kek_version)
+        raise KeyVersionError(
+            f"Unknown KEK version: {kek_version}. "
+            f"Active versions: {registry.current_version}, "
+            f"{registry.previous_version}"
+        )
+
+    master_key = unwrap_master_key(kek, record.wrapped_master_key)
+    return decrypt_with_master_key(master_key, record)</code></pre>
+
+        <h2>The Rotation Process</h2>
+
+        <h3>Step 1: Generate New KEK</h3>
+
+        <p>A new KEK is generated using a cryptographically secure random number generator. The new key is provisioned to all application instances through the configuration system (environment variables, secrets manager, or KMS). At this stage, no instances are using the new key yet.</p>
+
+        <h3>Step 2: Promote New KEK to Current</h3>
+
+        <p>The key version registry is updated: the current version becomes the previous version, and the new version becomes the current version. Application instances pick up this change at their next configuration refresh (typically within seconds for environment-based config, or at next startup for file-based config).</p>
+
+        <h3>Step 3: Gradual Re-Encryption</h3>
+
+        <p>After the new KEK is active, existing credentials are gradually re-encrypted with the new version. This happens opportunistically: when a credential is accessed for any reason (an LLM API call, a configuration view, a health check), the system checks its <code>kek_version</code>. If it uses the previous version, the system decrypts with the old key and re-encrypts with the new key in the same transaction. Over time, all credentials migrate to the new key version without requiring a batch re-encryption job.</p>
+
+        <pre><code>async def access_credential(record_id: str) -> bytes:
+    """Access a credential, opportunistically re-encrypting."""
+    record = await get_encrypted_record(record_id)
+    plaintext = decrypt_credential(record)
+
+    # Opportunistic re-encryption
+    registry = get_key_registry()
+    if record.kek_version != registry.current_version:
+        new_record = encrypt_credential(
+            plaintext, registry.current_version
+        )
+        await update_encrypted_record(record_id, new_record)
+        audit_log("KEY_REENCRYPT", record_id=record_id,
+                  old_version=record.kek_version,
+                  new_version=registry.current_version)
+
+    return plaintext</code></pre>
+
+        <h3>Step 4: Retire Previous KEK</h3>
+
+        <p>After sufficient time has passed for all credentials to be opportunistically re-encrypted (or after a manual sweep ensures no credentials remain on the old version), the previous KEK is retired. The key is removed from the registry, and any subsequent attempt to decrypt a record with the retired version fails with an explicit error. The retirement event is recorded in the audit chain.</p>
+
+        <h2>Rotation Triggers</h2>
+
+        <h3>Scheduled Rotation</h3>
+
+        <p>OCCP supports configurable scheduled rotation intervals. The default is 90 days, aligned with common compliance requirements. The rotation schedule is tracked in the key version registry, and the health check endpoint reports when the next rotation is due. Administrators receive warnings (through the dashboard and monitoring alerts) when a rotation is approaching.</p>
+
+        <h3>Manual Rotation</h3>
+
+        <p>Administrators can trigger immediate rotation through the admin API. Manual rotation follows the same dual-key process as scheduled rotation but is initiated on demand. The most common reason for manual rotation is personnel changes: when an engineer with access to the KEK leaves the organization, the KEK should be rotated.</p>
+
+        <h3>Breach-Triggered Rotation</h3>
+
+        <p>OCCP monitors for anomalous decryption patterns that may indicate key compromise. A burst of decryption failures (indicating someone is trying incorrect keys), decryption requests from unexpected network locations, or decryption of credentials that are not needed for any active task &mdash; these patterns trigger an automatic rotation alert. Automatic breach-triggered rotation can be enabled, but it defaults to alert-only mode because automatic rotation during an active breach can create operational confusion.</p>
+
+        <h2>Audit Logging of Rotation Events</h2>
+
+        <p>Every key rotation event produces a set of audit entries in the SHA-256 chain. The rotation initiation entry records the trigger (scheduled, manual, breach), the initiator (system, admin user ID), and the new version identifier. The rotation completion entry records the count of credentials that were immediately re-encrypted and the count still pending. Subsequent opportunistic re-encryptions are logged individually. The retirement entry records the final count of credentials migrated and confirms that no credentials remain on the retired version.</p>
+
+        <pre><code># Rotation audit trail
+[
+    {"event": "KEY_ROTATION_START",
+     "trigger": "scheduled",
+     "new_version": "kek-2026-05",
+     "old_version": "kek-2026-02",
+     "timestamp": "2026-05-15T00:00:00Z"},
+
+    {"event": "KEY_ROTATION_PROGRESS",
+     "reencrypted": 45, "remaining": 178,
+     "timestamp": "2026-05-15T00:05:00Z"},
+
+    {"event": "KEY_ROTATION_COMPLETE",
+     "total_reencrypted": 223, "remaining": 0,
+     "timestamp": "2026-05-18T14:30:00Z"},
+
+    {"event": "KEY_VERSION_RETIRED",
+     "version": "kek-2026-02",
+     "timestamp": "2026-05-20T00:00:00Z"}
+]</code></pre>
+
+        <h2>Zero-Downtime Guarantees</h2>
+
+        <p>The dual-key architecture ensures zero downtime during rotation. At no point during the rotation process are credentials inaccessible. Old credentials work because the previous KEK is still active. New credentials work because they use the current KEK. The transition is seamless from the perspective of any system that accesses encrypted credentials.</p>
+
+        <p>The only risk window is between Step 1 (generating the new KEK) and Step 2 (promoting it). If the system crashes during this window, the new KEK may not be persisted. This is mitigated by generating and persisting the new KEK before updating the registry &mdash; the registry update is the atomic commit point. If the system crashes before the registry update, the new key exists but is unused, and rotation can be retried. If it crashes after the registry update, the rotation is complete and the dual-key window is active.</p>
+      </div>
+
+      <!-- Summary Box -->
+      <div class="summary-box">
+        <h3>// Key Takeaways</h3>
+        <ul>
+          <li>Dual-key windows maintain two active KEK versions simultaneously, ensuring all credentials remain decryptable during rotation</li>
+          <li>Encryption always uses the current KEK version; decryption falls back to the previous version if needed</li>
+          <li>Opportunistic re-encryption migrates credentials to the new key version without batch processing</li>
+          <li>Three rotation triggers: scheduled (default 90 days), manual (admin-initiated), and breach-detected (alert or auto)</li>
+          <li>Every rotation event is recorded in the SHA-256 audit chain with full traceability</li>
+          <li>Zero-downtime guarantee: at no point during rotation are any credentials inaccessible</li>
+        </ul>
+      </div>
+
+      <!-- Article Navigation -->
+      <nav class="article-nav">
+        <a href="audit-retention-engineering.html">&larr; Audit Retention Engineering</a>
+        <a href="creating-ai-orchestration-category.html">The Category We Are Creating &rarr;</a>
+      </nav>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>OCCP &mdash; OpenCloud Control Plane &copy; 2025-2026 &nbsp;|&nbsp;
+    <a href="https://occp.ai">occp.ai</a> &nbsp;|&nbsp;
+    <a href="https://dash.occp.ai">Dashboard</a> &nbsp;|&nbsp;
+    <a href="https://github.com/azar-management-consulting/occp-core">GitHub</a>
+    </p>
+    <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.65rem;">
+      Next-generation AI orchestration &middot; Agent governance &middot; Verified autonomy
+    </p>
+  </footer>
+
+</body>
+</html>
