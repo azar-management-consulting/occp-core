@@ -8,6 +8,7 @@ import { TaskCard } from "@/components/task-card";
 import { LLMHealthPanel } from "@/components/llm-health-panel";
 import { WelcomePanel } from "@/components/welcome-panel";
 import { MCPBridgePanel } from "@/components/mcp-bridge-panel";
+import { ObservabilityPanel } from "@/components/observability-panel";
 import { useT } from "@/lib/i18n";
 
 export default function MissionControl() {
@@ -111,7 +112,10 @@ export default function MissionControl() {
       {/* LLM Providers Health */}
       <LLMHealthPanel />
 
-      {/* L4 MCP Runtime Bridge */}
+      {/* L6 System Observability */}
+      <ObservabilityPanel />
+
+      {/* MCP Runtime Bridge */}
       <MCPBridgePanel />
 
       {/* Verified Autonomy Pipeline */}
