@@ -20,12 +20,21 @@ from observability.behavior_digest import (
     BehaviorDigestGenerator,
     get_digest_generator,
 )
+from observability.gen_ai_tracer import (
+    record_llm_call,
+    record_response,
+)
 from observability.metrics_collector import (
     Counter,
     Gauge,
     Histogram,
     MetricsCollector,
     get_collector,
+)
+from observability.otel_setup import (
+    init_otel,
+    is_initialized,
+    reset_for_testing,
 )
 
 __all__ = [
@@ -44,4 +53,10 @@ __all__ = [
     "BehaviorDigest",
     "BehaviorDigestGenerator",
     "get_digest_generator",
+    # OpenTelemetry bootstrap + gen_ai helpers
+    "init_otel",
+    "is_initialized",
+    "reset_for_testing",
+    "record_llm_call",
+    "record_response",
 ]

@@ -6,6 +6,7 @@ import json
 import logging
 from typing import Any
 
+from observability.gen_ai_tracer import record_llm_call, record_response
 from orchestrator.models import Task
 
 logger = logging.getLogger(__name__)
@@ -64,16 +65,30 @@ class OpenAIPlanner:
             user_message += f"Metadata: {json.dumps(task.metadata)}\n"
 
         try:
-            response = await self._client.chat.completions.create(
+            with record_llm_call(
+                "chat",
                 model=self._model,
-                max_tokens=self._max_tokens,
-                messages=[
-                    {"role": "system", "content": _SYSTEM_PROMPT},
-                    {"role": "user", "content": user_message},
-                ],
-                temperature=0.2,
-                response_format={"type": "json_object"},
-            )
+                system="openai",
+                request_kwargs={
+                    "max_tokens": self._max_tokens,
+                    "temperature": 0.2,
+                },
+            ) as span:
+                response = await self._client.chat.completions.create(
+                    model=self._model,
+                    max_tokens=self._max_tokens,
+                    messages=[
+                        {"role": "system", "content": _SYSTEM_PROMPT},
+                        {"role": "user", "content": user_message},
+                    ],
+                    temperature=0.2,
+                    response_format={"type": "json_object"},
+                )
+                record_response(
+                    span,
+                    response=response,
+                    usage=getattr(response, "usage", None),
+                )
 
             raw = response.choices[0].message.content or ""
             raw = raw.strip()

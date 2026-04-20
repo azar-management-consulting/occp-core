@@ -6,6 +6,7 @@ import json
 import logging
 from typing import Any
 
+from observability.gen_ai_tracer import record_llm_call, record_response
 from orchestrator.models import Task
 
 logger = logging.getLogger(__name__)
@@ -59,12 +60,30 @@ class ClaudePlanner:
             user_message += f"Metadata: {json.dumps(task.metadata)}\n"
 
         try:
-            response = await self._client.messages.create(
+            with record_llm_call(
+                "chat",
                 model=self._model,
-                max_tokens=self._max_tokens,
-                system=_SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_message}],
-            )
+                system="anthropic",
+                request_kwargs={"max_tokens": self._max_tokens},
+            ) as span:
+                response = await self._client.messages.create(
+                    model=self._model,
+                    max_tokens=self._max_tokens,
+                    system=[
+                        {
+                            "type": "text",
+                            "text": _SYSTEM_PROMPT,
+                            "cache_control": {"type": "ephemeral", "ttl": "1h"},
+                        }
+                    ],
+                    messages=[{"role": "user", "content": user_message}],
+                    extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"},
+                )
+                record_response(
+                    span,
+                    response=response,
+                    usage=getattr(response, "usage", None),
+                )
 
             raw = response.content[0].text.strip()
 
