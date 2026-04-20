@@ -52,8 +52,9 @@ data/
 # Claude Code sessions
 .claude/
 
-# Prompt engineering (local only)
-prompts/
+# Top-level prompt engineering scratch (local only)
+# NOTE: do NOT ignore `config/openclaw/prompts/` — those are committed schema files
+/prompts/
 
 # UV lock (not committed)
 uv.lock
@@ -63,3 +64,36 @@ dash/next-env.d.ts
 
 # Stale pip artifacts
 =*
+
+# ═══════════════════════════════════════════════════════════════
+# Added 2026-04-20 · Secret cleanup + v0.10.0 modernization
+# ═══════════════════════════════════════════════════════════════
+
+# Secret-containing docs (until redaction pass complete — keep local only)
+OCCP_SYSTEM_MANUAL.md
+.planning/OCCP_OPERATIONAL_DESCRIPTION_*.md
+.planning/L6_HANDOVER_*.md
+
+# iCloud/Finder duplicate artifacts
+* 2.py
+* 2.ts
+* 2.tsx
+* 2.yaml
+* 2.yml
+* 2.json
+* 2.md
+* 2.html
+* 2.css
+* 2.js
+* 2.sql
+* 2.txt
+*\ 2.*
+
+# macOS metadata
+._*
+.AppleDouble
+.LSOverride
+
+# Claude Code agent run transcripts (never committed)
+.claude/
+*/.claude/
