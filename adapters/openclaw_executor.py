@@ -17,20 +17,79 @@ Features:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import hashlib
 import hmac
 import json
 import logging
 import os
+import re
 import time
 import uuid
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from orchestrator.exceptions import ExecutionError
-from orchestrator.models import Task
+
+if TYPE_CHECKING:
+    from orchestrator.models import Task
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Execution directive constants (tool-call contract)
+#
+# These constants define the contract between OpenClaw agents and the Brain
+# MCP Bridge dispatch layer. Agents MAY embed a structured JSON directive
+# block in their response text:
+#
+#     ```json
+#     {"directives": [
+#         {"tool": "filesystem.read", "args": {"path": "..."}, "risk": "low"}
+#     ]}
+#     ```
+#
+# The executor extracts these directives but does NOT execute them — actual
+# execution is the responsibility of the MCP Bridge on the Brain side.
+# ---------------------------------------------------------------------------
+
+# Whitelisted tools mirroring OCCP_SYSTEM_MANUAL.md §6 MCP Bridge (14 tools)
+ALLOWED_DIRECTIVE_TOOLS: frozenset[str] = frozenset({
+    "brain.status",
+    "brain.health",
+    "filesystem.read",
+    "filesystem.write",
+    "filesystem.list",
+    "http.get",
+    "http.post",
+    "wordpress.get_site_info",
+    "wordpress.get_posts",
+    "wordpress.get_pages",
+    "wordpress.update_post",
+    "node.list",
+    "node.status",
+    "node.exec",
+})
+
+ALLOWED_DIRECTIVE_RISK: frozenset[str] = frozenset({"low", "medium", "high"})
+
+# DoS protection bounds
+MAX_DIRECTIVES_PER_RESPONSE: int = 10
+MAX_DIRECTIVE_ARGS_BYTES: int = 50 * 1024  # 50 KB per directive args
+
+# Regex: markdown-fenced JSON block containing either "directives" or
+# "exec_type" marker. Uses non-greedy capture with DOTALL to span newlines.
+_FENCED_JSON_RE = re.compile(
+    r"```(?:json)?\s*\n?(\{[^`]*?(?:\"directives\"|\"exec_type\")[^`]*?\})\s*\n?```",
+    re.DOTALL,
+)
+# Fallback: bare JSON object with "directives" key (no fence) — anchored,
+# non-greedy, balanced-brace heuristic (good enough for typical LLM output).
+_BARE_DIRECTIVES_RE = re.compile(
+    r"(\{\s*\"directives\"\s*:\s*\[.*?\]\s*\})",
+    re.DOTALL,
+)
 
 # Attempt to import websockets; fail gracefully with clear message.
 try:
@@ -74,7 +133,7 @@ class OpenClawConfig:
     protocol_version: int = 3
 
     @classmethod
-    def from_env(cls) -> "OpenClawConfig":
+    def from_env(cls) -> OpenClawConfig:
         """Build config from OCCP-prefixed environment variables."""
         return cls(
             gateway_url=os.getenv("OCCP_OPENCLAW_GATEWAY_URL", "ws://95.216.212.174:18789"),
@@ -105,11 +164,10 @@ class CircuitBreaker:
 
     @property
     def state(self) -> str:
-        if self._state == self.OPEN:
-            if self._last_failure_time is not None:
-                elapsed = time.monotonic() - self._last_failure_time
-                if elapsed >= self._recovery_timeout:
-                    self._state = self.HALF_OPEN
+        if self._state == self.OPEN and self._last_failure_time is not None:
+            elapsed = time.monotonic() - self._last_failure_time
+            if elapsed >= self._recovery_timeout:
+                self._state = self.HALF_OPEN
         return self._state
 
     @property
@@ -243,7 +301,7 @@ class OpenClawConnection:
                 self._receive_loop(), name="openclaw-recv"
             )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self._connected = False
             raise ExecutionError(
                 "openclaw",
@@ -269,7 +327,7 @@ class OpenClawConnection:
         cfg = self._config
 
         # Wait for the challenge event (up to connect_timeout)
-        challenge_nonce = await self._wait_for_challenge(
+        await self._wait_for_challenge(
             timeout=cfg.connect_timeout
         )
 
@@ -344,7 +402,7 @@ class OpenClawConnection:
                     nonce = payload.get("nonce", "")
                     logger.debug("OpenClaw: received challenge nonce")
                     return nonce
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 break
             except Exception as exc:
                 logger.warning(
@@ -518,7 +576,7 @@ class OpenClawConnection:
             )
             result = await asyncio.wait_for(future, timeout=timeout)
             return result
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self._pending.pop(req_id, None)
             raise ExecutionError(
                 "openclaw",
@@ -573,7 +631,7 @@ class OpenClawConnection:
             )
 
             return result
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self._chat_completions.pop(run_id, None)
             raise ExecutionError(
                 "openclaw",
@@ -587,16 +645,12 @@ class OpenClawConnection:
         """Gracefully close the WebSocket connection."""
         if self._recv_task and not self._recv_task.done():
             self._recv_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._recv_task
-            except asyncio.CancelledError:
-                pass
 
         if self._ws:
-            try:
+            with contextlib.suppress(Exception):
                 await self._ws.close()
-            except Exception:
-                pass
 
         self._ws = None
         self._connected = False
@@ -622,10 +676,8 @@ class OpenClawConnection:
         self._shutting_down = True
         if self._reconnect_task and not self._reconnect_task.done():
             self._reconnect_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._reconnect_task
-            except asyncio.CancelledError:
-                pass
         await self.close()
         logger.info("OpenClaw: persistent connection shut down")
 
@@ -772,7 +824,9 @@ class OpenClawExecutor:
             latency = time.monotonic() - t0
             self._circuit.record_success()
 
-            output = self._extract_output(result)
+            extracted = self._extract_output(result)
+            output = extracted["output"]
+            execution_directives = extracted["execution_directives"]
 
             # If output is raw JSON (no text extracted), fetch from OpenClaw session JSONL
             if output.startswith("{") and ("runId" in output or "sessionKey" in output):
@@ -782,8 +836,19 @@ class OpenClawExecutor:
                         fetched = await self._fetch_session_text(session_key)
                         if fetched:
                             output = fetched
+                            # Re-parse directives from the recovered text
+                            execution_directives = self._parse_execution_directives(fetched)
                 except Exception as fetch_exc:
                     logger.warning("OpenClaw: session text fetch failed: %s", fetch_exc)
+
+            if execution_directives:
+                logger.info(
+                    "OpenClaw: task=%s agent=%s emitted %d execution directive(s): %s",
+                    task.id,
+                    agent,
+                    len(execution_directives),
+                    [d["tool"] for d in execution_directives],
+                )
 
             logger.info(
                 "OpenClaw: task=%s agent=%s completed in %.1fs",
@@ -796,6 +861,7 @@ class OpenClawExecutor:
                 "executor": "openclaw",
                 "task_id": task.id,
                 "output": output,
+                "execution_directives": execution_directives,
                 "exit_code": 0,
                 "agent": agent,
                 "latency_ms": round(latency * 1000, 1),
@@ -957,8 +1023,8 @@ class OpenClawExecutor:
         return ""
 
     @staticmethod
-    def _extract_output(result: dict[str, Any]) -> str:
-        """Extract the main text output from an OpenClaw chat response.
+    def _extract_text(result: dict[str, Any]) -> str:
+        """Extract the main text content from an OpenClaw chat response.
 
         Handles both:
         - RPC response: {content/message/text/output: str}
@@ -993,6 +1059,151 @@ class OpenClawExecutor:
             return result["output"]
         # Fallback: serialize the whole result
         return json.dumps(result, indent=2, default=str)
+
+    @classmethod
+    def _parse_execution_directives(cls, text: str) -> list[dict[str, Any]]:
+        """Parse structured execution directives from agent response text.
+
+        Scans ``text`` for a fenced ```json ... ``` block (or bare JSON
+        object) that contains a ``directives`` array. Each directive is
+        validated against :data:`ALLOWED_DIRECTIVE_TOOLS` and size caps.
+
+        Returns
+        -------
+        list[dict[str, Any]]
+            Normalized directives with keys ``{"tool", "args", "risk"}``.
+            Returns ``[]`` on any parse error (never raises).
+
+        Notes
+        -----
+        - Max :data:`MAX_DIRECTIVES_PER_RESPONSE` directives (DoS cap).
+        - Max :data:`MAX_DIRECTIVE_ARGS_BYTES` per directive (size cap).
+        - Unknown tools are skipped with a warning (audit log).
+        - Invalid JSON → empty list + warning (no crash).
+        """
+        if not text or not isinstance(text, str):
+            return []
+
+        # Prefer fenced ```json``` blocks; only fall back to bare JSON
+        # when no fenced block matched (prevents double-parsing the same
+        # payload from both regexes).
+        candidates: list[str] = list(_FENCED_JSON_RE.findall(text))
+        if not candidates:
+            candidates = list(_BARE_DIRECTIVES_RE.findall(text))
+
+        if not candidates:
+            return []
+
+        raw_directives: list[Any] = []
+        for candidate in candidates:
+            try:
+                parsed = json.loads(candidate)
+            except (json.JSONDecodeError, ValueError) as exc:
+                logger.warning(
+                    "OpenClaw: invalid JSON directive block (%s): %s",
+                    exc,
+                    candidate[:200],
+                )
+                continue
+
+            if isinstance(parsed, dict):
+                if "directives" in parsed and isinstance(parsed["directives"], list):
+                    raw_directives.extend(parsed["directives"])
+                elif "exec_type" in parsed or "tool" in parsed:
+                    # Single directive embedded directly
+                    raw_directives.append(parsed)
+            elif isinstance(parsed, list):
+                raw_directives.extend(parsed)
+
+            if len(raw_directives) >= MAX_DIRECTIVES_PER_RESPONSE * 2:
+                # Stop scanning obvious garbage early
+                break
+
+        # DoS cap
+        if len(raw_directives) > MAX_DIRECTIVES_PER_RESPONSE:
+            logger.warning(
+                "OpenClaw: directive count %d exceeds max %d — truncating",
+                len(raw_directives),
+                MAX_DIRECTIVES_PER_RESPONSE,
+            )
+            raw_directives = raw_directives[:MAX_DIRECTIVES_PER_RESPONSE]
+
+        normalized: list[dict[str, Any]] = []
+        for idx, directive in enumerate(raw_directives):
+            if not isinstance(directive, dict):
+                logger.warning(
+                    "OpenClaw: directive #%d not a dict, skipping: %r",
+                    idx,
+                    directive,
+                )
+                continue
+
+            # Support both "tool" (preferred) and "exec_type" (alt naming).
+            tool = directive.get("tool") or directive.get("exec_type") or ""
+            if not isinstance(tool, str) or not tool:
+                logger.warning(
+                    "OpenClaw: directive #%d missing tool name, skipping", idx
+                )
+                continue
+
+            if tool not in ALLOWED_DIRECTIVE_TOOLS:
+                # AUDIT: unknown tool requested by agent
+                logger.warning(
+                    "OpenClaw: audit — directive tool %r NOT in whitelist, "
+                    "skipping (directive #%d)",
+                    tool,
+                    idx,
+                )
+                continue
+
+            args = directive.get("args", {})
+            if not isinstance(args, dict):
+                logger.warning(
+                    "OpenClaw: directive #%d args not a dict (got %s), skipping",
+                    idx,
+                    type(args).__name__,
+                )
+                continue
+
+            # Size cap
+            try:
+                args_bytes = len(json.dumps(args, default=str).encode("utf-8"))
+            except (TypeError, ValueError):
+                logger.warning(
+                    "OpenClaw: directive #%d args not JSON-serializable, skipping",
+                    idx,
+                )
+                continue
+            if args_bytes > MAX_DIRECTIVE_ARGS_BYTES:
+                logger.warning(
+                    "OpenClaw: directive #%d args size %d bytes exceeds cap %d, skipping",
+                    idx,
+                    args_bytes,
+                    MAX_DIRECTIVE_ARGS_BYTES,
+                )
+                continue
+
+            risk = directive.get("risk", "low")
+            if not isinstance(risk, str) or risk not in ALLOWED_DIRECTIVE_RISK:
+                risk = "low"
+
+            normalized.append({"tool": tool, "args": args, "risk": risk})
+
+        return normalized
+
+    @classmethod
+    def _extract_output(cls, result: dict[str, Any]) -> dict[str, Any]:
+        """Extract text output AND structured execution directives.
+
+        Returns a dict with:
+          - ``output`` (str): the human-readable agent response text
+            (backward-compatible — always present).
+          - ``execution_directives`` (list[dict]): parsed structured tool-call
+            directives emitted by the agent; empty list if none/invalid.
+        """
+        text = cls._extract_text(result)
+        directives = cls._parse_execution_directives(text) if text else []
+        return {"output": text, "execution_directives": directives}
 
     async def startup(self) -> None:
         """Start persistent connection with auto-reconnect."""

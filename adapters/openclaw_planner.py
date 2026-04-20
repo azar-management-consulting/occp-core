@@ -11,11 +11,125 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from orchestrator.models import Task
+if TYPE_CHECKING:
+    from orchestrator.models import Task
 
 logger = logging.getLogger(__name__)
+
+
+# Structured tool schema injected into agent prompts so that agents can
+# emit execution directives (MCP tools/call-style) rather than prose.
+# The shape mirrors OCCP_SYSTEM_MANUAL.md §6 (14 MCP Bridge tools).
+# This block is cache-friendly (stable JSON) and is prepended to the
+# planning prompt as an agent system message.
+AVAILABLE_TOOLS_SCHEMA: dict[str, Any] = {
+    "available_tools": [
+        {"name": "brain.status", "args_schema": {}, "risk": "low"},
+        {"name": "brain.health", "args_schema": {}, "risk": "low"},
+        {
+            "name": "filesystem.read",
+            "args_schema": {"path": "string (within /tmp/occp-workspace)"},
+            "risk": "low",
+        },
+        {
+            "name": "filesystem.write",
+            "args_schema": {
+                "path": "string (within /tmp/occp-workspace)",
+                "content": "string",
+            },
+            "risk": "medium",
+        },
+        {
+            "name": "filesystem.list",
+            "args_schema": {"path": "string (within /tmp/occp-workspace)"},
+            "risk": "low",
+        },
+        {
+            "name": "http.get",
+            "args_schema": {"url": "string (https:// URL)"},
+            "risk": "low",
+        },
+        {
+            "name": "http.post",
+            "args_schema": {
+                "url": "string (https:// URL)",
+                "body": "object | string",
+            },
+            "risk": "medium",
+        },
+        {
+            "name": "wordpress.get_site_info",
+            "args_schema": {"site": "string (e.g. magyarorszag.ai)"},
+            "risk": "low",
+        },
+        {
+            "name": "wordpress.get_posts",
+            "args_schema": {"site": "string", "per_page": "int (<=100)"},
+            "risk": "low",
+        },
+        {
+            "name": "wordpress.get_pages",
+            "args_schema": {"site": "string", "per_page": "int (<=100)"},
+            "risk": "low",
+        },
+        {
+            "name": "wordpress.update_post",
+            "args_schema": {
+                "site": "string",
+                "post_id": "int",
+                "fields": "object (title/content/status)",
+            },
+            "risk": "high",
+        },
+        {"name": "node.list", "args_schema": {}, "risk": "low"},
+        {
+            "name": "node.status",
+            "args_schema": {"node_id": "string"},
+            "risk": "low",
+        },
+        {
+            "name": "node.exec",
+            "args_schema": {
+                "node_id": "string",
+                "command": "string (allowlisted only — see §6.1)",
+            },
+            "risk": "medium",
+        },
+    ],
+    "response_format": {
+        "narrative": (
+            "string — human-readable explanation of the plan and outcome"
+        ),
+        "directives": (
+            "array — structured execution_directives to execute AFTER policy "
+            "approval. Each item: {tool, args, risk}. Omit or use [] if the "
+            "task is purely analytical and requires no side effects."
+        ),
+    },
+    "directive_example": {
+        "directives": [
+            {
+                "tool": "wordpress.get_site_info",
+                "args": {"site": "magyarorszag.ai"},
+                "risk": "low",
+            }
+        ]
+    },
+}
+
+
+def _render_tools_schema_block() -> str:
+    """Render the stable tool-schema system block (cache-friendly)."""
+    return (
+        "[SYSTEM: available tools]\n"
+        "You have access to the following MCP Bridge tools. Emit structured\n"
+        "execution directives inside a fenced ```json block at the END of your\n"
+        "response when the task requires action. The Brain will route directives\n"
+        "through policy + MCP dispatch. Do NOT invent tool names.\n\n"
+        + json.dumps(AVAILABLE_TOOLS_SCHEMA, indent=2, ensure_ascii=False)
+    )
 
 
 class OpenClawPlanner:
@@ -112,13 +226,23 @@ class OpenClawPlanner:
             }
 
     def _build_planning_prompt(self, task: Task) -> str:
-        """Build a structured planning prompt for the OpenClaw agent."""
+        """Build a structured planning prompt for the OpenClaw agent.
+
+        The prompt starts with a stable, cache-friendly tool schema block so
+        that the agent can emit MCP-style execution directives, then lists
+        the plan fields and task context.
+        """
         lines = [
+            _render_tools_schema_block(),
+            "",
             "Create an execution plan for the following task.",
             "Respond with a JSON object containing:",
             '  - "strategy": a brief name for the approach',
             '  - "description": one-sentence summary',
             '  - "steps": array of strings, each being a short action description',
+            '  - "directives": OPTIONAL array of structured tool calls '
+            "({tool, args, risk}) — only include if the task requires side "
+            "effects. Tool names MUST come from the schema above.",
             "",
             f"Task Name: {task.name}",
             f"Task Description: {task.description}",
