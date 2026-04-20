@@ -693,7 +693,7 @@ viewer → operator → org_admin → system_admin
 ### 16.3 Live users (verified DB)
 
 - **2 user** (admin + seeded)
-- Admin: `admin` / `L4Verify2026pw` (tegnap esti pw reset után)
+- Admin: `admin` / See: `.env` (OCCP_ADMIN_PASSWORD) — rotate: `ssh root@brain 'cd /opt/occp && docker compose exec api python -m cli.main user update admin --user_pass="$NEW_PW"'`
 
 ---
 
