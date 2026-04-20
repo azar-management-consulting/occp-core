@@ -46,6 +46,28 @@ except Exception:  # noqa: BLE001
     _KillSwitchActive = None  # type: ignore[assignment]
     _require_ks_inactive = None  # type: ignore[assignment]
 
+# L6 persistent (Redis-backed) kill switch — survives container restarts.
+# Import-safe: if the module or `redis` dep is missing, we silently
+# skip the Redis check and fall back to the in-memory singleton above.
+try:
+    from evaluation.kill_switch_redis import (
+        get_redis_kill_switch as _get_redis_ks,
+        kill_switch_backend as _ks_backend,
+    )
+except Exception:  # noqa: BLE001
+    _get_redis_ks = None  # type: ignore[assignment]
+    _ks_backend = None  # type: ignore[assignment]
+
+# L6 budget policy — pre-flight + post-flight USD budget enforcement.
+try:
+    from policy_engine.budget_policy import (
+        BudgetExceededError as _BudgetExceededError,
+        get_budget_policy as _get_budget_policy,
+    )
+except Exception:  # noqa: BLE001
+    _BudgetExceededError = None  # type: ignore[assignment]
+    _get_budget_policy = None  # type: ignore[assignment]
+
 if TYPE_CHECKING:
     from adapters.confirmation_gate import ConfirmationGate
     from orchestrator.adapter_registry import AdapterRegistry
@@ -267,6 +289,77 @@ class Pipeline:
                     error=f"kill_switch_active: {ks_exc}",
                 )
 
+        # L6 persistent kill-switch (Redis) — survives container restarts.
+        # Only consulted when the operator configured redis backend via
+        # OCCP_KILL_SWITCH_BACKEND=redis; otherwise skipped (zero-cost).
+        if (
+            _get_redis_ks is not None
+            and _ks_backend is not None
+            and _ks_backend() == "redis"
+        ):
+            try:
+                redis_ks = _get_redis_ks()
+                if redis_ks.is_active():
+                    status = redis_ks.status()
+                    reason = (
+                        (status.get("current") or {}).get("reason")
+                        or "redis_kill_switch_active"
+                    )
+                    try:
+                        task.transition(TaskStatus.FAILED)
+                    except Exception:  # noqa: BLE001
+                        pass
+                    task.error = f"kill_switch_active (redis): {reason}"
+                    evidence["_kill_switch"] = {
+                        "blocked": True,
+                        "backend": "redis",
+                        "reason": reason,
+                        "status": status,
+                    }
+                    self._emit_metrics(task, agent_type, "kill_switch", timings)
+                    logger.critical(
+                        "Pipeline refused task=%s: redis kill switch active",
+                        task.id,
+                    )
+                    return PipelineResult(
+                        task_id=task.id,
+                        success=False,
+                        status=TaskStatus.FAILED,
+                        started_at=started,
+                        finished_at=datetime.now(timezone.utc),
+                        evidence=evidence,
+                        error=f"kill_switch_active: {reason}",
+                    )
+            except Exception as exc:  # noqa: BLE001 — never fail-open
+                logger.debug("redis kill-switch probe error: %s", exc)
+
+        # L6 budget policy — attach to task metadata so executors can
+        # run pre-flight check() before every LLM call and
+        # record_spend() after. Pipeline itself does not issue LLM
+        # calls, so it publishes the policy handle rather than
+        # consuming it. Executors that see `_budget_policy` and
+        # `_budget_task_id` in task.metadata can enforce spending.
+        #
+        # Gated by OCCP_BUDGET_POLICY_ENABLED=true so existing
+        # deployments opt-in rather than hit a Redis ping at startup.
+        if (
+            _get_budget_policy is not None
+            and os.environ.get("OCCP_BUDGET_POLICY_ENABLED", "").lower()
+            in ("1", "true", "yes")
+        ):
+            try:
+                budget_policy = _get_budget_policy()
+                task.metadata.setdefault("_budget_policy", budget_policy)
+                task.metadata.setdefault("_budget_task_id", task.id)
+                # Surface pre-existing spend for observability.
+                evidence["_budget"] = {
+                    "backend": budget_policy.backend,
+                    "budget_usd": budget_policy.get_task_budget(task.id),
+                    "spent_usd_at_start": budget_policy.get_spend(task.id),
+                }
+            except Exception as exc:  # noqa: BLE001 — never fail-open
+                logger.debug("budget policy attach error: %s", exc)
+
         # Record routing info when registry is available
         if self._registry:
             evidence["_routing"] = self._registry.get_routing_info(agent_type)
@@ -432,7 +525,47 @@ class Pipeline:
                 error=str(exc),
             )
 
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — final catch-all
+            # BudgetExceededError is treated as a FAILED terminal result
+            # with dedicated evidence so dashboards / audit can see *why*
+            # the task was halted without leaking the stack trace.
+            if _BudgetExceededError is not None and isinstance(
+                exc, _BudgetExceededError
+            ):
+                try:
+                    task.transition(TaskStatus.FAILED)
+                except Exception:  # noqa: BLE001
+                    pass
+                task.error = str(exc)
+                if emitter:
+                    emitter.emit_error(
+                        task.id, correlation_id, f"budget_exceeded: {exc}"
+                    )
+                evidence["_timings"] = timings
+                evidence["_completed_stages"] = completed_stages
+                evidence["_budget_exceeded"] = {
+                    "task_id": exc.task_id,
+                    "reason": exc.reason,
+                    "spent_usd": exc.spent_usd,
+                    "estimated_usd": exc.estimated_usd,
+                    "budget_usd": exc.budget_usd,
+                }
+                self._emit_metrics(
+                    task, agent_type, "budget_exceeded", timings
+                )
+                logger.critical(
+                    "Pipeline budget exceeded for task=%s: %s", task.id, exc
+                )
+                return PipelineResult(
+                    task_id=task.id,
+                    success=False,
+                    status=TaskStatus.FAILED,
+                    started_at=started,
+                    finished_at=datetime.now(timezone.utc),
+                    evidence=evidence,
+                    error=f"budget_exceeded: {exc}",
+                )
+
             task.transition(TaskStatus.FAILED)
             task.error = str(exc)
             if emitter:
@@ -641,6 +774,14 @@ class Pipeline:
             except ExecutionError:
                 raise  # Explicit execution failures are not retried
             except Exception as exc:
+                # BudgetExceededError must NOT be retried — retrying
+                # only burns more tokens. Propagate to the pipeline
+                # handler which converts it into a FAILED result.
+                if (
+                    _BudgetExceededError is not None
+                    and isinstance(exc, _BudgetExceededError)
+                ):
+                    raise
                 last_exc = exc
                 if attempt < self._execute_retries:
                     logger.warning(

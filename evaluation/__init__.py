@@ -36,6 +36,11 @@ from evaluation.kill_switch import (
     get_kill_switch,
     require_kill_switch_inactive,
 )
+from evaluation.kill_switch_redis import (
+    RedisKillSwitch,
+    get_redis_kill_switch,
+    kill_switch_backend,
+)
 from evaluation.proposal_generator import (
     ProposalCandidate,
     ProposalGenerator,
@@ -84,6 +89,9 @@ __all__ = [
     "KillSwitchActive",
     "get_kill_switch",
     "require_kill_switch_inactive",
+    "RedisKillSwitch",
+    "get_redis_kill_switch",
+    "kill_switch_backend",
     # Drift detector
     "DriftDetector",
     "DriftEntry",
