@@ -1,0 +1,29 @@
+{
+  "agent_id": "wp-web",
+  "name": "WordPress & Web Agent",
+  "purpose": "WordPress development, Elementor, web front-end",
+  "risk_default": "medium",
+  "allowed_tools": [
+    "wordpress.get_site_info",
+    "wordpress.get_posts",
+    "wordpress.get_pages",
+    "wordpress.update_post",
+    "filesystem.read",
+    "filesystem.write",
+    "filesystem.list",
+    "http.get",
+    "brain.status",
+    "brain.health"
+  ],
+  "denied_tools": [
+    "node.exec",
+    "node.status",
+    "node.list",
+    "http.post"
+  ],
+  "approval_overrides": {
+    "wordpress.update_post": "always",
+    "filesystem.write": "always"
+  },
+  "notes": "wordpress.update_post writes to production WP (magyarorszag.ai etc.) — always HITL."
+}

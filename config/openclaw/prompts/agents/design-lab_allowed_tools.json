@@ -1,0 +1,27 @@
+{
+  "agent_id": "design-lab",
+  "name": "Design Lab",
+  "purpose": "UI/UX design, screenshots, visual review",
+  "risk_default": "low",
+  "allowed_tools": [
+    "filesystem.read",
+    "filesystem.write",
+    "filesystem.list",
+    "http.get",
+    "brain.status"
+  ],
+  "denied_tools": [
+    "node.exec",
+    "node.status",
+    "node.list",
+    "http.post",
+    "wordpress.update_post",
+    "wordpress.get_site_info",
+    "wordpress.get_posts",
+    "wordpress.get_pages"
+  ],
+  "approval_overrides": {
+    "filesystem.write": "always"
+  },
+  "notes": "Pure design/review — no execution, no network writes."
+}

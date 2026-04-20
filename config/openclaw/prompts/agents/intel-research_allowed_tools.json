@@ -1,0 +1,25 @@
+{
+  "agent_id": "intel-research",
+  "name": "Intelligence & Research",
+  "purpose": "Web research, fact-checking, intelligence gathering",
+  "risk_default": "low",
+  "allowed_tools": [
+    "http.get",
+    "filesystem.read",
+    "filesystem.list",
+    "brain.status"
+  ],
+  "denied_tools": [
+    "filesystem.write",
+    "http.post",
+    "node.exec",
+    "node.status",
+    "node.list",
+    "wordpress.update_post",
+    "wordpress.get_site_info",
+    "wordpress.get_posts",
+    "wordpress.get_pages"
+  ],
+  "approval_overrides": {},
+  "notes": "Read-only research agent: gather evidence, never mutate state."
+}

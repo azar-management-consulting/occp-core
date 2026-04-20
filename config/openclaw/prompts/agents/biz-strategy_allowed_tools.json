@@ -1,0 +1,25 @@
+{
+  "agent_id": "biz-strategy",
+  "name": "Business Strategy",
+  "purpose": "Business planning, strategic analysis",
+  "risk_default": "low",
+  "allowed_tools": [
+    "filesystem.read",
+    "filesystem.list",
+    "http.get",
+    "wordpress.get_site_info",
+    "wordpress.get_posts",
+    "wordpress.get_pages",
+    "brain.status"
+  ],
+  "denied_tools": [
+    "filesystem.write",
+    "http.post",
+    "node.exec",
+    "node.status",
+    "node.list",
+    "wordpress.update_post"
+  ],
+  "approval_overrides": {},
+  "notes": "Strategic analysis is read-only. Produces artifacts by returning directives the Brain later routes to content-forge/wp-web."
+}

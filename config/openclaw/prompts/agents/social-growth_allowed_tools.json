@@ -1,0 +1,27 @@
+{
+  "agent_id": "social-growth",
+  "name": "Social Growth",
+  "purpose": "Social media scheduling, growth experiments",
+  "risk_default": "medium",
+  "allowed_tools": [
+    "http.get",
+    "http.post",
+    "brain.status"
+  ],
+  "denied_tools": [
+    "filesystem.read",
+    "filesystem.write",
+    "filesystem.list",
+    "node.exec",
+    "node.status",
+    "node.list",
+    "wordpress.update_post",
+    "wordpress.get_site_info",
+    "wordpress.get_posts",
+    "wordpress.get_pages"
+  ],
+  "approval_overrides": {
+    "http.post": "always"
+  },
+  "notes": "Social posting via http.post to 3rd-party APIs (FB/IG/X). No local filesystem access."
+}

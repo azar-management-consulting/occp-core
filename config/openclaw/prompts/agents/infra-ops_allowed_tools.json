@@ -1,0 +1,30 @@
+{
+  "agent_id": "infra-ops",
+  "name": "Infrastructure & DevOps Agent",
+  "purpose": "Server operations, Docker, DNS, SSL, deployment",
+  "risk_default": "high",
+  "allowed_tools": [
+    "node.list",
+    "node.status",
+    "node.exec",
+    "filesystem.read",
+    "filesystem.write",
+    "filesystem.list",
+    "http.get",
+    "brain.status",
+    "brain.health"
+  ],
+  "denied_tools": [
+    "wordpress.update_post",
+    "wordpress.get_posts",
+    "wordpress.get_pages",
+    "wordpress.get_site_info",
+    "http.post"
+  ],
+  "approval_overrides": {
+    "node.exec": "always",
+    "node.status": "never",
+    "filesystem.write": "always"
+  },
+  "notes": "risk_default=high: every node.exec call goes through HITL. Read-only node.list/status auto-approved."
+}

@@ -1,0 +1,27 @@
+{
+  "agent_id": "content-forge",
+  "name": "Content Forge",
+  "purpose": "Content generation, copywriting, translation",
+  "risk_default": "low",
+  "allowed_tools": [
+    "filesystem.read",
+    "filesystem.write",
+    "filesystem.list",
+    "http.get",
+    "wordpress.get_site_info",
+    "wordpress.get_posts",
+    "wordpress.get_pages",
+    "brain.status"
+  ],
+  "denied_tools": [
+    "wordpress.update_post",
+    "node.exec",
+    "node.status",
+    "node.list",
+    "http.post"
+  ],
+  "approval_overrides": {
+    "filesystem.write": "always"
+  },
+  "notes": "Content agent drafts material into workspace files; publishing is explicitly delegated to wp-web."
+}

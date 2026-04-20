@@ -1,0 +1,30 @@
+{
+  "agent_id": "eng-core",
+  "name": "Engineering Agent",
+  "purpose": "Core engineering work, code generation, refactoring",
+  "risk_default": "medium",
+  "allowed_tools": [
+    "filesystem.read",
+    "filesystem.write",
+    "filesystem.list",
+    "http.get",
+    "http.post",
+    "node.list",
+    "node.status",
+    "node.exec",
+    "brain.status",
+    "brain.health"
+  ],
+  "denied_tools": [
+    "wordpress.get_site_info",
+    "wordpress.get_posts",
+    "wordpress.get_pages",
+    "wordpress.update_post"
+  ],
+  "approval_overrides": {
+    "node.exec": "always",
+    "filesystem.write": "always",
+    "http.post": "always"
+  },
+  "notes": "Engineering agent may run allowlisted shell commands on mesh nodes but every node.exec and filesystem.write requires HITL approval."
+}
