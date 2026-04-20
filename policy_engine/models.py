@@ -45,6 +45,13 @@ class AuditEntry:
 
     Each entry's ``hash`` is computed over its payload **plus** the
     previous entry's hash, forming a verifiable chain.
+
+    Optional usage fields capture the full ``response.usage`` payload
+    emitted by the Anthropic API (input/output tokens, prompt-cache
+    reads/writes, per-TTL ephemeral buckets).  ``computed_usd`` and
+    ``cache_hit_ratio`` are derived values populated by the store layer
+    on insert — they are intentionally excluded from :meth:`compute_hash`
+    so the chain remains stable across price-table edits.
     """
 
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:16])
@@ -57,6 +64,16 @@ class AuditEntry:
     detail: dict[str, Any] = field(default_factory=dict)
     prev_hash: str = ""
     hash: str = ""
+    # Optional cost-attribution fields (nullable / backward compatible)
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    cache_read_input_tokens: int | None = None
+    cache_creation_input_tokens: int | None = None
+    ephemeral_5m_input_tokens: int | None = None
+    ephemeral_1h_input_tokens: int | None = None
+    model_id: str | None = None
+    computed_usd: float | None = None
+    cache_hit_ratio: float | None = None
 
     def compute_hash(self, prev_hash: str = "") -> str:
         """Compute SHA-256 hash over payload + previous hash."""

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import BigInteger, Boolean, DateTime, Index, Integer, String, Text, func
+from sqlalchemy import BigInteger, Boolean, DateTime, Float, Index, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from store.base import Base, JSONBText
@@ -73,9 +73,21 @@ class AuditEntryRow(Base):
     prev_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     hash: Mapped[str] = mapped_column(String(64), nullable=False)
 
+    # ── Cost attribution fields (all nullable for backward compatibility) ──
+    input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cache_read_input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cache_creation_input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    ephemeral_5m_input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    ephemeral_1h_input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    model_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    computed_usd: Mapped[float | None] = mapped_column(Float, nullable=True)
+    cache_hit_ratio: Mapped[float | None] = mapped_column(Float, nullable=True)
+
     __table_args__ = (
         Index("idx_audit_task", "task_id"),
         Index("idx_audit_ts", "timestamp"),
+        Index("idx_audit_model", "model_id"),
     )
 
 
