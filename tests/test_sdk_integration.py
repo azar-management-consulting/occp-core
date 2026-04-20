@@ -110,7 +110,7 @@ class TestSDKIntegration:
         assert resp.status_code == 200
         data = resp.json()
         assert data["platform"] == "OCCP"
-        assert data["version"] == "0.9.0"
+        assert data["version"] == "0.10.0"
 
     @pytest.mark.asyncio
     async def test_login_success(self, live_base_url) -> None:

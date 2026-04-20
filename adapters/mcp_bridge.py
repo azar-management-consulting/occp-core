@@ -329,7 +329,7 @@ async def _http_post(params: dict[str, Any]) -> Any:
 async def _brain_status(params: dict[str, Any]) -> Any:
     return {
         "platform": "OCCP",
-        "version": "0.9.0",
+        "version": "0.10.1",
         "bridge": "mcp_bridge v1",
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }

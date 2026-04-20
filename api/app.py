@@ -69,6 +69,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     # Structured logging (structlog wrapping stdlib)
     setup_logging(level=settings.log_level, fmt=settings.log_format)
 
+    # OpenTelemetry tracing (opt-in via OCCP_OTEL_ENABLED=true) ─────
+    try:
+        from observability.otel_setup import init_otel
+
+        init_otel(
+            service_name="occp-api",
+            env=settings.occp_env,
+            app=app,
+        )
+    except Exception as exc:
+        # Never fail startup because of telemetry — just log and continue.
+        logger.warning("OTEL init skipped due to error: %s", exc)
+
     # Persistent storage
     db = Database(url=settings.database_url)
     await db.connect()
@@ -453,7 +466,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 def create_app() -> FastAPI:
     app = FastAPI(
         title="OCCP – OpenCloud Control Plane",
-        version="0.9.0",
+        version="0.10.1",
         description="Agent Control Plane with Verified Autonomy Pipeline",
         lifespan=lifespan,
     )

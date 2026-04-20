@@ -4,7 +4,7 @@ A modul felel a Plan → Gate → Execute → Validate → Ship pipeline
 koordinálásáért, az ügynökök ütemezéséért és a futási állapot kezeléséért.
 """
 
-__version__ = "0.9.0"
+__version__ = "0.10.1"
 
 from orchestrator.models import (
     Task,

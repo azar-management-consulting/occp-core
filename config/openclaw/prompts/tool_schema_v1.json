@@ -1,0 +1,342 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://occp.ai/schema/openclaw/tool_schema.v1.json",
+  "title": "OCCP OpenClaw MCP Tool Schema",
+  "description": "Authoritative tool catalogue for 8 OpenClaw specialist agents. Every tool mirrors the adapters/mcp_bridge.py implementation.",
+  "version": "1.0.0",
+  "generated": "2026-04-20",
+  "type": "object",
+  "required": ["tools", "response_contract"],
+  "properties": {
+    "tools": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "items": {"$ref": "#/$defs/Tool"}
+    },
+    "response_contract": {"$ref": "#/$defs/ResponseContract"}
+  },
+  "$defs": {
+    "RiskLevel": {
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    },
+    "Tool": {
+      "type": "object",
+      "required": [
+        "name",
+        "description",
+        "args_schema",
+        "required_args",
+        "risk_level",
+        "requires_approval"
+      ],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z_]+\\.[a-z_]+$"},
+        "description": {"type": "string", "minLength": 16},
+        "args_schema": {"type": "object"},
+        "required_args": {"type": "array", "items": {"type": "string"}},
+        "risk_level": {"$ref": "#/$defs/RiskLevel"},
+        "requires_approval": {"type": "boolean"},
+        "timeout_seconds": {"type": "number", "minimum": 1, "maximum": 120},
+        "workspace_root": {"type": "string"},
+        "notes": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "ResponseContract": {
+      "type": "object",
+      "required": ["narrative", "directives", "confidence"],
+      "properties": {
+        "narrative": {"type": "string", "description": "Human-readable explanation in Hungarian or English"},
+        "directives": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["tool", "args", "reason", "risk"],
+            "properties": {
+              "tool": {"type": "string"},
+              "args": {"type": "object"},
+              "reason": {"type": "string"},
+              "risk": {"$ref": "#/$defs/RiskLevel"}
+            },
+            "additionalProperties": false
+          }
+        },
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "reasoning": {"type": "string", "description": "Optional chain-of-thought, logged separately"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "tools": [
+    {
+      "name": "brain.status",
+      "description": "Return OCCP platform metadata (version, bridge, timestamp). Read-only, no side effects.",
+      "args_schema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "required_args": [],
+      "risk_level": "low",
+      "requires_approval": false,
+      "timeout_seconds": 5
+    },
+    {
+      "name": "brain.health",
+      "description": "Forward /api/v1/health payload. Returns runtime health for API, DB, executors.",
+      "args_schema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "required_args": [],
+      "risk_level": "low",
+      "requires_approval": false,
+      "timeout_seconds": 5
+    },
+    {
+      "name": "filesystem.read",
+      "description": "Read a UTF-8 text file inside the confined workspace. Path traversal is blocked.",
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "description": "Relative path below workspace_root"
+          }
+        },
+        "required": ["path"],
+        "additionalProperties": false
+      },
+      "required_args": ["path"],
+      "risk_level": "low",
+      "requires_approval": false,
+      "timeout_seconds": 10,
+      "workspace_root": "/tmp/occp-workspace"
+    },
+    {
+      "name": "filesystem.write",
+      "description": "Write a UTF-8 text file inside the confined workspace. Overwrites existing content.",
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "path": {"type": "string", "minLength": 1, "maxLength": 512},
+          "content": {"type": "string", "maxLength": 1048576}
+        },
+        "required": ["path", "content"],
+        "additionalProperties": false
+      },
+      "required_args": ["path", "content"],
+      "risk_level": "medium",
+      "requires_approval": true,
+      "timeout_seconds": 10,
+      "workspace_root": "/tmp/occp-workspace"
+    },
+    {
+      "name": "filesystem.list",
+      "description": "List directory entries inside the confined workspace. Returns sorted file and directory names.",
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "path": {"type": "string", "maxLength": 512, "default": ""}
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "required_args": [],
+      "risk_level": "low",
+      "requires_approval": false,
+      "timeout_seconds": 5,
+      "workspace_root": "/tmp/occp-workspace"
+    },
+    {
+      "name": "http.get",
+      "description": "Perform HTTPS GET. Body truncated to 10 KiB. Only https:// or http:// schemes accepted.",
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "url": {"type": "string", "format": "uri", "pattern": "^https?://"},
+          "headers": {"type": "object", "additionalProperties": {"type": "string"}}
+        },
+        "required": ["url"],
+        "additionalProperties": false
+      },
+      "required_args": ["url"],
+      "risk_level": "low",
+      "requires_approval": false,
+      "timeout_seconds": 15,
+      "notes": "Returns {status_code, headers, body (first 10000 chars)}"
+    },
+    {
+      "name": "http.post",
+      "description": "Perform HTTPS POST with JSON body. Body response truncated to 10 KiB.",
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "url": {"type": "string", "format": "uri", "pattern": "^https?://"},
+          "body": {"type": "object"},
+          "headers": {"type": "object", "additionalProperties": {"type": "string"}}
+        },
+        "required": ["url"],
+        "additionalProperties": false
+      },
+      "required_args": ["url"],
+      "risk_level": "medium",
+      "requires_approval": true,
+      "timeout_seconds": 15
+    },
+    {
+      "name": "wordpress.get_site_info",
+      "description": "Fetch WordPress site info via public REST (/wp-json/). No authentication required.",
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "site_url": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https://",
+            "default": "https://magyarorszag.ai"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "required_args": [],
+      "risk_level": "low",
+      "requires_approval": false,
+      "timeout_seconds": 15
+    },
+    {
+      "name": "wordpress.get_posts",
+      "description": "Fetch published posts from WP REST (/wp-json/wp/v2/posts). Public endpoint.",
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "site_url": {"type": "string", "format": "uri", "pattern": "^https://"},
+          "per_page": {"type": "integer", "minimum": 1, "maximum": 50, "default": 10}
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "required_args": [],
+      "risk_level": "low",
+      "requires_approval": false,
+      "timeout_seconds": 15
+    },
+    {
+      "name": "wordpress.get_pages",
+      "description": "Fetch published pages from WP REST (/wp-json/wp/v2/pages). Public endpoint.",
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "site_url": {"type": "string", "format": "uri", "pattern": "^https://"},
+          "per_page": {"type": "integer", "minimum": 1, "maximum": 50, "default": 20}
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "required_args": [],
+      "risk_level": "low",
+      "requires_approval": false,
+      "timeout_seconds": 15
+    },
+    {
+      "name": "wordpress.update_post",
+      "description": "Update a WP post/page. Requires basic-auth via application password. Writes to production WP.",
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "site_url": {"type": "string", "format": "uri", "pattern": "^https://"},
+          "post_id": {"type": "integer", "minimum": 1},
+          "wp_user": {"type": "string", "minLength": 1},
+          "wp_app_password": {"type": "string", "minLength": 1},
+          "title": {"type": "string"},
+          "content": {"type": "string"},
+          "status": {"type": "string", "enum": ["publish", "draft", "private", "pending"]},
+          "excerpt": {"type": "string"}
+        },
+        "required": ["post_id", "wp_user", "wp_app_password"],
+        "additionalProperties": false
+      },
+      "required_args": ["post_id", "wp_user", "wp_app_password"],
+      "risk_level": "high",
+      "requires_approval": true,
+      "timeout_seconds": 15,
+      "notes": "HITL required. At least one of title/content/status/excerpt must be supplied."
+    },
+    {
+      "name": "node.list",
+      "description": "List all known OCCP mesh nodes (imac, mbp, hetzner-brain, hetzner-openclaw) and roles.",
+      "args_schema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "required_args": [],
+      "risk_level": "low",
+      "requires_approval": false,
+      "timeout_seconds": 2
+    },
+    {
+      "name": "node.status",
+      "description": "Check node reachability via SSH (ConnectTimeout=5s). Runs `hostname && uptime`.",
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "enum": ["imac", "mbp", "hetzner-brain", "hetzner-openclaw"]
+          }
+        },
+        "required": ["node_id"],
+        "additionalProperties": false
+      },
+      "required_args": ["node_id"],
+      "risk_level": "medium",
+      "requires_approval": false,
+      "timeout_seconds": 12
+    },
+    {
+      "name": "node.exec",
+      "description": "Execute ONLY an allowlisted command on a mesh node via SSH. Allowlist: hostname, uptime, uname, df, free, docker, ls, cat, head, tail, curl, python3, node, sw_vers.",
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "enum": ["imac", "mbp", "hetzner-brain", "hetzner-openclaw"]
+          },
+          "command": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "description": "Command whose leading token is in the safe allowlist"
+          }
+        },
+        "required": ["node_id", "command"],
+        "additionalProperties": false
+      },
+      "required_args": ["node_id", "command"],
+      "risk_level": "high",
+      "requires_approval": true,
+      "timeout_seconds": 35,
+      "notes": "Only the first token of `command` is checked against the allowlist; pipes/redirects are rejected by the bridge."
+    }
+  ],
+  "response_contract": {
+    "narrative": "<Hungarian or English explanation of what you decided and why>",
+    "directives": [
+      {
+        "tool": "<tool.name from tools[]>",
+        "args": {},
+        "reason": "<short justification>",
+        "risk": "low"
+      }
+    ],
+    "confidence": 0.0
+  }
+}
