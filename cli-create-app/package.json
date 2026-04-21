@@ -1,0 +1,32 @@
+{
+  "name": "create-occp-app",
+  "version": "0.1.0",
+  "description": "Scaffold a new OCCP agent project in seconds.",
+  "type": "module",
+  "bin": {
+    "create-occp-app": "./src/index.js"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test tests/"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.8.2"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "occp",
+    "ai",
+    "agent",
+    "scaffold",
+    "cli"
+  ],
+  "author": "Azar Management Consulting",
+  "license": "MIT"
+}
