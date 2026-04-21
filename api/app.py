@@ -50,6 +50,8 @@ from api.deps import AppState, set_state
 from api.ws_manager import ConnectionManager
 from api.routes import agents, audit, auth, brain, dashboard, pipeline, policy, status, tasks, ws
 from api.routes import onboarding, mcp, skills, llm, tokens
+from api.routes import oauth as oauth_route
+from api.routes import onboarding_keys as onboarding_keys_route
 from api.routes import users, admin, projects, quality
 from api.routes import cloudcode, bridge, voice
 from api.routes import mcp_bridge as mcp_bridge_route
@@ -516,6 +518,8 @@ def create_app() -> FastAPI:
     app.include_router(audit.router, prefix=prefix)
     app.include_router(ws.router, prefix=prefix)
     app.include_router(onboarding.router, prefix=prefix)
+    app.include_router(onboarding_keys_route.router, prefix=prefix)
+    app.include_router(oauth_route.router, prefix=prefix)
     app.include_router(mcp.router, prefix=prefix)
     app.include_router(skills.router, prefix=prefix)
     app.include_router(llm.router, prefix=prefix)

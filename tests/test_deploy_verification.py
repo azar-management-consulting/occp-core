@@ -53,7 +53,7 @@ class TestStatusEndpoint:
         resp = await client.get("/api/v1/status")
         data = resp.json()
         assert "version" in data
-        assert data["version"] == "0.10.0"
+        assert data["version"] == "0.10.1"
 
     @pytest.mark.asyncio
     async def test_status_contains_environment(self, client: AsyncClient):

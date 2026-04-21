@@ -1,21 +1,41 @@
 # OCCP — OpenCloud Control Plane
 
 > Agent Control Plane with Verified Autonomy Pipeline.
-> Every autonomous action verified before execution.
+> Every autonomous action verified, logged, and reversible — before it runs.
+> Open source (MIT), self-hostable, EU AI Act Art. 14 compliant.
 
-## Docs
+## Quick links
 
-- [Quick Start](docs/QuickStart.md): Installation and first steps
-- [API Reference](docs/API.md): Full REST API documentation
-- [Architecture](docs/ARCHITECTURE.md): System design and data flow
-- [Comparison](docs/COMPARISON.md): OCCP vs OpenClaw, Cordum, EV
-- [Security](security/SECRETS_POLICY.md): Secret management policy
-- [Roadmap](docs/ROADMAP_v080.md): v0.8.0 planned features
-- [Changelog](CHANGELOG.md): Version history
-
-## Source
-
+- [Landing page](https://occp.ai)
+- [Dashboard (Mission Control)](https://dash.occp.ai)
+- [Docs](https://docs.occp.ai)
+- [API status](https://api.occp.ai/api/v1/status)
+- [API reference (OpenAPI JSON)](https://api.occp.ai/api/v1/openapi.json)
 - [GitHub](https://github.com/azar-management-consulting/occp-core)
-- [API](https://api.occp.ai)
-- [Dashboard](https://dash.occp.ai)
-- [Website](https://occp.ai)
+
+## Core concepts
+
+- [Verified Autonomy Pipeline](https://docs.occp.ai/docs/concepts/verified-autonomy.md): The 5-gate pipeline (PLAN → VERIFY → APPROVE → EXECUTE → AUDIT).
+- [Agent](https://docs.occp.ai/docs/concepts/agent.md): Scoped specialist that handles one class of task.
+- [Policy](https://docs.occp.ai/docs/concepts/policy.md): Rego/OPA rules evaluated at VERIFY.
+- [Skill](https://docs.occp.ai/docs/concepts/skill.md): Versioned, audit-logged capability.
+- [MCP integration](https://docs.occp.ai/docs/concepts/mcp.md): Model Context Protocol bridge.
+
+## Guides
+
+- [Quickstart — 5 minute first verified action](https://docs.occp.ai/docs/quickstart.md)
+- [Your first agent](https://docs.occp.ai/docs/guides/first-agent.md)
+- [Writing policies](https://docs.occp.ai/docs/guides/policy-writing.md)
+- [Hello-agent template repo](https://github.com/azar-management-consulting/occp-core/tree/main/templates/hello-agent)
+
+## Security & compliance
+
+- [EU AI Act Art. 14 compliance mapping](https://github.com/azar-management-consulting/occp-core/blob/main/.planning/EU_AI_ACT_ART14_COMPLIANCE_MAPPING.md)
+- [OWASP Agentic Top 10 audit](https://github.com/azar-management-consulting/occp-core/blob/main/.planning/OWASP_AGENTIC_TOP10_AUDIT_2026-04-20.md)
+- [Secrets policy](https://github.com/azar-management-consulting/occp-core/blob/main/security/SECRETS_POLICY.md)
+
+## Optional
+
+- [Changelog](https://github.com/azar-management-consulting/occp-core/blob/main/CHANGELOG.md)
+- [Contributing](https://github.com/azar-management-consulting/occp-core/blob/main/CONTRIBUTING.md)
+- [10/10 Roadmap](https://github.com/azar-management-consulting/occp-core/blob/main/.planning/OCCP_WEB_10_OF_10_MASTER.md)
