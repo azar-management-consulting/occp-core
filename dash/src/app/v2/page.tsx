@@ -29,6 +29,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { SpendSparkline } from "@/components/spend-sparkline";
 
 // Mock data placeholders — replace with SSE subscriptions in follow-up.
 const KPIs = [
@@ -75,9 +76,9 @@ export default function DashboardV2Home() {
           <h1 className="text-3xl font-semibold tracking-tight">
             Mission Control
           </h1>
-          <p className="text-[var(--fg-muted,#999)]">
+          <p className="text-[var(--fg-muted,#a1a1aa)]">
             All autonomous activity in one pane. Press{" "}
-            <kbd className="rounded border border-[var(--border-subtle,#333)] px-1.5 py-0.5 text-xs">
+            <kbd className="rounded border border-[var(--border-subtle,#52525b)] px-1.5 py-0.5 text-xs">
               ⌘K
             </kbd>{" "}
             for the command palette.
@@ -86,17 +87,17 @@ export default function DashboardV2Home() {
         <div className="flex gap-2">
           <Button asChild>
             <Link href="/pipeline">
-              <Plus /> New task
+              <Plus aria-hidden="true" /> New task
             </Link>
           </Button>
           <Button asChild variant="outline">
             <Link href="/admin/users">
-              <UserPlus /> Invite user
+              <UserPlus aria-hidden="true" /> Invite user
             </Link>
           </Button>
           <Button asChild variant="ghost">
             <Link href="/audit">
-              <FileText /> Audit
+              <FileText aria-hidden="true" /> Audit
             </Link>
           </Button>
         </div>
@@ -110,13 +111,14 @@ export default function DashboardV2Home() {
             <Card key={k.label}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{k.label}</CardTitle>
-                <Icon className="text-[var(--fg-muted,#999)]" />
+                <Icon className="text-[var(--fg-muted,#a1a1aa)]" aria-hidden="true" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{k.value}</div>
-                <p className="mt-1 text-xs text-[var(--fg-muted,#999)]">
+                <p className="mt-1 text-xs text-[var(--fg-muted,#a1a1aa)]">
                   {k.delta}
                 </p>
+                {k.label === "Token Spend" && <SpendSparkline />}
               </CardContent>
             </Card>
           );
@@ -138,11 +140,11 @@ export default function DashboardV2Home() {
               {RECENT_EVENTS.map((e, i) => (
                 <li
                   key={i}
-                  className="flex items-center justify-between border-b border-[var(--border-subtle,#333)] pb-2 last:border-0"
+                  className="flex items-center justify-between border-b border-[var(--border-subtle,#52525b)] pb-2 last:border-0"
                 >
-                  <span className="text-[var(--fg-muted,#999)]">{e.ts}</span>
+                  <span className="text-[var(--fg-muted,#a1a1aa)]">{e.ts}</span>
                   <span className="flex-1 px-4">{e.type}</span>
-                  <span className="mr-3 text-[var(--fg-muted,#999)]">
+                  <span className="mr-3 text-[var(--fg-muted,#a1a1aa)]">
                     {e.agent}
                   </span>
                   <span>{e.task}</span>
@@ -155,12 +157,12 @@ export default function DashboardV2Home() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Keyboard /> Shortcuts
+              <Keyboard aria-hidden="true" /> Shortcuts
             </CardTitle>
             <CardDescription>Keyboard first.</CardDescription>
           </CardHeader>
           <CardContent>
-            <dl className="space-y-2 text-sm">
+            <dl className="space-y-2 text-sm" aria-label="Keyboard shortcuts">
               {[
                 ["⌘K", "Command palette"],
                 ["⌘J", "Ask Brian"],
@@ -172,10 +174,10 @@ export default function DashboardV2Home() {
                 ["⌘⇧K", "KILL SWITCH"],
               ].map(([k, v]) => (
                 <div key={k} className="flex items-center justify-between">
-                  <kbd className="rounded border border-[var(--border-subtle,#333)] px-2 py-0.5 text-xs font-mono">
+                  <kbd className="rounded border border-[var(--border-subtle,#52525b)] px-2 py-0.5 text-xs font-mono">
                     {k}
                   </kbd>
-                  <span className="text-[var(--fg-muted,#999)]">{v}</span>
+                  <span className="text-[var(--fg-muted,#a1a1aa)]">{v}</span>
                 </div>
               ))}
             </dl>

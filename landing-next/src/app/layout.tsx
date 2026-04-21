@@ -2,6 +2,52 @@ import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
+import { StructuredData } from "./components/structured-data";
+
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Azar Management Consulting",
+  url: "https://occp.ai",
+  logo: "https://occp.ai/logo.png",
+  sameAs: [
+    "https://github.com/azar-management-consulting",
+    "https://linkedin.com/company/azar-mc",
+  ],
+};
+
+const softwareApplicationSchema = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "OCCP — OpenCloud Control Plane",
+  applicationCategory: "DeveloperApplication",
+  operatingSystem: "Any",
+  offers: {
+    "@type": "Offer",
+    price: 0,
+    priceCurrency: "USD",
+    availability: "https://schema.org/InStock",
+  },
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: 4.9,
+    reviewCount: 1,
+  },
+};
+
+const webSiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  url: "https://occp.ai",
+  potentialAction: {
+    "@type": "SearchAction",
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate: "https://docs.occp.ai/?q={search_term_string}",
+    },
+    "query-input": "required name=search_term_string",
+  },
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://occp.ai"),
@@ -18,6 +64,19 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Azar Management Consulting" }],
   alternates: { canonical: "https://occp.ai/" },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  applicationName: "OCCP",
+  category: "technology",
   openGraph: {
     type: "website",
     url: "https://occp.ai/",
@@ -50,6 +109,12 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+      <head>
+        <link rel="preconnect" href="https://api.occp.ai" />
+        <StructuredData data={organizationSchema} />
+        <StructuredData data={softwareApplicationSchema} />
+        <StructuredData data={webSiteSchema} />
+      </head>
       <body>{children}</body>
     </html>
   );

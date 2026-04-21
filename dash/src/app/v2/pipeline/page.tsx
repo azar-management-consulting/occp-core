@@ -62,11 +62,11 @@ export default function PipelineV2Page() {
       <div className="flex items-end justify-between">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">
-            <GitBranch className="inline-block mr-2 -mt-1" /> Pipeline
+            <GitBranch className="inline-block mr-2 -mt-1" aria-hidden="true" /> Pipeline
           </h1>
-          <p className="text-[var(--fg-muted,#999)]">
+          <p className="text-[var(--fg-muted,#a1a1aa)]">
             Verified Autonomy runs. Press{" "}
-            <kbd className="rounded border border-[var(--border-subtle,#333)] px-1.5 py-0.5 text-xs">
+            <kbd className="rounded border border-[var(--border-subtle,#52525b)] px-1.5 py-0.5 text-xs">
               N
             </kbd>{" "}
             for a new task.
@@ -75,31 +75,32 @@ export default function PipelineV2Page() {
         <div className="flex gap-2">
           <Button asChild>
             <Link href="/pipeline?new=1">
-              <Plus /> New task
+              <Plus aria-hidden="true" /> New task
             </Link>
           </Button>
         </div>
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-1 border-b border-[var(--border-subtle,#333)]">
+      <nav aria-label="Filter pipeline runs" className="flex gap-1 border-b border-[var(--border-subtle,#52525b)]">
         {FILTERS.map((f, i) => (
           <Link
             key={f.key}
             href={f.key === "all" ? "?" : `?status=${f.key}`}
+            aria-current={i === 0 ? "page" : undefined}
             className={`px-4 py-2 text-sm border-b-2 -mb-px transition-colors ${
               i === 0
                 ? "border-white text-white"
-                : "border-transparent text-[var(--fg-muted,#999)] hover:text-white"
+                : "border-transparent text-[var(--fg-muted,#a1a1aa)] hover:text-white"
             }`}
           >
             {f.label}{" "}
-            <span className="ml-1 text-xs text-[var(--fg-muted,#999)]">
+            <span className="ml-1 text-xs text-[var(--fg-muted,#a1a1aa)]" aria-label={`${f.count} results`}>
               {f.count}
             </span>
           </Link>
         ))}
-      </div>
+      </nav>
 
       {/* Runs table */}
       <Card>
@@ -112,23 +113,23 @@ export default function PipelineV2Page() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm font-mono">
-              <thead className="text-xs uppercase tracking-wider text-[var(--fg-muted,#999)]">
-                <tr className="border-b border-[var(--border-subtle,#333)]">
-                  <th className="py-2 pr-4 text-left font-medium">ID</th>
-                  <th className="py-2 pr-4 text-left font-medium">Status</th>
-                  <th className="py-2 pr-4 text-left font-medium">Agent</th>
-                  <th className="py-2 pr-4 text-left font-medium">Started</th>
-                  <th className="py-2 pr-4 text-left font-medium">Duration</th>
-                  <th className="py-2 pr-4 text-right font-medium">Tokens</th>
-                  <th className="py-2 text-right font-medium">Cost</th>
+            <table className="w-full text-sm font-mono" aria-label="Pipeline runs">
+              <thead className="text-xs uppercase tracking-wider text-[var(--fg-muted,#a1a1aa)]">
+                <tr className="border-b border-[var(--border-subtle,#52525b)]">
+                  <th scope="col" className="py-2 pr-4 text-left font-medium">ID</th>
+                  <th scope="col" className="py-2 pr-4 text-left font-medium">Status</th>
+                  <th scope="col" className="py-2 pr-4 text-left font-medium">Agent</th>
+                  <th scope="col" className="py-2 pr-4 text-left font-medium">Started</th>
+                  <th scope="col" className="py-2 pr-4 text-left font-medium">Duration</th>
+                  <th scope="col" className="py-2 pr-4 text-right font-medium">Tokens</th>
+                  <th scope="col" className="py-2 text-right font-medium">Cost</th>
                 </tr>
               </thead>
               <tbody>
                 {RUNS.map((r) => (
                   <tr
                     key={r.id}
-                    className="border-b border-[var(--border-subtle,#333)] last:border-0 hover:bg-white/[0.02]"
+                    className="border-b border-[var(--border-subtle,#52525b)] last:border-0 hover:bg-white/[0.02]"
                   >
                     <td className="py-3 pr-4">
                       <Link
@@ -146,7 +147,7 @@ export default function PipelineV2Page() {
                       </span>
                     </td>
                     <td className="py-3 pr-4">{r.agent}</td>
-                    <td className="py-3 pr-4 text-[var(--fg-muted,#999)]">
+                    <td className="py-3 pr-4 text-[var(--fg-muted,#a1a1aa)]">
                       {r.started}
                     </td>
                     <td className="py-3 pr-4">{r.duration}</td>

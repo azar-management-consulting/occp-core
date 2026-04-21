@@ -63,9 +63,9 @@ export default function SettingsV2Page() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">
-          <Settings className="inline-block mr-2 -mt-1" /> Settings
+          <Settings className="inline-block mr-2 -mt-1" aria-hidden="true" /> Settings
         </h1>
-        <p className="text-[var(--fg-muted,#999)]">
+        <p className="text-[var(--fg-muted,#a1a1aa)]">
           Configure providers, tokens, tool policies and your profile.
         </p>
       </div>
@@ -82,7 +82,7 @@ export default function SettingsV2Page() {
             >
               <Card className="h-full group-hover:border-white/40">
                 <CardHeader className="flex flex-row items-start gap-4 space-y-0">
-                  <Icon className="mt-1 text-[var(--fg-muted,#999)] group-hover:text-white" />
+                  <Icon className="mt-1 text-[var(--fg-muted,#a1a1aa)] group-hover:text-white" aria-hidden="true" />
                   <div>
                     <CardTitle className="text-base font-semibold">
                       {t.title}
@@ -93,7 +93,7 @@ export default function SettingsV2Page() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <span className="text-xs font-mono text-[var(--fg-muted,#999)]">
+                  <span className="text-xs font-mono text-[var(--fg-muted,#a1a1aa)]">
                     {t.href}
                   </span>
                 </CardContent>

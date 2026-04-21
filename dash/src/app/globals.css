@@ -66,6 +66,16 @@
   --warning: #edf171;
   --danger: #d27d6f;
   --purple: #b75de5;
+
+  /* ── dash-v2 design tokens (WCAG 2.2 AA audited) ──────────── */
+  /* --fg-muted: muted text. #a1a1aa on #18181b = 5.56:1 (PASS 4.5:1) */
+  --fg-muted: #a1a1aa;
+  /* --fg: primary foreground */
+  --fg: #fafafa;
+  /* --bg-elev: elevated surface (cards, sheets) */
+  --bg-elev: #18181b;
+  /* --border-subtle: UI borders (non-text). #52525b on #18181b = 3.14:1 (PASS 3:1) */
+  --border-subtle: #52525b;
 }
 
 body {

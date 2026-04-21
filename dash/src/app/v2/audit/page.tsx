@@ -42,7 +42,7 @@ const DECISION_STYLES: Record<Decision, string> = {
   allow: "bg-green-500/10 text-green-400 border-green-500/30",
   deny: "bg-red-500/10 text-red-400 border-red-500/30",
   approve: "bg-blue-500/10 text-blue-400 border-blue-500/30",
-  "n/a": "bg-white/5 text-[var(--fg-muted,#999)] border-[var(--border-subtle,#333)]",
+  "n/a": "bg-white/5 text-[var(--fg-muted,#a1a1aa)] border-[var(--border-subtle,#52525b)]",
 };
 
 export default function AuditV2Page() {
@@ -52,16 +52,17 @@ export default function AuditV2Page() {
       <div className="flex items-end justify-between">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">
-            <ScrollText className="inline-block mr-2 -mt-1" /> Audit log
+            <ScrollText className="inline-block mr-2 -mt-1" aria-hidden="true" /> Audit log
           </h1>
-          <p className="text-[var(--fg-muted,#999)]">
+          <p className="text-[var(--fg-muted,#a1a1aa)]">
             Immutable, hash-chained decision record. {ENTRIES.length} most
             recent entries.
           </p>
         </div>
+        {/* TODO(a11y): href="#" is a stub — replace with /api/audit/export once endpoint is wired */}
         <Button asChild variant="outline">
           <Link href="#">
-            <Download /> Export CSV
+            <Download aria-hidden="true" /> Export CSV
           </Link>
         </Button>
       </div>
@@ -69,15 +70,20 @@ export default function AuditV2Page() {
       {/* Search bar */}
       <form action="/audit" className="flex items-center gap-2">
         <div className="relative flex-1">
+          <label htmlFor="audit-search" className="sr-only">
+            Search audit log by task ID, actor, or action
+          </label>
           <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--fg-muted,#999)]"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--fg-muted,#a1a1aa)]"
             size={16}
+            aria-hidden="true"
           />
           <input
+            id="audit-search"
             name="q"
             type="search"
             placeholder="Search by task_id, actor, action…"
-            className="w-full rounded border border-[var(--border-subtle,#333)] bg-transparent py-2 pl-9 pr-3 text-sm outline-none focus:border-white/60"
+            className="w-full rounded border border-[var(--border-subtle,#52525b)] bg-transparent py-2 pl-9 pr-3 text-sm outline-none focus:border-white/60 focus-visible:ring-2 focus-visible:ring-[var(--accent,#6366f1)]"
           />
         </div>
         <Button type="submit" variant="outline">
@@ -93,23 +99,23 @@ export default function AuditV2Page() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm font-mono">
-              <thead className="text-xs uppercase tracking-wider text-[var(--fg-muted,#999)]">
-                <tr className="border-b border-[var(--border-subtle,#333)]">
-                  <th className="py-2 pr-4 text-left font-medium">Timestamp</th>
-                  <th className="py-2 pr-4 text-left font-medium">Task</th>
-                  <th className="py-2 pr-4 text-left font-medium">Actor</th>
-                  <th className="py-2 pr-4 text-left font-medium">Action</th>
-                  <th className="py-2 text-left font-medium">Decision</th>
+            <table className="w-full text-sm font-mono" aria-label="Audit log entries">
+              <thead className="text-xs uppercase tracking-wider text-[var(--fg-muted,#a1a1aa)]">
+                <tr className="border-b border-[var(--border-subtle,#52525b)]">
+                  <th scope="col" className="py-2 pr-4 text-left font-medium">Timestamp</th>
+                  <th scope="col" className="py-2 pr-4 text-left font-medium">Task</th>
+                  <th scope="col" className="py-2 pr-4 text-left font-medium">Actor</th>
+                  <th scope="col" className="py-2 pr-4 text-left font-medium">Action</th>
+                  <th scope="col" className="py-2 text-left font-medium">Decision</th>
                 </tr>
               </thead>
               <tbody>
                 {ENTRIES.map((e) => (
                   <tr
                     key={`${e.ts}-${e.taskId}-${e.action}`}
-                    className="border-b border-[var(--border-subtle,#333)] last:border-0 hover:bg-white/[0.02]"
+                    className="border-b border-[var(--border-subtle,#52525b)] last:border-0 hover:bg-white/[0.02]"
                   >
-                    <td className="py-3 pr-4 text-[var(--fg-muted,#999)]">
+                    <td className="py-3 pr-4 text-[var(--fg-muted,#a1a1aa)]">
                       {e.ts}
                     </td>
                     <td className="py-3 pr-4">

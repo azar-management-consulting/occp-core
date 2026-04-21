@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CodeTabs } from "./code-tabs";
+import { PipelineViz } from "./pipeline-viz";
 
 /**
  * OCCP Landing Hero — 2026-Q2 redesign.
@@ -12,7 +13,8 @@ import { CodeTabs } from "./code-tabs";
  */
 export function Hero() {
   return (
-    <section className="mx-auto grid max-w-7xl gap-12 px-6 py-20 lg:grid-cols-2 lg:py-28">
+    <section className="mx-auto max-w-7xl px-6 py-20 lg:py-28">
+      <div className="grid gap-12 lg:grid-cols-2">
       {/* Left: copy */}
       <div className="flex flex-col justify-center">
         <span className="mb-6 inline-block w-fit rounded-full border border-brand-subtle bg-brand-subtle/10 px-3 py-1 text-xs font-mono uppercase tracking-wider text-brand">
@@ -61,6 +63,10 @@ export function Hero() {
       <div className="flex items-center">
         <CodeTabs />
       </div>
+      </div>
+
+      {/* Verified Autonomy Pipeline — animated, below copy/CTAs, above tabs on mobile */}
+      <PipelineViz />
     </section>
   );
 }

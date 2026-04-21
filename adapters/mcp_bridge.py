@@ -428,6 +428,17 @@ def build_default_bridge(
         except Exception as exc:  # noqa: BLE001
             logger.warning("Slack MCP registration failed: %s", exc)
 
+    # WordPress Application-Password adapter (env-gated)
+    _wp_configured = bool(os.getenv("OCCP_WP_SITES")) or any(
+        k.startswith("OCCP_WP_") and k.endswith("_URL") for k in os.environ
+    )
+    if _wp_configured:
+        try:
+            from adapters.mcp_wordpress import register_wordpress_tools
+            register_wordpress_tools(bridge)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("WordPress MCP registration failed: %s", exc)
+
     return bridge
 
 

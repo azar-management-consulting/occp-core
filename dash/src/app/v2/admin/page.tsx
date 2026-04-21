@@ -71,9 +71,9 @@ export default function AdminV2Page() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">
-          <Shield className="inline-block mr-2 -mt-1" /> Admin
+          <Shield className="inline-block mr-2 -mt-1" aria-hidden="true" /> Admin
         </h1>
-        <p className="text-[var(--fg-muted,#999)]">
+        <p className="text-[var(--fg-muted,#a1a1aa)]">
           Platform-wide users, orgs and usage.
         </p>
       </div>
@@ -86,11 +86,11 @@ export default function AdminV2Page() {
             <Card key={k.label}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{k.label}</CardTitle>
-                <Icon className="text-[var(--fg-muted,#999)]" />
+                <Icon className="text-[var(--fg-muted,#a1a1aa)]" aria-hidden="true" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{k.value}</div>
-                <p className="mt-1 text-xs text-[var(--fg-muted,#999)]">
+                <p className="mt-1 text-xs text-[var(--fg-muted,#a1a1aa)]">
                   {k.delta}
                 </p>
               </CardContent>
@@ -107,7 +107,7 @@ export default function AdminV2Page() {
             <Link key={s.href} href={s.href} className="group block">
               <Card className="h-full group-hover:border-white/40">
                 <CardHeader className="flex flex-row items-start gap-4 space-y-0">
-                  <Icon className="mt-1 text-[var(--fg-muted,#999)] group-hover:text-white" />
+                  <Icon className="mt-1 text-[var(--fg-muted,#a1a1aa)] group-hover:text-white" aria-hidden="true" />
                   <div>
                     <CardTitle className="text-base font-semibold">
                       {s.title}
@@ -118,7 +118,7 @@ export default function AdminV2Page() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <span className="text-xs font-mono text-[var(--fg-muted,#999)]">
+                  <span className="text-xs font-mono text-[var(--fg-muted,#a1a1aa)]">
                     {s.href}
                   </span>
                 </CardContent>

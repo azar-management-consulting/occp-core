@@ -100,6 +100,7 @@ describe("BrianDrawer", () => {
     expect(init.method).toBe("POST");
     expect(init.headers.Authorization).toMatch(/^Bearer occp_live_sk_/);
     expect(init.headers.Accept).toBe("text/event-stream");
+    expect(init.headers["X-OCCP-Cache-Control"]).toBe("ttl=3600");
     const body = JSON.parse(init.body);
     expect(body.message).toBe("hi");
     expect(body.session_id).toMatch(/^sess_/);

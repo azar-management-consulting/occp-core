@@ -46,11 +46,11 @@ export default function AgentsV2Page() {
       <div className="flex items-end justify-between">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">
-            <Cpu className="inline-block mr-2 -mt-1" /> Agents
+            <Cpu className="inline-block mr-2 -mt-1" aria-hidden="true" /> Agents
           </h1>
-          <p className="text-[var(--fg-muted,#999)]">
+          <p className="text-[var(--fg-muted,#a1a1aa)]">
             {AGENTS.length} agents registered. Press{" "}
-            <kbd className="rounded border border-[var(--border-subtle,#333)] px-1.5 py-0.5 text-xs">
+            <kbd className="rounded border border-[var(--border-subtle,#52525b)] px-1.5 py-0.5 text-xs">
               G A
             </kbd>{" "}
             anywhere to jump here.
@@ -58,7 +58,7 @@ export default function AgentsV2Page() {
         </div>
         <Button asChild>
           <Link href="/agents?new=1">
-            <Plus /> Register agent
+            <Plus aria-hidden="true" /> Register agent
           </Link>
         </Button>
       </div>
@@ -80,23 +80,23 @@ export default function AgentsV2Page() {
                 className={`rounded border px-2 py-0.5 text-[10px] uppercase tracking-wider ${
                   a.status === "active"
                     ? "border-green-500/30 bg-green-500/10 text-green-400"
-                    : "border-[var(--border-subtle,#333)] bg-white/5 text-[var(--fg-muted,#999)]"
+                    : "border-[var(--border-subtle,#52525b)] bg-white/5 text-[var(--fg-muted,#a1a1aa)]"
                 }`}
               >
                 {a.status}
               </span>
             </CardHeader>
             <CardContent>
-              <p className="mb-3 text-xs text-[var(--fg-muted,#999)]">
+              <p className="mb-3 text-xs text-[var(--fg-muted,#a1a1aa)]">
                 {a.description}
               </p>
-              <div className="flex items-center justify-between border-t border-[var(--border-subtle,#333)] pt-3 text-xs font-mono">
+              <div className="flex items-center justify-between border-t border-[var(--border-subtle,#52525b)] pt-3 text-xs font-mono">
                 <div>
-                  <div className="text-[var(--fg-muted,#999)]">Last run</div>
+                  <div className="text-[var(--fg-muted,#a1a1aa)]">Last run</div>
                   <div className="mt-0.5">{a.lastRun}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[var(--fg-muted,#999)]">Success</div>
+                  <div className="text-[var(--fg-muted,#a1a1aa)]">Success</div>
                   <div className="mt-0.5 font-bold">
                     {(a.successRate * 100).toFixed(0)}%
                   </div>

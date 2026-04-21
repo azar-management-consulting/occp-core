@@ -51,15 +51,15 @@ export default function MCPV2Page() {
       <div className="flex items-end justify-between">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">
-            <Plug className="inline-block mr-2 -mt-1" /> MCP servers
+            <Plug className="inline-block mr-2 -mt-1" aria-hidden="true" /> MCP servers
           </h1>
-          <p className="text-[var(--fg-muted,#999)]">
+          <p className="text-[var(--fg-muted,#a1a1aa)]">
             {connected} of {SERVERS.length} servers online.
           </p>
         </div>
         <Button asChild>
           <Link href="/mcp?new=1">
-            <Plus /> Connect server
+            <Plus aria-hidden="true" /> Connect server
           </Link>
         </Button>
       </div>
@@ -74,21 +74,21 @@ export default function MCPV2Page() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm font-mono">
-              <thead className="text-xs uppercase tracking-wider text-[var(--fg-muted,#999)]">
-                <tr className="border-b border-[var(--border-subtle,#333)]">
-                  <th className="py-2 pr-4 text-left font-medium">Name</th>
-                  <th className="py-2 pr-4 text-left font-medium">Status</th>
-                  <th className="py-2 pr-4 text-right font-medium">Tools</th>
-                  <th className="py-2 pr-4 text-left font-medium">Last ping</th>
-                  <th className="py-2 text-left font-medium">Version</th>
+            <table className="w-full text-sm font-mono" aria-label="MCP server connections">
+              <thead className="text-xs uppercase tracking-wider text-[var(--fg-muted,#a1a1aa)]">
+                <tr className="border-b border-[var(--border-subtle,#52525b)]">
+                  <th scope="col" className="py-2 pr-4 text-left font-medium">Name</th>
+                  <th scope="col" className="py-2 pr-4 text-left font-medium">Status</th>
+                  <th scope="col" className="py-2 pr-4 text-right font-medium">Tools</th>
+                  <th scope="col" className="py-2 pr-4 text-left font-medium">Last ping</th>
+                  <th scope="col" className="py-2 text-left font-medium">Version</th>
                 </tr>
               </thead>
               <tbody>
                 {SERVERS.map((s) => (
                   <tr
                     key={s.name}
-                    className="border-b border-[var(--border-subtle,#333)] last:border-0 hover:bg-white/[0.02]"
+                    className="border-b border-[var(--border-subtle,#52525b)] last:border-0 hover:bg-white/[0.02]"
                   >
                     <td className="py-3 pr-4 font-bold">{s.name}</td>
                     <td className="py-3 pr-4">
@@ -99,10 +99,10 @@ export default function MCPV2Page() {
                       </span>
                     </td>
                     <td className="py-3 pr-4 text-right">{s.toolsCount}</td>
-                    <td className="py-3 pr-4 text-[var(--fg-muted,#999)]">
+                    <td className="py-3 pr-4 text-[var(--fg-muted,#a1a1aa)]">
                       {s.lastPing}
                     </td>
-                    <td className="py-3 text-[var(--fg-muted,#999)]">
+                    <td className="py-3 text-[var(--fg-muted,#a1a1aa)]">
                       {s.version}
                     </td>
                   </tr>

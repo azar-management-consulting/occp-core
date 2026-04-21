@@ -187,6 +187,7 @@ export function BrianDrawer() {
             "Content-Type": "application/json",
             Accept: "text/event-stream",
             Authorization: `Bearer ${apiKey}`,
+            "X-OCCP-Cache-Control": "ttl=3600",
           },
           body: JSON.stringify({
             message: text,
@@ -292,6 +293,15 @@ export function BrianDrawer() {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
+      {/* 2.4.11 Focus Not Obscured: focus moves to textarea (line 126 timeout) on open.
+          aria-live="assertive" announces drawer state to screen readers on open/close. */}
+      <div
+        aria-live="assertive"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {open ? "Brian drawer opened" : ""}
+      </div>
       <SheetContent
         side="right"
         className="flex flex-col p-0 sm:max-w-md lg:max-w-[420px]"
@@ -300,7 +310,7 @@ export function BrianDrawer() {
         <SheetHeader className="flex flex-row items-center justify-between space-y-0 border-b border-[var(--border-subtle,#27272a)] px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--accent,#6366f1)]/10">
-              <Sparkles className="h-4 w-4 text-[var(--accent,#6366f1)]" />
+              <Sparkles className="h-4 w-4 text-[var(--accent,#6366f1)]" aria-hidden="true" />
             </div>
             <div className="flex flex-col items-start">
               <SheetTitle className="text-base">Brian the Brain</SheetTitle>
@@ -340,16 +350,19 @@ export function BrianDrawer() {
           </Button>
         </SheetHeader>
 
+        {/* 4.1.3 Status Messages: role="log" + aria-live="polite" announces
+            each new Brian token to screen readers without interrupting. VERIFIED OK. */}
         <div
           ref={scrollRef}
           className="flex-1 overflow-y-auto px-5 py-4"
           role="log"
           aria-live="polite"
+          aria-label="Conversation with Brian"
         >
           {messages.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent,#6366f1)]/10">
-                <Sparkles className="h-5 w-5 text-[var(--accent,#6366f1)]" />
+                <Sparkles className="h-5 w-5 text-[var(--accent,#6366f1)]" aria-hidden="true" />
               </div>
               <p className="max-w-[260px] text-sm text-[var(--fg-muted,#a1a1aa)]">
                 Ask Brian anything — it&apos;s the OCCP control plane brain.
@@ -402,7 +415,8 @@ export function BrianDrawer() {
               onKeyDown={handleKeyDown}
               placeholder="Message Brian..."
               rows={2}
-              className="flex-1 resize-none rounded-md border border-[var(--border-subtle,#27272a)] bg-[var(--bg,#09090b)] px-3 py-2 text-sm text-[var(--fg,#fafafa)] placeholder:text-[var(--fg-muted,#a1a1aa)] focus:outline-none focus:ring-2 focus:ring-[var(--accent,#6366f1)]"
+              aria-label="Message to Brian"
+              className="flex-1 resize-none rounded-md border border-[var(--border-subtle,#27272a)] bg-[var(--bg,#09090b)] px-3 py-2 text-sm text-[var(--fg,#fafafa)] placeholder:text-[var(--fg-muted,#a1a1aa)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent,#6366f1)]"
               disabled={sending}
             />
             <Button
@@ -411,7 +425,7 @@ export function BrianDrawer() {
               disabled={sending || input.trim().length === 0}
               aria-label="Send message"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
           <p className="mt-2 text-[11px] text-[var(--fg-muted,#a1a1aa)]">
