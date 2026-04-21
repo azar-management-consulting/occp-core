@@ -28,6 +28,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -388,6 +389,45 @@ def build_default_bridge(
     bridge.register("node.exec", _node_exec)
     bridge.register("node.list", _node_list)
     bridge.register("node.status", _node_status)
+
+    # ── External MCP client adapters (env-var gated) ────────────
+    # Each block is skipped silently when its env var is absent so
+    # startup never breaks on a missing integration secret.
+    if os.getenv("OCCP_SUPABASE_URL") and os.getenv("OCCP_SUPABASE_SERVICE_ROLE_KEY"):
+        try:
+            from adapters.mcp_supabase import register_supabase_tools
+            register_supabase_tools(bridge)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Supabase MCP registration failed: %s", exc)
+
+    if os.getenv("OCCP_GITHUB_TOKEN"):
+        try:
+            from adapters.mcp_github import register_github_tools
+            register_github_tools(bridge)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("GitHub MCP registration failed: %s", exc)
+
+    # Playwright tools are safe without secrets (stubs + httpx fetch).
+    try:
+        from adapters.mcp_playwright import register_playwright_tools
+        register_playwright_tools(bridge)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Playwright MCP registration failed: %s", exc)
+
+    if os.getenv("OCCP_CLOUDFLARE_API_TOKEN"):
+        try:
+            from adapters.mcp_cloudflare import register_cloudflare_tools
+            register_cloudflare_tools(bridge)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Cloudflare MCP registration failed: %s", exc)
+
+    if os.getenv("OCCP_SLACK_BOT_TOKEN"):
+        try:
+            from adapters.mcp_slack import register_slack_tools
+            register_slack_tools(bridge)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Slack MCP registration failed: %s", exc)
+
     return bridge
 
 

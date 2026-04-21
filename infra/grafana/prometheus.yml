@@ -1,0 +1,78 @@
+# Prometheus scrape configuration for OCCP observability stack
+# https://prometheus.io/docs/prometheus/2.55/configuration/configuration/
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: occp-local
+    environment: production
+
+rule_files:
+  # Prometheus-native alerting rules (separate from Grafana unified alerting)
+  # - "rules/*.yml"
+
+scrape_configs:
+
+  # ── OCCP API metrics endpoint ──────────────────────────────────────────────
+  - job_name: occp-api
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets:
+          - "occp-api:8000"
+        labels:
+          service: occp-api
+          env: production
+    # Relabeling: drop high-cardinality path labels if present
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "go_.*"
+        action: drop
+
+  # ── Prometheus self-scrape ─────────────────────────────────────────────────
+  - job_name: prometheus
+    scrape_interval: 60s
+    scrape_timeout: 10s
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets:
+          - "localhost:9090"
+        labels:
+          service: prometheus
+          env: production
+
+  # ── Grafana metrics ────────────────────────────────────────────────────────
+  - job_name: grafana
+    scrape_interval: 60s
+    scrape_timeout: 10s
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets:
+          - "grafana:3000"
+        labels:
+          service: grafana
+          env: production
+
+  # ── Alertmanager metrics ───────────────────────────────────────────────────
+  - job_name: alertmanager
+    scrape_interval: 60s
+    scrape_timeout: 10s
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets:
+          - "alertmanager:9093"
+        labels:
+          service: alertmanager
+          env: production
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - "alertmanager:9093"
+      timeout: 10s

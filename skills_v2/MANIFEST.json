@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "generated_at": "2026-04-21",
+  "skills": [
+    {
+      "name": "approval-gate",
+      "path": "skills_v2/approval-gate.md",
+      "version": 1,
+      "description": "Validate agent output through PolicyEngine before delivery or next pipeline stage"
+    },
+    {
+      "name": "authority-positioning",
+      "path": "skills_v2/authority-positioning.md",
+      "version": 1,
+      "description": "Write authority and trust-building copy for B2B contexts using credibility signals and expertise markers"
+    },
+    {
+      "name": "b2b-offer-design",
+      "path": "skills_v2/b2b-offer-design.md",
+      "version": 1,
+      "description": "Design structured B2B proposals and offers with scope, deliverables matrix, pricing, and terms"
+    },
+    {
+      "name": "deep-web-research",
+      "path": "skills_v2/deep-web-research.md",
+      "version": 1,
+      "description": "Conduct multi-source deep research with citation tracking, bias detection, and structured synthesis"
+    },
+    {
+      "name": "elementor-section-build",
+      "path": "skills_v2/elementor-section-build.md",
+      "version": 1,
+      "description": "Build Elementor Pro sections and containers with responsive layout and performance best practices"
+    },
+    {
+      "name": "fb-ad-copy",
+      "path": "skills_v2/fb-ad-copy.md",
+      "version": 1,
+      "description": "Write Facebook/Meta ad copy variations with hook, body, and CTA optimized for Hungarian audience"
+    },
+    {
+      "name": "final-synthesis",
+      "path": "skills_v2/final-synthesis.md",
+      "version": 1,
+      "description": "Aggregate completed multi-agent workflow results into a single coherent deliverable"
+    },
+    {
+      "name": "hetzner-vps-setup",
+      "path": "skills_v2/hetzner-vps-setup.md",
+      "version": 1,
+      "description": "Provision and harden a Hetzner Cloud VPS with SSH, firewall, and initial service stack"
+    },
+    {
+      "name": "hungarian-premium-copy",
+      "path": "skills_v2/hungarian-premium-copy.md",
+      "version": 1,
+      "description": "Write premium Hungarian copy for B2B and high-ticket B2C contexts with proper register and persuasion structure"
+    },
+    {
+      "name": "monochrome-executive-style",
+      "path": "skills_v2/monochrome-executive-style.md",
+      "version": 1,
+      "description": "Apply executive monochrome design aesthetic for premium B2B brand materials and presentations"
+    },
+    {
+      "name": "multi-agent-planner",
+      "path": "skills_v2/multi-agent-planner.md",
+      "version": 1,
+      "description": "Decompose a complex multi-domain task into a DAG workflow with wave-based execution"
+    },
+    {
+      "name": "nextjs-build",
+      "path": "skills_v2/nextjs-build.md",
+      "version": 1,
+      "description": "Build Next.js 15 App Router pages and components with TypeScript and Tailwind"
+    },
+    {
+      "name": "partnership-fit-analysis",
+      "path": "skills_v2/partnership-fit-analysis.md",
+      "version": 1,
+      "description": "Evaluate partnership opportunities with strategic fit scoring, synergy mapping, and deal structure recommendations"
+    },
+    {
+      "name": "procurement-scan",
+      "path": "skills_v2/procurement-scan.md",
+      "version": 1,
+      "description": "Scan Hungarian and EU procurement databases for relevant tenders and funding opportunities"
+    },
+    {
+      "name": "pytest-generate",
+      "path": "skills_v2/pytest-generate.md",
+      "version": 1,
+      "description": "Generate comprehensive pytest test suites with fixtures, mocks, and coverage targets"
+    },
+    {
+      "name": "refactor-safe",
+      "path": "skills_v2/refactor-safe.md",
+      "version": 1,
+      "description": "Refactor existing code with test coverage verification before and after each change"
+    },
+    {
+      "name": "sales-copy-framework",
+      "path": "skills_v2/sales-copy-framework.md",
+      "version": 1,
+      "description": "Write structured sales copy using proven frameworks (PAS, AIDA, BAB) with strong CTA"
+    },
+    {
+      "name": "short-video-script",
+      "path": "skills_v2/short-video-script.md",
+      "version": 1,
+      "description": "Write TikTok and Instagram Reels scripts with hook-first structure and pattern interrupts"
+    },
+    {
+      "name": "wordpress-plugin-architecture",
+      "path": "skills_v2/wordpress-plugin-architecture.md",
+      "version": 1,
+      "description": "Design and scaffold WordPress plugins following WPCS, OOP patterns, and security standards"
+    }
+  ]
+}

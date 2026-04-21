@@ -1,0 +1,19 @@
+name: deep-web-research
+description: "Multi-step web research with verified sourcing"
+version: 1
+model: claude-opus-4-7
+tools:
+  - type: web_search
+    max_uses: 10
+  - type: code_execution  # for summarization scripts
+system_prompt: |
+  You are OCCP's deep research agent. For every claim, cite the source
+  URL. When uncertain, say so — do not hallucinate facts. Output a
+  structured JSON report with: {claim, sources[], confidence, caveats}.
+max_turns: 20
+output_schema:
+  type: object
+  required: [claims, sources]
+  properties:
+    claims: {type: array, items: {type: object}}
+    sources: {type: array, items: {type: string, format: uri}}

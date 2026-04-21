@@ -1,0 +1,163 @@
+---
+title: Postgres Deployment
+description: Migrate OCCP from the default SQLite backend to Supabase/Postgres without code changes — driven entirely by OCCP_DATABASE_URL.
+---
+
+# Postgres Deployment
+
+OCCP ships with a file-based **SQLite** backend for local development
+and solo-operator installs. When you outgrow SQLite (concurrent writers
+> 5, tasks > 10K, or you need multi-region replicas), flip a single
+environment variable to switch the platform onto **PostgreSQL** — no
+code changes, no code paths to refactor. All ORM models are written
+against SQLAlchemy 2.0 with cross-dialect type decorators
+(`JSONBText`, `GUID`) so the same models run unchanged on both engines.
+
+The recommended managed host is **Supabase** because its `pgvector`
+extension doubles as the vector store for the Organizational Memory
+(OM) service (`supabase/migrations/0001_om_core.sql`).
+
+---
+
+## 1. Supabase Setup
+
+1. Create a new project at [supabase.com/dashboard](https://supabase.com/dashboard).
+   - **Project name**: `occp-prod` (or per-tenant name).
+   - **Region**: `eu-central-1` (Frankfurt) for EU AI Act data residency.
+   - **Database password**: store in your secret manager immediately.
+2. Enable extensions under *Database → Extensions*:
+   - `pgvector` (required — OM embeddings, HNSW index).
+   - `pgcrypto` (recommended — server-side UUIDs and hashing).
+3. Apply the OM schema:
+
+   ```bash
+   psql "$SUPABASE_DIRECT_URL" -f supabase/migrations/0001_om_core.sql
+   ```
+
+4. Grab two connection strings from *Project Settings → Database*:
+   - **Direct** (port `5432`) — for migrations and admin tasks.
+   - **Transaction pooler** (port `6543`) — for the API runtime.
+
+---
+
+## 2. Connection String Patterns
+
+OCCP uses SQLAlchemy's async URL format with the `asyncpg` driver.
+
+### Direct connection (port 5432)
+
+```
+postgresql+asyncpg://postgres:<password>@db.<project>.supabase.co:5432/postgres
+```
+
+- Standard pooling semantics (prepared statements OK).
+- Use for: Alembic migrations, one-off admin scripts, low-concurrency
+  single-node installs.
+
+### Transaction pooler (port 6543)
+
+```
+postgresql+asyncpg://postgres.<project>:<password>@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
+```
+
+- Routes through **PgBouncer** in transaction-pooling mode.
+- Required for serverless / high-concurrency workloads.
+- **asyncpg caveat**: prepared-statement cache must be disabled.
+  `store/engine.py` detects `:6543/` and the substring `pgbouncer` and
+  automatically passes `connect_args={"statement_cache_size": 0}` — no
+  user action required, but keep the URL pattern intact.
+
+### SSL
+
+Supabase enforces TLS. Append `?sslmode=require` (or set
+`OCCP_DATABASE_SSL_MODE=require`) when connecting from networks that
+don't trust the Supabase CA by default.
+
+---
+
+## 3. Environment Variables
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `OCCP_DATABASE_URL` | Primary backend URL (SQLite or Postgres). | `postgresql+asyncpg://.../postgres` |
+| `OCCP_DATABASE_SSL_MODE` | Forwarded to asyncpg when set. | `require` |
+
+Set it once, everything else follows:
+
+```bash
+export OCCP_DATABASE_URL="postgresql+asyncpg://postgres:***@db.xyz.supabase.co:5432/postgres"
+```
+
+Resolution order inside `Database.__init__`:
+
+1. Explicit `Database(url=...)` kwarg.
+2. `OCCP_DATABASE_URL` environment variable.
+3. SQLite default (`sqlite+aiosqlite:///data/occp.db`).
+
+---
+
+## 4. Migration Commands
+
+Alembic is dialect-aware — the same revision files run against SQLite
+(with `render_as_batch`) and Postgres (online DDL).
+
+```bash
+# 1. Point at the direct (5432) connection for DDL
+export OCCP_DATABASE_URL="postgresql+asyncpg://postgres:***@db.xyz.supabase.co:5432/postgres"
+
+# 2. Preview
+alembic current
+alembic history
+
+# 3. Apply — production override is MANDATORY for any postgresql:// URL
+alembic -x env=migrate-production upgrade head
+```
+
+The `-x env=migrate-production` flag is a **safety interlock**. Without
+it `migrations/env.py` will refuse to run any migration against a URL
+containing `postgresql`, `supabase`, or a PgBouncer endpoint, and exit
+with code `2`. This prevents developers from accidentally pointing a
+local `alembic upgrade` at production.
+
+Existing revisions (see `migrations/versions/`):
+
+- `2026_02_23_001_initial_schema`
+- `2026_02_23_002_add_users_table`
+- `2026_02_27_003_add_encrypted_tokens`
+- `2026_03_26_004_add_workflow_executions`
+- `2026_03_30_006_add_brain_conversations`
+- `2026_03_30_007_add_pending_approvals`
+- `2026_04_08_008_onboarding_org_columns`
+- `2026_04_20_009_audit_cost_attribution`
+
+---
+
+## 5. Rollback Plan
+
+1. **Snapshot before switchover.** Supabase provides PITR; for SQLite
+   simply copy `data/occp.db` to an archive location.
+
+   ```bash
+   cp data/occp.db data/backups/occp-$(date +%F).db
+   ```
+
+2. **Dual-write window.** Run OCCP against both backends for 24–48 hours
+   by proxying writes through a thin adapter (the ORM layer is already
+   abstract — no SQL rewrites needed). Compare row counts nightly.
+
+3. **Cutover.** Flip `OCCP_DATABASE_URL` on the API service, redeploy.
+   Keep the SQLite file read-only for a week as a read fallback.
+
+4. **Rollback.** Revert the env var; restart. Because OCCP never
+   persists Postgres-specific features from application code (no
+   `ON CONFLICT`, no Postgres-only JSON ops), the SQLite schema stays
+   schema-compatible through the same Alembic revision.
+
+---
+
+## Related
+
+- Alembic revisions: `migrations/versions/`
+- Engine factory: `store/engine.py`
+- Cross-dialect types: `store/base.py` (`JSONBText`, `GUID`)
+- OM schema: `supabase/migrations/0001_om_core.sql`

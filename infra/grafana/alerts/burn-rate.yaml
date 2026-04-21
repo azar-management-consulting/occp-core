@@ -1,0 +1,259 @@
+# Grafana 11 Unified Alerting — Multi-Window Multi-Burn-Rate (MWMBR) SRE pattern
+# SLO target: 99.5% API availability
+# Error budget: 0.5% of 30 days = 216 minutes / month (≈ 29 min if measured monthly)
+#
+# MWMBR formula (Google SRE Workbook, Chapter 5):
+#   fast_burn:  1h window,  burn_rate >= 14.4x  → consumes 2% budget in 1h  → PAGE
+#   slow_burn:  6h window,  burn_rate >= 3x      → consumes 5% budget in 6h  → TICKET
+#
+# Burn rate = (actual error rate) / (1 - SLO target) = error_rate / 0.005
+# fast threshold: 14.4  → error_rate > 14.4 * 0.005 = 0.072 (7.2% errors in 1h)
+# slow threshold: 3     → error_rate > 3    * 0.005 = 0.015 (1.5% errors in 6h)
+#
+# TODO: All expressions below reference occp_http_requests_total which is not yet
+# emitted. Replace with the real HTTP counter once middleware instrumentation ships.
+# Interim real-metric equivalents use occp_pipeline_tasks.
+
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: OCCP SLO Burn Rate
+    folder: OCCP
+    interval: 1m
+    rules:
+
+      # ── Fast burn: 1h window, 14.4× burn rate → PAGE ──────────────────────
+      - uid: occp-burn-fast-001
+        title: "OCCP Fast Burn — API Availability (page)"
+        condition: C
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        annotations:
+          summary: "OCCP fast burn detected: API error budget burning at >14.4× rate"
+          description: >
+            Error rate over the last 1 hour exceeds the fast-burn SLO threshold (7.2%).
+            At this rate the entire 29-min monthly error budget will be exhausted in <2 hours.
+            Immediate investigation required.
+          runbook_url: "https://github.com/your-org/occp-core/blob/main/docs/runbooks/slo-burn-rate.md"
+        labels:
+          severity: critical
+          team: occp-platform
+          notification_channel: occp-pagerduty
+          slo: api_availability
+          burn_window: "1h"
+        data:
+          # TODO: replace with occp_http_requests_total when HTTP middleware ships
+          - refId: A
+            relativeTimeRange:
+              from: 3600
+              to: 0
+            datasourceUid: prometheus-occp
+            model:
+              expr: >
+                sum(rate(occp_http_requests_total{status=~"5.."}[1h]))
+                /
+                sum(rate(occp_http_requests_total[1h]))
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 3600
+              to: 0
+            datasourceUid: prometheus-occp
+            model:
+              expr: >
+                sum(rate(occp_pipeline_tasks{outcome!="success"}[1h]))
+                /
+                sum(rate(occp_pipeline_tasks[1h]))
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 3600
+              to: 0
+            datasourceUid: "__expr__"
+            model:
+              conditions:
+                - evaluator:
+                    params: [0.072]
+                    type: gt
+                  operator:
+                    type: or
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                - evaluator:
+                    params: [0.072]
+                    type: gt
+                  operator:
+                    type: or
+                  query:
+                    params: [B]
+                  reducer:
+                    params: []
+                    type: last
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: ""
+              hide: false
+              refId: C
+              type: classic_conditions
+
+      # ── Slow burn: 6h window, 3× burn rate → TICKET ───────────────────────
+      - uid: occp-burn-slow-001
+        title: "OCCP Slow Burn — API Availability (ticket)"
+        condition: C
+        noDataState: NoData
+        execErrState: Error
+        for: 15m
+        annotations:
+          summary: "OCCP slow burn detected: API error budget burning at >3× rate"
+          description: >
+            Error rate over the last 6 hours exceeds the slow-burn SLO threshold (1.5%).
+            At this rate the entire 29-min monthly error budget will be exhausted within 10 hours.
+            Create a P2 ticket and investigate within 4 hours.
+          runbook_url: "https://github.com/your-org/occp-core/blob/main/docs/runbooks/slo-burn-rate.md"
+        labels:
+          severity: warning
+          team: occp-platform
+          notification_channel: occp-pagerduty
+          slo: api_availability
+          burn_window: "6h"
+        data:
+          # TODO: replace with occp_http_requests_total when HTTP middleware ships
+          - refId: A
+            relativeTimeRange:
+              from: 21600
+              to: 0
+            datasourceUid: prometheus-occp
+            model:
+              expr: >
+                sum(rate(occp_http_requests_total{status=~"5.."}[6h]))
+                /
+                sum(rate(occp_http_requests_total[6h]))
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 21600
+              to: 0
+            datasourceUid: prometheus-occp
+            model:
+              expr: >
+                sum(rate(occp_pipeline_tasks{outcome!="success"}[6h]))
+                /
+                sum(rate(occp_pipeline_tasks[6h]))
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 21600
+              to: 0
+            datasourceUid: "__expr__"
+            model:
+              conditions:
+                - evaluator:
+                    params: [0.015]
+                    type: gt
+                  operator:
+                    type: or
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                - evaluator:
+                    params: [0.015]
+                    type: gt
+                  operator:
+                    type: or
+                  query:
+                    params: [B]
+                  reducer:
+                    params: []
+                    type: last
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: ""
+              hide: false
+              refId: C
+              type: classic_conditions
+
+  # ── Kill Switch alert ──────────────────────────────────────────────────────
+  - orgId: 1
+    name: OCCP Kill Switch
+    folder: OCCP
+    interval: 30s
+    rules:
+      - uid: occp-killswitch-001
+        title: "OCCP Kill Switch Activated"
+        condition: A
+        noDataState: NoData
+        execErrState: Error
+        for: 0s
+        annotations:
+          summary: "OCCP kill switch is ACTIVE — all agent pipelines halted"
+          description: >
+            The OCCP kill switch gauge occp_kill_switch_active is 1.
+            All agent pipeline executions are blocked. Verify intent and deactivate via
+            the OCCP mission control dashboard or CLI: occp admin kill-switch disable
+          runbook_url: "https://github.com/your-org/occp-core/blob/main/docs/runbooks/kill-switch.md"
+        labels:
+          severity: critical
+          team: occp-platform
+          notification_channel: occp-pagerduty
+        data:
+          # TODO: occp_kill_switch_active gauge not yet emitted — see observability/metrics_collector.py
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus-occp
+            model:
+              expr: "occp_kill_switch_active"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+
+contact_points:
+  - orgId: 1
+    name: occp-pagerduty
+    receivers:
+      - uid: occp-pagerduty-recv-001
+        type: pagerduty
+        settings:
+          # Configure in Grafana UI: Alerting > Contact points > occp-pagerduty
+          # Set PAGERDUTY_INTEGRATION_KEY in .env.grafana
+          integrationKey: "${PAGERDUTY_INTEGRATION_KEY}"
+          severity: critical
+          class: OCCP SLO
+          component: occp-api
+          group: occp-platform
+        disableResolveMessage: false
+
+policies:
+  - orgId: 1
+    receiver: occp-pagerduty
+    group_by: ["alertname", "slo", "burn_window"]
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 4h
+    matchers:
+      - label: notification_channel
+        match: =
+        value: occp-pagerduty

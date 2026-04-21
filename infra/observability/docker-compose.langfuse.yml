@@ -1,0 +1,225 @@
+# ============================================================================
+# Langfuse v3 observability stack for OCCP
+# ----------------------------------------------------------------------------
+# Alternate to Phoenix — richer dashboards, prompt management, evals, datasets.
+# v3 splits the app into:
+#   - langfuse-web    (Next.js UI + ingestion API)
+#   - langfuse-worker (background processor: events, evals)
+# Backed by:
+#   - postgres        (app state: users, orgs, sessions, evaluations)
+#   - clickhouse      (trace/event columnar store — high write throughput)
+#   - redis           (queue + cache)
+#
+# Usage:
+#   cp .env.langfuse.example .env.langfuse
+#   # generate secrets, set NEXTAUTH_URL
+#   docker compose -f docker-compose.langfuse.yml --env-file .env.langfuse up -d
+#
+# Target host: Hetzner CX32 — tight fit for 4 GB RAM if co-running Phoenix.
+# Recommend dedicating the box to ONE stack in production.
+# ============================================================================
+
+name: occp-langfuse
+
+networks:
+  occp-obs:
+    name: occp-obs
+    external: true
+
+volumes:
+  langfuse-pg-data:
+    name: langfuse-pg-data
+  langfuse-ch-data:
+    name: langfuse-ch-data
+  langfuse-ch-logs:
+    name: langfuse-ch-logs
+  langfuse-redis-data:
+    name: langfuse-redis-data
+
+services:
+  # -------------------------------------------------------------------------
+  # Postgres — app state (isolated from phoenix-postgres for safety)
+  # -------------------------------------------------------------------------
+  langfuse-postgres:
+    image: postgres:16-alpine
+    container_name: langfuse-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${LANGFUSE_PG_USER:-langfuse}
+      POSTGRES_PASSWORD: ${LANGFUSE_PG_PASSWORD:?langfuse postgres password required}
+      POSTGRES_DB: ${LANGFUSE_PG_DB:-langfuse}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - langfuse-pg-data:/var/lib/postgresql/data
+    networks:
+      - occp-obs
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${LANGFUSE_PG_USER:-langfuse} -d ${LANGFUSE_PG_DB:-langfuse}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1536m
+        reservations:
+          cpus: "0.25"
+          memory: 256m
+
+  # -------------------------------------------------------------------------
+  # ClickHouse — trace columnar store
+  # -------------------------------------------------------------------------
+  langfuse-clickhouse:
+    image: clickhouse/clickhouse-server:24
+    container_name: langfuse-clickhouse
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-default}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-clickhouse}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?clickhouse password required}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    volumes:
+      - langfuse-ch-data:/var/lib/clickhouse
+      - langfuse-ch-logs:/var/log/clickhouse-server
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    networks:
+      - occp-obs
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 2g
+        reservations:
+          cpus: "0.5"
+          memory: 512m
+
+  # -------------------------------------------------------------------------
+  # Redis — queue + cache
+  # -------------------------------------------------------------------------
+  langfuse-redis:
+    image: redis:7-alpine
+    container_name: langfuse-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:?redis password required}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - langfuse-redis-data:/data
+    networks:
+      - occp-obs
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 384m
+        reservations:
+          cpus: "0.1"
+          memory: 64m
+
+  # -------------------------------------------------------------------------
+  # Langfuse worker — background event ingestion, evals
+  # -------------------------------------------------------------------------
+  langfuse-worker:
+    image: langfuse/langfuse-worker:3
+    container_name: langfuse-worker
+    restart: unless-stopped
+    depends_on:
+      langfuse-postgres:
+        condition: service_healthy
+      langfuse-clickhouse:
+        condition: service_healthy
+      langfuse-redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${LANGFUSE_DATABASE_URL}
+      CLICKHOUSE_MIGRATION_URL: ${LANGFUSE_CLICKHOUSE_MIGRATION_URL}
+      CLICKHOUSE_URL: ${LANGFUSE_CLICKHOUSE_URL}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-clickhouse}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_CLUSTER_ENABLED: "false"
+      REDIS_CONNECTION_STRING: ${LANGFUSE_REDIS_URL}
+      SALT: ${SALT}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      TELEMETRY_ENABLED: "false"
+      LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "false"
+    networks:
+      - occp-obs
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1g
+        reservations:
+          cpus: "0.25"
+          memory: 256m
+
+  # -------------------------------------------------------------------------
+  # Langfuse web — UI + ingestion API (OTLP via /api/public/otel)
+  # -------------------------------------------------------------------------
+  langfuse-web:
+    image: langfuse/langfuse:3
+    container_name: langfuse-web
+    restart: unless-stopped
+    depends_on:
+      langfuse-postgres:
+        condition: service_healthy
+      langfuse-clickhouse:
+        condition: service_healthy
+      langfuse-redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${LANGFUSE_DATABASE_URL}
+      CLICKHOUSE_MIGRATION_URL: ${LANGFUSE_CLICKHOUSE_MIGRATION_URL}
+      CLICKHOUSE_URL: ${LANGFUSE_CLICKHOUSE_URL}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-clickhouse}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_CLUSTER_ENABLED: "false"
+      REDIS_CONNECTION_STRING: ${LANGFUSE_REDIS_URL}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:?public URL required e.g. https://traces.occp.ai}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?nextauth secret required}
+      SALT: ${SALT:?salt required}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?32-byte hex encryption key required}
+      TELEMETRY_ENABLED: "false"
+      LANGFUSE_INIT_ORG_ID: ${LANGFUSE_INIT_ORG_ID:-}
+      LANGFUSE_INIT_ORG_NAME: ${LANGFUSE_INIT_ORG_NAME:-OCCP}
+      LANGFUSE_INIT_PROJECT_ID: ${LANGFUSE_INIT_PROJECT_ID:-}
+      LANGFUSE_INIT_PROJECT_NAME: ${LANGFUSE_INIT_PROJECT_NAME:-occp-api}
+      LANGFUSE_INIT_USER_EMAIL: ${LANGFUSE_INIT_USER_EMAIL:-}
+      LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD:-}
+    ports:
+      - "${LANGFUSE_WEB_PORT:-3100}:3000"
+    networks:
+      - occp-obs
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/public/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 2g
+        reservations:
+          cpus: "0.5"
+          memory: 512m

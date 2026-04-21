@@ -3,11 +3,27 @@
 The ``Database`` class preserves the legacy API used by tests and lifespan
 bootstrap while delegating to the new ``engine.py`` async engine factory.
 Table creation now uses ``Base.metadata.create_all`` instead of inline DDL.
+
+Resolution of the backend URL follows a three-tier fallback order:
+
+1. **Explicit kwarg** — ``Database(url="...")`` passed by the caller.
+2. **Environment variable** — ``OCCP_DATABASE_URL`` (covers both local
+   SQLite and production Postgres/Supabase deployments).
+3. **SQLite default** — ``sqlite+aiosqlite:///data/occp.db`` for local dev.
+
+Modes
+-----
+- SQLite (aiosqlite): file-based, local-only, zero-config. Default.
+- PostgreSQL direct (asyncpg, port 5432): standard pool semantics.
+- PostgreSQL via PgBouncer/Supabase pooler (port 6543): asyncpg prepared
+  statement cache must be disabled — handled transparently by
+  ``store.engine._create_pg_engine``.
 """
 
 from __future__ import annotations
 
 import logging
+import os
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
@@ -20,6 +36,19 @@ import store.models  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
+# Default URL used when neither an explicit kwarg nor OCCP_DATABASE_URL is set.
+_SQLITE_DEFAULT_URL = "sqlite+aiosqlite:///data/occp.db"
+
+
+def _resolve_url(explicit: str | None) -> str:
+    """Resolve the backend URL from kwarg → env var → SQLite default."""
+    if explicit:
+        return explicit
+    env_url = os.environ.get("OCCP_DATABASE_URL")
+    if env_url:
+        return env_url
+    return _SQLITE_DEFAULT_URL
+
 
 class Database:
     """Async database wrapper with ORM-based schema initialisation.
@@ -27,10 +56,23 @@ class Database:
     This class exists for backward compatibility with existing tests
     and the ``api.app`` lifespan.  New code should use ``engine.py``
     and ``async_sessionmaker`` directly.
+
+    Backend URL resolution (first non-empty wins):
+
+    1. ``url`` kwarg passed to ``__init__``.
+    2. ``OCCP_DATABASE_URL`` environment variable.
+    3. Built-in SQLite default (``sqlite+aiosqlite:///data/occp.db``).
+
+    Supported backends
+    ------------------
+    - ``sqlite+aiosqlite://...`` — default, local file or ``:memory:``.
+    - ``postgresql+asyncpg://...`` — direct Postgres or Supabase (5432).
+    - ``postgresql+asyncpg://...:6543/...`` — Supabase transaction pooler;
+      prepared-statement cache is automatically disabled.
     """
 
-    def __init__(self, url: str = "sqlite+aiosqlite:///data/occp.db") -> None:
-        self._url = url
+    def __init__(self, url: str | None = None) -> None:
+        self._url = _resolve_url(url)
         self._engine: AsyncEngine | None = None
         self._session_factory: async_sessionmaker[AsyncSession] | None = None
 

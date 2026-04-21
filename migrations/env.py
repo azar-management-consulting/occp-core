@@ -1,13 +1,27 @@
 """Alembic environment — async-capable with dual-backend support.
 
 Supports both SQLite (render_as_batch) and PostgreSQL (online DDL).
-Database URL resolved from OCCP_DATABASE_URL or config/settings.py.
+Database URL resolution order:
+
+1. ``-x url=...`` alembic command-line override (``config.get_main_option``).
+2. ``OCCP_DATABASE_URL`` environment variable.
+3. ``config.settings.Settings().database_url``.
+4. Built-in SQLite default.
+
+Safety
+------
+When the resolved URL targets a production-grade Postgres backend
+(Supabase or any ``postgresql://`` scheme), destructive migrations require
+the caller to explicitly opt in via ``-x env=migrate-production``. This
+guard prevents accidental prod DB writes from developer shells.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
+import os
+import sys
 from logging.config import fileConfig
 
 from alembic import context
@@ -16,7 +30,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from store.base import Base
-from store.engine import is_sqlite
+from store.engine import _is_pgbouncer_url, is_sqlite
 
 # Ensure all models are imported so their tables register on Base.metadata
 import store.models  # noqa: F401
@@ -33,15 +47,24 @@ logger = logging.getLogger("alembic.env")
 # Target metadata for 'autogenerate' support
 target_metadata = Base.metadata
 
+# Sentinel value callers pass via ``alembic -x env=migrate-production``
+# to confirm they intend to mutate a production Postgres/Supabase DB.
+_PROD_OVERRIDE_TOKEN = "migrate-production"
+
 
 def _get_url() -> str:
-    """Resolve database URL from settings or environment."""
-    # Prefer explicit sqlalchemy.url from alembic.ini (e.g., via -x or direct edit)
+    """Resolve database URL from CLI → env var → settings → default."""
+    # 1. Explicit -x url=... or sqlalchemy.url set on the Config
     url = config.get_main_option("sqlalchemy.url")
     if url:
         return url
 
-    # Fall back to OCCP settings
+    # 2. Environment variable (preferred for CI / prod runners)
+    env_url = os.environ.get("OCCP_DATABASE_URL")
+    if env_url:
+        return env_url
+
+    # 3. OCCP settings (pydantic-settings reads .env too)
     try:
         from config.settings import Settings
         return Settings().database_url
@@ -49,9 +72,66 @@ def _get_url() -> str:
         return "sqlite+aiosqlite:///data/occp.db"
 
 
+def _is_production_url(url: str) -> bool:
+    """Heuristic: does this URL point at a prod Postgres/Supabase DB?"""
+    lowered = url.lower()
+    if lowered.startswith("sqlite"):
+        return False
+    return (
+        "supabase" in lowered
+        or lowered.startswith("postgresql")
+        or lowered.startswith("postgres+")
+        or _is_pgbouncer_url(lowered)
+    )
+
+
+def _guard_production(url: str) -> None:
+    """Abort unless caller opted in to writing a production DB.
+
+    Reads the ``env`` x-arg from the alembic command (``-x env=...``).
+    Accepted override token: ``migrate-production``. Any other value
+    (or a missing x-arg) causes the runner to print a warning and exit
+    before any DDL is emitted.
+    """
+    if not _is_production_url(url):
+        return
+
+    x_args = context.get_x_argument(as_dictionary=True) or {}
+    override = x_args.get("env")
+
+    if override == _PROD_OVERRIDE_TOKEN:
+        logger.warning(
+            "Production migration explicitly authorised (env=%s) against %s",
+            override,
+            _redact(url),
+        )
+        return
+
+    msg = (
+        "REFUSING to run migrations against a production-grade database.\n"
+        f"  URL: {_redact(url)}\n"
+        f"  Re-run with: alembic -x env={_PROD_OVERRIDE_TOKEN} upgrade head\n"
+        "  (Set OCCP_DATABASE_URL to a non-prod URL for local runs.)"
+    )
+    print(msg, file=sys.stderr)
+    sys.exit(2)
+
+
+def _redact(url: str) -> str:
+    """Strip credentials before logging a URL."""
+    if "@" not in url:
+        return url
+    prefix, rest = url.split("@", 1)
+    if ":" in prefix.rsplit("/", 1)[-1]:
+        safe = prefix.rsplit(":", 1)[0] + ":***"
+        return f"{safe}@{rest}"
+    return url
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode — emit SQL as script output."""
     url = _get_url()
+    _guard_production(url)
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -81,6 +161,7 @@ def do_run_migrations(connection: Connection) -> None:
 async def run_async_migrations() -> None:
     """Run migrations in 'online' mode with an async engine."""
     url = _get_url()
+    _guard_production(url)
 
     configuration = config.get_section(config.config_ini_section, {})
     configuration["sqlalchemy.url"] = url
@@ -90,6 +171,10 @@ async def run_async_migrations() -> None:
     if is_sqlite(url):
         engine_kwargs["poolclass"] = pool.StaticPool
         engine_kwargs["connect_args"] = {"check_same_thread": False}
+    elif _is_pgbouncer_url(url):
+        # Same PgBouncer caveat as store.engine: disable prepared-statement
+        # cache when routing through a transaction pooler.
+        engine_kwargs["connect_args"] = {"statement_cache_size": 0}
 
     connectable = async_engine_from_config(
         configuration,

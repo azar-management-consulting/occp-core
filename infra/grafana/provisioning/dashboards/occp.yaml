@@ -1,0 +1,17 @@
+# Grafana 11 dashboard provider provisioning — OCCP
+# https://grafana.com/docs/grafana/latest/administration/provisioning/#dashboards
+apiVersion: 1
+
+providers:
+  - name: OCCP
+    orgId: 1
+    folder: OCCP
+    folderUid: occp-slo-folder
+    type: file
+    disableDeletion: false
+    editable: true
+    updateIntervalSeconds: 30
+    allowUiUpdates: false
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false

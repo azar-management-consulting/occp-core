@@ -1,0 +1,360 @@
+{
+  "id": null,
+  "uid": "occp-slo-001",
+  "title": "OCCP SLO \u2014 Agent Control Plane",
+  "description": "Service Level Objectives dashboard for OCCP Agent Control Plane. Tracks API latency, error rate, token spend, kill switch state, and pipeline success rate.",
+  "tags": ["occp", "slo", "production"],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "fiscalYearStartMonth": 0,
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "API Latency (p50 / p95 / p99)",
+      "description": "TODO: metric occp_http_request_duration_seconds_bucket is not yet emitted by observability/metrics_collector.py. Add HTTP middleware instrumentation to emit this histogram. Real fallback target (occp_pipeline_stage_duration_ms_bucket) is active and shows pipeline stage latency in ms.",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          },
+          "color": {"mode": "palette-classic"}
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {"mode": "multi", "sort": "desc"},
+        "legend": {"displayMode": "list", "placement": "bottom", "calcs": ["lastNotNull"]}
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "histogram_quantile(0.50, sum(rate(occp_http_request_duration_seconds_bucket{env=\"$env\"}[5m])) by (le)) * 1000",
+          "legendFormat": "p50 (spec \u2014 TODO)",
+          "hide": false
+        },
+        {
+          "refId": "B",
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "histogram_quantile(0.95, sum(rate(occp_http_request_duration_seconds_bucket{env=\"$env\"}[5m])) by (le)) * 1000",
+          "legendFormat": "p95 (spec \u2014 TODO)",
+          "hide": false
+        },
+        {
+          "refId": "C",
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "histogram_quantile(0.99, sum(rate(occp_http_request_duration_seconds_bucket{env=\"$env\"}[5m])) by (le)) * 1000",
+          "legendFormat": "p99 (spec \u2014 TODO)",
+          "hide": false
+        },
+        {
+          "refId": "D",
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "histogram_quantile(0.50, sum(rate(occp_pipeline_stage_duration_ms_bucket{env=\"$env\"}[5m])) by (le))",
+          "legendFormat": "p50 pipeline (real)",
+          "hide": false
+        },
+        {
+          "refId": "E",
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "histogram_quantile(0.95, sum(rate(occp_pipeline_stage_duration_ms_bucket{env=\"$env\"}[5m])) by (le))",
+          "legendFormat": "p95 pipeline (real)",
+          "hide": false
+        },
+        {
+          "refId": "F",
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "histogram_quantile(0.99, sum(rate(occp_pipeline_stage_duration_ms_bucket{env=\"$env\"}[5m])) by (le))",
+          "legendFormat": "p99 pipeline (real)",
+          "hide": false
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Error Rate",
+      "description": "TODO: metric occp_http_requests_total is not yet emitted by observability/metrics_collector.py. Add HTTP middleware to emit this counter with a 'status' label. Real fallback: occp_pipeline_tasks with outcome!='success' tracks pipeline-level failures.",
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 8},
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 0.01},
+              {"color": "red", "value": 0.05}
+            ]
+          },
+          "mappings": [],
+          "color": {"mode": "thresholds"}
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "sum(rate(occp_http_requests_total{status=~\"5..\",env=\"$env\"}[5m])) / sum(rate(occp_http_requests_total{env=\"$env\"}[5m]))",
+          "legendFormat": "5xx error rate (spec \u2014 TODO)",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "sum(rate(occp_pipeline_tasks{outcome!=\"success\",env=\"$env\"}[5m])) / sum(rate(occp_pipeline_tasks{env=\"$env\"}[5m]))",
+          "legendFormat": "pipeline failure rate (real)",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Token Spend (USD/hour)",
+      "description": "TODO: metric occp_llm_cost_usd_total is not yet emitted by observability/metrics_collector.py. Add a counter in gen_ai_tracer.py or the LLM call wrapper to emit cost per model_id. Stack by model_id label.",
+      "gridPos": {"h": 8, "w": 18, "x": 6, "y": 8},
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "stacking": {"mode": "normal", "group": "A"},
+            "showPoints": "never"
+          },
+          "color": {"mode": "palette-classic"}
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {"mode": "multi", "sort": "desc"},
+        "legend": {"displayMode": "list", "placement": "bottom", "calcs": ["lastNotNull", "sum"]}
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "sum by (model_id) (rate(occp_llm_cost_usd_total{env=\"$env\"}[1h])) * 3600",
+          "legendFormat": "{{model_id}} (spec \u2014 TODO)"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Kill Switch Status",
+      "description": "TODO: metrics occp_kill_switch_active (gauge) and kill_switch_activations_total (counter) are not yet emitted by observability/metrics_collector.py. Add a gauge in the kill switch handler and a counter per activation event. 0 = inactive (green), 1 = active (red). The activations_total target (refId B) surfaces the last 5 activations count; for a full event table connect a Table panel to a Loki log source or use a separate dashboard panel.",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 16},
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "red", "value": 1}
+            ]
+          },
+          "mappings": [
+            {"type": "value", "options": {"0": {"text": "INACTIVE", "color": "green"}}},
+            {"type": "value", "options": {"1": {"text": "ACTIVE", "color": "red"}}}
+          ],
+          "color": {"mode": "thresholds"},
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "occp_kill_switch_active{env=\"$env\"}",
+          "legendFormat": "Kill Switch (spec \u2014 TODO)",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "topk(5, increase(kill_switch_activations_total{env=\"$env\"}[24h]))",
+          "legendFormat": "Activations (last 24h, spec \u2014 TODO)",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Pipeline Success Rate",
+      "description": "Real metric: occp_pipeline_tasks{outcome='success'} / occp_pipeline_tasks{} (from observability/metrics_collector.py via orchestrator/pipeline.py). Spec metric occp_pipeline_runs_total is a TODO alias for the same data; add it when HTTP-level pipeline tracking is instrumented.",
+      "gridPos": {"h": 8, "w": 16, "x": 8, "y": 16},
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "showPoints": "never"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "yellow", "value": 0.9},
+              {"color": "green", "value": 0.995}
+            ]
+          },
+          "color": {"mode": "thresholds"}
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {"mode": "single", "sort": "none"},
+        "legend": {"displayMode": "list", "placement": "bottom", "calcs": ["lastNotNull", "mean"]}
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "sum(rate(occp_pipeline_runs_total{result=\"pass\",env=\"$env\"}[15m])) / sum(rate(occp_pipeline_runs_total{env=\"$env\"}[15m]))",
+          "legendFormat": "success rate (spec \u2014 TODO)"
+        },
+        {
+          "refId": "B",
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "sum(rate(occp_pipeline_tasks{outcome=\"success\",env=\"$env\"}[15m])) / sum(rate(occp_pipeline_tasks{env=\"$env\"}[15m]))",
+          "legendFormat": "success rate (real)"
+        }
+      ]
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "pluginId": "prometheus",
+        "label": "Datasource",
+        "hide": 0,
+        "refresh": 1,
+        "current": {},
+        "options": []
+      },
+      {
+        "name": "env",
+        "type": "custom",
+        "label": "Environment",
+        "hide": 0,
+        "current": {
+          "selected": true,
+          "text": "production",
+          "value": "production"
+        },
+        "options": [
+          {"selected": true, "text": "production", "value": "production"},
+          {"selected": false, "text": "staging", "value": "staging"}
+        ],
+        "query": "production,staging",
+        "multi": false,
+        "includeAll": false,
+        "refresh": 0
+      }
+    ]
+  },
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {"type": "grafana", "uid": "-- Grafana --"},
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "11.0.0"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    }
+  ]
+}

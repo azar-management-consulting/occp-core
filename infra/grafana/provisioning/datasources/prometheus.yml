@@ -1,0 +1,19 @@
+# Grafana 11 datasource provisioning — Prometheus
+# https://grafana.com/docs/grafana/latest/administration/provisioning/#datasources
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus-occp
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: 15s
+      httpMethod: POST
+      prometheusType: Prometheus
+      prometheusVersion: 2.55.0
+      cacheLevel: Low
+    version: 1

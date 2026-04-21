@@ -59,6 +59,7 @@ from api.routes import observability as observability_route
 from api.routes import governance as governance_route
 from api.routes import autodev as autodev_route
 from api.routes import daily_check as daily_check_route
+from api.routes import managed_agents as managed_agents_route
 from config.settings import Settings
 
 logger = logging.getLogger(__name__)
@@ -83,6 +84,20 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     except Exception as exc:
         # Never fail startup because of telemetry — just log and continue.
         logger.warning("OTEL init skipped due to error: %s", exc)
+
+    # Observability stack auto-config (Phoenix/Langfuse) — opt-in via
+    # OCCP_OBSERVABILITY_STACK. No-op when unset. Additive to init_otel;
+    # the stack selector resolves endpoint + auth then delegates to init_otel.
+    try:
+        from observability.phoenix_exporter import auto_configure
+
+        auto_configure(
+            service_name="occp-api",
+            env=settings.occp_env,
+            app=app,
+        )
+    except Exception as exc:
+        logger.warning("Observability stack auto-config skipped: %s", exc)
 
     # Persistent storage
     db = Database(url=settings.database_url)
@@ -537,6 +552,7 @@ def create_app() -> FastAPI:
     app.include_router(governance_route.router, prefix=prefix)
     app.include_router(autodev_route.router, prefix=prefix)
     app.include_router(daily_check_route.router, prefix=prefix)
+    app.include_router(managed_agents_route.router, prefix=prefix)
 
     return app
 
