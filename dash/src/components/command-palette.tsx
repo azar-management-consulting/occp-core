@@ -50,9 +50,12 @@ export function CommandPalette() {
 
   useHotkeys("mod+j", (e) => {
     e.preventDefault();
-    // Brian chat drawer — stub for now
-    console.log("[CommandPalette] Brian drawer toggle");
+    window.dispatchEvent(new CustomEvent("brian:open"));
   });
+
+  const openBrian = React.useCallback(() => {
+    window.dispatchEvent(new CustomEvent("brian:open"));
+  }, []);
 
   const runCommand = React.useCallback((fn: () => void) => {
     setOpen(false);
@@ -92,7 +95,7 @@ export function CommandPalette() {
         <CommandSeparator />
 
         <CommandGroup heading="Brian / AI">
-          <CommandItem onSelect={() => runCommand(() => alert("Brian chat drawer — stub"))}>
+          <CommandItem onSelect={() => runCommand(openBrian)}>
             <MessageSquare /> Ask Brian... <CommandShortcut>⌘J</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={() => runCommand(() => alert("Generate widget — stub"))}>

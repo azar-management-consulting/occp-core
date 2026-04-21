@@ -7,6 +7,7 @@ import { I18nProvider } from "@/lib/i18n";
 import { AuthGuard } from "@/components/auth-guard";
 import { Nav } from "@/components/nav";
 import { CommandPalette } from "@/components/command-palette";
+import { BrianDrawer } from "@/components/brian-drawer";
 
 const STANDALONE_ROUTES = ["/docs"];
 
@@ -26,6 +27,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 <Nav />
                 <main className="max-w-7xl mx-auto px-6 py-10">{children}</main>
                 <CommandPalette />
+                <BrianDrawer />
               </>
             )}
           </AuthGuard>

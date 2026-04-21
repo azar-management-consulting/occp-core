@@ -2,8 +2,8 @@
 
 /* ── Tailwind 4.0 CSS-first config ───────────────────────────── */
 @theme {
-  --font-pixel: var(--font-pixel), monospace;
-  --font-mono: var(--font-mono), monospace;
+  --font-pixel: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   /* C64 palette */
   --color-c64-black: #0A0A1A;
