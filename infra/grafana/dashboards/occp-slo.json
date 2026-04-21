@@ -22,7 +22,7 @@
       "id": 1,
       "type": "timeseries",
       "title": "API Latency (p50 / p95 / p99)",
-      "description": "TODO: metric occp_http_request_duration_seconds_bucket is not yet emitted by observability/metrics_collector.py. Add HTTP middleware instrumentation to emit this histogram. Real fallback target (occp_pipeline_stage_duration_ms_bucket) is active and shows pipeline stage latency in ms.",
+      "description": "HTTP request latency quantiles computed from occp_http_request_duration_seconds_bucket (emitted by api/middleware_metrics.py). Pipeline-stage quantiles from occp_pipeline_stage_duration_ms_bucket are shown alongside for cross-comparison.",
       "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
       "fieldConfig": {
@@ -90,7 +90,7 @@
       "id": 2,
       "type": "stat",
       "title": "Error Rate",
-      "description": "TODO: metric occp_http_requests_total is not yet emitted by observability/metrics_collector.py. Add HTTP middleware to emit this counter with a 'status' label. Real fallback: occp_pipeline_tasks with outcome!='success' tracks pipeline-level failures.",
+      "description": "5xx HTTP error ratio from occp_http_requests_total (emitted by api/middleware_metrics.py). Pipeline-level failure ratio from occp_pipeline_tasks{outcome!='success'} shown as secondary signal.",
       "gridPos": {"h": 8, "w": 6, "x": 0, "y": 8},
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
       "fieldConfig": {
@@ -143,7 +143,7 @@
       "id": 3,
       "type": "timeseries",
       "title": "Token Spend (USD/hour)",
-      "description": "TODO: metric occp_llm_cost_usd_total is not yet emitted by observability/metrics_collector.py. Add a counter in gen_ai_tracer.py or the LLM call wrapper to emit cost per model_id. Stack by model_id label.",
+      "description": "LLM spend rate stacked by model_id. Fed by occp_llm_cost_usd_total, incremented from policy_engine/budget_policy.py::record_spend() — the authoritative cost event.",
       "gridPos": {"h": 8, "w": 18, "x": 6, "y": 8},
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
       "fieldConfig": {
@@ -176,7 +176,7 @@
       "id": 4,
       "type": "stat",
       "title": "Kill Switch Status",
-      "description": "TODO: metrics occp_kill_switch_active (gauge) and kill_switch_activations_total (counter) are not yet emitted by observability/metrics_collector.py. Add a gauge in the kill switch handler and a counter per activation event. 0 = inactive (green), 1 = active (red). The activations_total target (refId B) surfaces the last 5 activations count; for a full event table connect a Table panel to a Loki log source or use a separate dashboard panel.",
+      "description": "Current kill-switch state (0=inactive/green, 1=active/red) from occp_kill_switch_active. Top 5 activation triggers in the last 24h from occp_kill_switch_activations_total. Both metrics are emitted by evaluation/kill_switch.py on activate()/deactivate().",
       "gridPos": {"h": 8, "w": 8, "x": 0, "y": 16},
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
       "fieldConfig": {
@@ -220,8 +220,8 @@
         {
           "refId": "B",
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "expr": "topk(5, increase(kill_switch_activations_total{env=\"$env\"}[24h]))",
-          "legendFormat": "Activations (last 24h, spec \u2014 TODO)",
+          "expr": "topk(5, increase(occp_kill_switch_activations_total{env=\"$env\"}[24h]))",
+          "legendFormat": "Activations (last 24h)",
           "instant": true
         }
       ]
@@ -230,7 +230,7 @@
       "id": 5,
       "type": "timeseries",
       "title": "Pipeline Success Rate",
-      "description": "Real metric: occp_pipeline_tasks{outcome='success'} / occp_pipeline_tasks{} (from observability/metrics_collector.py via orchestrator/pipeline.py). Spec metric occp_pipeline_runs_total is a TODO alias for the same data; add it when HTTP-level pipeline tracking is instrumented.",
+      "description": "Pipeline success ratio over 15m windows. Primary signal: occp_pipeline_runs_total{result='pass'} / total, emitted by orchestrator/pipeline.py. occp_pipeline_tasks (outcome=success) is retained as a secondary/legacy signal.",
       "gridPos": {"h": 8, "w": 16, "x": 8, "y": 16},
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
       "fieldConfig": {

@@ -107,9 +107,23 @@ class TestMetricsCollector:
         coll.counter("occp.test.counter", 1)
         coll.reset()
         snap = coll.snapshot()
-        assert not snap["counters"]
-        assert not snap["gauges"]
-        assert not snap["histograms"]
+        # reset() wipes user-added counters but re-seeds the SLO metric
+        # registry (http_requests_total, llm_cost_usd_total, etc. — always
+        # need to be present, just at value 0). The seeded ones are empty
+        # `values: []` collections — user-added "occp.test.counter" must
+        # be gone.
+        user_counter_names = {
+            name for name in snap["counters"] if name.startswith("occp_test_")
+        }
+        assert not user_counter_names, (
+            f"reset did not clear user counter: {user_counter_names}"
+        )
+        assert not snap["gauges"] or all(
+            name.startswith("occp_kill_switch") for name in snap["gauges"]
+        ), "only SLO-seeded gauges permitted after reset"
+        assert not snap["histograms"] or all(
+            name == "occp_http_request_duration_seconds" for name in snap["histograms"]
+        ), "only SLO-seeded histograms permitted after reset"
 
 
 class TestSingleton:

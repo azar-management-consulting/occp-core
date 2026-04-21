@@ -15,6 +15,7 @@ from api.middleware import (
     RequestLoggingMiddleware,
     SecurityHeadersMiddleware,
 )
+from api.middleware_metrics import MetricsMiddleware
 
 from adapters.echo_planner import EchoPlanner
 from adapters.multi_llm_planner import MultiLLMPlanner
@@ -521,6 +522,11 @@ def create_app() -> FastAPI:
         window_seconds=settings.rate_limit_window,
         rate_limit_paths=rate_paths or None,
     )
+
+    # HTTP metrics (Grafana SLO panels 1 & 2). Added last so it's the
+    # outermost middleware — sees every response, including 5xx, and
+    # measures the full request lifetime.
+    app.add_middleware(MetricsMiddleware)
 
     prefix = "/api/v1"
     app.include_router(status.router, prefix=prefix)

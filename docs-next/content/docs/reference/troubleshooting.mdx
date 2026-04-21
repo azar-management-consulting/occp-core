@@ -1,0 +1,182 @@
+---
+title: "Troubleshooting Guide"
+description: "Concrete fixes for the 6 most common OCCP operator incidents: kill switch, budgets, MCP, SSE, Postgres, OTEL."
+---
+
+# Troubleshooting Guide
+
+This page is a living runbook for operators. Every section is a single
+concrete issue with a diagnostic step and a copy-pasteable fix.
+
+<Callout type="warn">
+  Production credentials never leave your secret manager. Replace
+  `$OCCP_API_KEY` etc. with a shell variable — never paste the
+  literal value into a ticket.
+</Callout>
+
+## Kill switch stuck active
+
+**Symptom:** every request returns `503 kill_switch_active`, pipeline
+runs refuse to start.
+
+**Check state:**
+
+```bash
+curl -sH "Authorization: Bearer $OCCP_API_KEY" \
+  https://api.occp.ai/api/v1/governance/kill_switch | jq
+```
+
+Response shape:
+
+```json
+{ "state": "active", "trigger": "ANOMALY", "actor": "anomaly_detector", "since": "..." }
+```
+
+**Reset** (requires `Admin` role):
+
+```bash
+curl -X POST -H "Authorization: Bearer $OCCP_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"reason":"anomaly false positive, verified metrics normal"}' \
+  https://api.occp.ai/api/v1/governance/kill_switch/deactivate
+```
+
+Every deactivate is audit-logged. See `evaluation/kill_switch.py:174`.
+
+## Budget exceeded before task completes
+
+**Symptom:** plan aborts with `budget_policy:over_limit` and the audit
+row shows `tokens_in` far below your per-task budget.
+
+**Root cause 90% of the time:** cached input tokens count against the
+budget at full rate when `tiktoken` is unavailable and the heuristic
+fallback overestimates. Check:
+
+```bash
+python -c "import tiktoken; print(tiktoken.__version__)"
+```
+
+**Fix:**
+
+```bash
+pip install 'tiktoken>=0.8'
+# or raise the per-task cap in your policy
+export OCCP_DEFAULT_TASK_BUDGET_USD=10.00
+```
+
+Verify in [`policy_engine/budget_policy.py`](https://github.com/azar-management-consulting/occp-core/blob/main/policy_engine/budget_policy.py)
+that your model's rate card matches your provider invoice.
+
+## MCP tool not registered
+
+**Symptom:** `dispatch(...)` returns `status=error, error="Unknown tool: supabase.query"`.
+
+**Diagnose:**
+
+```bash
+python -c "from adapters.mcp_bridge import build_default_bridge; \
+  print(build_default_bridge().list_tools())"
+```
+
+If `supabase.*` is missing, the env var gate skipped registration.
+**Fix** by exporting the required credentials:
+
+```bash
+export OCCP_SUPABASE_URL="https://xxx.supabase.co"
+export OCCP_SUPABASE_SERVICE_ROLE_KEY="eyJhbGciOi..."
+# then restart the API service
+```
+
+See [MCP Tool Catalog](/docs/guides/mcp-tools) for every env var.
+
+## SSE stream drops after 30 seconds
+
+**Symptom:** the dashboard's live pipeline view disconnects roughly
+every 30s; Chrome DevTools shows a `net::ERR_INCOMPLETE_CHUNKED_ENCODING`.
+
+**Root cause:** reverse proxy buffers the SSE body. The two most common
+culprits are `nginx` and Cloudflare.
+
+**nginx fix** — disable buffering for the SSE route:
+
+```nginx
+location /api/v1/pipeline/stream {
+  proxy_pass http://occp_api;
+  proxy_http_version 1.1;
+  proxy_buffering off;
+  proxy_cache off;
+  proxy_set_header Connection "";
+  chunked_transfer_encoding on;
+}
+```
+
+**Cloudflare fix** — enable "Grey cloud" (DNS-only) for the API
+hostname, **or** add a Transform Rule that disables buffering for paths
+matching `/stream`.
+
+## Postgres pooler prepared-statement error
+
+**Symptom:**
+
+```
+asyncpg.exceptions.DuplicatePreparedStatementError:
+prepared statement "__asyncpg_stmt_1__" already exists
+```
+
+**Root cause:** you connected through **PgBouncer** (port `6543`) in
+transaction-pooling mode without disabling the statement cache.
+
+**Quick fix** — switch to the direct connection for anything that runs
+prepared statements (migrations, admin scripts):
+
+```bash
+# From Supabase → Project Settings → Database:
+export OCCP_DATABASE_URL="postgresql+asyncpg://postgres:<pw>@db.xxx.supabase.co:5432/postgres"
+```
+
+**Proper fix:** OCCP's engine factory auto-detects `:6543/` and
+`pgbouncer` substrings and passes `statement_cache_size=0`. If the
+error persists, verify the URL pattern in [`store/engine.py`](https://github.com/azar-management-consulting/occp-core/blob/main/store/engine.py)
+still matches your hostname.
+
+See [Postgres deployment](/docs/deployment/postgres) for the full URL contract.
+
+## OTEL spans not reaching Phoenix
+
+**Symptom:** `gen_ai.*` spans are missing in Phoenix / your OTLP
+collector despite the agent completing tasks.
+
+**Check network path:**
+
+```bash
+curl -v $OCCP_OTLP_ENDPOINT/v1/traces
+# TLS handshake output ↓
+openssl s_client -connect $(echo $OCCP_OTLP_ENDPOINT | sed 's|https://||; s|/.*||'):443 -servername $(echo $OCCP_OTLP_ENDPOINT | sed 's|https://||; s|/.*||')
+```
+
+**Common causes & fixes:**
+
+| Cause | Fix |
+|-------|-----|
+| Wrong endpoint var | Set `OCCP_OTLP_ENDPOINT=https://otlp.phoenix.example/v1/traces` (must include `/v1/traces`) |
+| Self-signed TLS on collector | Set `OCCP_OTLP_CA_BUNDLE=/path/to/ca.pem` and restart |
+| Egress blocked (firewall) | Open outbound `:443` to the collector CIDR |
+| Gzip disabled upstream | `export OTEL_EXPORTER_OTLP_COMPRESSION=none` |
+
+Verify by emitting a test span:
+
+```bash
+python -c "from observability.otel import emit_test_span; emit_test_span()"
+```
+
+## Still stuck?
+
+- Check `api/logs/occp.log` for the correlation ID (every error logs one).
+- Grab the ID + tenant and open an issue: [github.com/azar-management-consulting/occp-core/issues](https://github.com/azar-management-consulting/occp-core/issues).
+- For security issues, use [security@azar.hu](mailto:security@azar.hu) (PGP available).
+
+## Next
+
+- [Security & compliance](/docs/security)
+- [Postgres deployment](/docs/deployment/postgres)
+- [MCP tool catalog](/docs/guides/mcp-tools)

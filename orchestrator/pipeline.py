@@ -584,6 +584,17 @@ class Pipeline:
                 error=str(exc),
             )
 
+    # outcome → Grafana "result" label mapping for occp_pipeline_runs_total.
+    _OUTCOME_TO_RESULT: dict[str, str] = {
+        "success": "pass",
+        "failed": "fail",
+        "error": "fail",
+        "gate_rejected": "gated",
+        "human_rejected": "gated",
+        "kill_switch": "halted",
+        "budget_exceeded": "halted",
+    }
+
     def _emit_metrics(
         self,
         task: Task,
@@ -616,6 +627,10 @@ class Pipeline:
                     {"stage": stage, "agent_type": agent_type},
                     help_text="Pipeline stage duration in milliseconds",
                 )
+
+            # Grafana SLO panel 5: occp_pipeline_runs_total{result=...}.
+            result = self._OUTCOME_TO_RESULT.get(outcome, "fail")
+            coll.record_pipeline_run(result=result)
         except Exception as exc:  # noqa: BLE001 — metrics must not break pipeline
             logger.debug("Failed to emit pipeline metrics: %s", exc)
 

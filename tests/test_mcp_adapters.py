@@ -94,8 +94,44 @@ async def test_supabase_query_blocks_writes(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setenv("OCCP_SUPABASE_SERVICE_ROLE_KEY", "svc")
     from adapters.mcp_supabase import supabase_query
 
+    # Plain write
     result = await supabase_query({"sql": "DELETE FROM users"})
     assert result == {"error": "write SQL blocked (read-only tool)"}
+
+    # CTE-bypass attempt — strict guard must catch this too
+    result = await supabase_query(
+        {"sql": "WITH x AS (SELECT 1) DELETE FROM users WHERE id IN x"}
+    )
+    assert result == {"error": "write SQL blocked (read-only tool)"}
+
+    # Multi-statement stack — must be blocked
+    result = await supabase_query({"sql": "SELECT 1; DROP TABLE audit_log"})
+    assert result == {"error": "write SQL blocked (read-only tool)"}
+
+    # Comment-bypass — write keyword hidden after /* ... */ block
+    result = await supabase_query(
+        {"sql": "/* safe */ UPDATE users SET admin = true WHERE id = 1"}
+    )
+    assert result == {"error": "write SQL blocked (read-only tool)"}
+
+
+@pytest.mark.asyncio
+async def test_playwright_extract_text_blocks_ssrf(monkeypatch: pytest.MonkeyPatch) -> None:
+    """SSRF defense: private IPs, localhost, and metadata hosts must be rejected."""
+    from adapters.mcp_playwright import playwright_extract_text
+
+    blocked = [
+        "http://127.0.0.1/admin",
+        "http://localhost/",
+        "http://169.254.169.254/latest/meta-data/",  # AWS IMDS
+        "http://metadata.google.internal/",
+        "http://10.0.0.5/",
+        "http://192.168.1.1/router",
+        "http://[::1]/",
+    ]
+    for url in blocked:
+        result = await playwright_extract_text({"url": url})
+        assert result.get("status") == "error", f"SSRF NOT blocked for {url}: {result}"
 
 
 @pytest.mark.asyncio

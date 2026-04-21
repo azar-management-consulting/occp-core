@@ -550,6 +550,19 @@ class BudgetPolicy:
             cost,
             spend.spent_usd,
         )
+
+        # L6 observability: emit the authoritative cost event into the
+        # SLO metrics collector (Grafana panel 3 "Token Spend USD/hour").
+        # Import-safe: never break the hot path on metrics failure.
+        try:
+            from observability.metrics_collector import get_collector
+
+            get_collector().record_llm_cost(
+                model_id=canonical_model, cost_usd=cost
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("record_spend: metrics emit failed: %s", exc)
+
         return spend
 
     def reset(self, task_id: str) -> None:

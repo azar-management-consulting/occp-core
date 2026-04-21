@@ -241,27 +241,35 @@ feat(docs): docs-next MDX skeleton + llms-txt generator             (9847883)
 
 5. **Fumadocs app scaffold** — ✅ LEZÁRVA iter-2. Teljesen non-interactive CLI flag-ekkel (`--template +next+fuma-docs-mdx --src --install --linter eslint --search orama --og-image next-og --ai-chat openrouter --no-git --pm npm`). Fumadocs 16.8.1 + Next 16.2.4, 4 MDX SSG, `/llms.txt` + `/llms-full.txt` + `/og/docs/[...]/image` endpoints.
 
-### Short term (1 hónap)
+### Short term (1 hónap) — ✅ MIND LEZÁRVA iter-3 (2026-04-21)
 
-6. **10/10 roadmap SHORT fázis** (`.planning/OCCP_10_OF_10_ROADMAP.md` §Month 1-2):
-   - Executor wiring — adapters/*_executor.py hívásokat `BudgetPolicy.check()` + `record_spend()` közé ágyazni
-   - Phoenix/Langfuse self-host Hetzner CX32 containerben
-   - Grafana SLO dashboard — 5 panel + burn-rate alert
-   - Eval-driven CI — `tests/eval/` DeepEval + promptfoo GitHub Action
+6. **10/10 roadmap SHORT fázis** — ✅ LEZÁRVA:
+   - ✅ Executor wiring: `adapters/openclaw_executor.py` pre/post-flight `BudgetPolicy.check()` + `record_spend()`
+   - ✅ Phoenix/Langfuse self-host: `infra/observability/docker-compose.{phoenix,langfuse}.yml` + `observability/phoenix_exporter.py`
+   - ✅ Grafana SLO: `infra/grafana/dashboards/occp-slo.json` (5 panel) + `alerts/burn-rate.yaml` (MWMBR fast 1h/14.4× + slow 6h/3×)
+   - ✅ Eval CI: `tests/eval/` (17 teszt — plan_offline 6 + prompt_snapshot 1 + audit_shape 10) + `.github/workflows/eval-ci.yml`
 
-7. **EU AI Act Art.14 Gap G-6 fix** — `require_kill_switch_inactive()` jelenleg csak `orchestrator/pipeline.py:40-47`-ben. Be kell szőni `BrainFlow`, `MCPBridge`, `AutoDevOrchestrator` entry pointokba. `tests/test_eu_ai_act_compliance.py::test_halt_enforced_across_all_entry_points` → xfail → PASS.
+7. **EU AI Act Art.14 Gap G-6** — ✅ LEZÁRVA iter-3. `__kill_switch_guarded__ = True` attribútum + `require_kill_switch_inactive()` hívás `BrainFlowEngine.process_message`, `MCPBridge.dispatch`, `AutoDevOrchestrator.propose` entry pointokon. Teszt `test_halt_enforced_across_all_entry_points` **xfail → PASS**.
 
-8. **v2 dashboard oldal migráció** — Pipeline, Agents, Audit, MCP, Settings, Admin mindegyikhez `(v2)/` parallel route shadcn-nel.
+8. **v2 dashboard oldal migráció** — ✅ LEZÁRVA iter-3. 6 új shadcn oldal: `dash/src/app/v2/{pipeline,agents,audit,mcp,settings,admin}/page.tsx`. (Route group `(v2)` → explicit `v2/` segment a kollízió miatt.) Plus iter-5: `middleware.ts` feature flag `NEXT_PUBLIC_DASH_V2` — ON-kor `/pipeline → /v2/pipeline` redirect, OFF-kor `/v2/*` → 404.
 
-### Medium (3 hónap)
+### Medium (3 hónap) — ✅ KÓD-SZINTEN MIND LEZÁRVA iter-4 (2026-04-21)
 
-9. **SQLite → Postgres (Supabase) migráció** — `aiosqlite` → `asyncpg`. Gotcha: Supabase pooler port 6543 TÖRI asyncpg prepared statements → use port 5432 direct.
+9. **SQLite → Postgres (Supabase) migráció** — ✅ KÓD LEZÁRVA. `store/engine.py` `_is_pgbouncer_url()` + `statement_cache_size=0` pooler esetén, `pool_pre_ping` + `pool_recycle=3600` direct Postgres-en. `store/database.py` `OCCP_DATABASE_URL` env var. `migrations/env.py` prod-guard (`alembic -x env=migrate-production`). **TODO Henry:** Supabase projekt létrehozás + alembic upgrade.
 
-10. **MCP standardizáció** — 14 OCCP tool-ból 7 lecserélhető hivatalos MCP-re (220 LoC delete). Priority P0: Supabase MCP, Playwright MCP, GitHub MCP, Cloudflare Code Mode MCP, WordPress/mcp-adapter.
+10. **MCP standardizáció** — ✅ KÓD LEZÁRVA. 5 új adapter: `adapters/mcp_{supabase,github,playwright,cloudflare,slack}.py`, env-var-gated registration `mcp_bridge.py::build_default_bridge()`-ben. Iter-5 security hardening: stricter SELECT-only SQL guard (CTE + multi-statement + comment-bypass mind blokkolt), SSRF defense `mcp_playwright.extract_text`-ben (RFC1918 + link-local + metadata IP blokkolás).
 
-11. **Managed Agents PoC** — 1 OCCP agent (deep-web-research) → Claude Managed Agents session. Beta header: `managed-agents-2026-04-01`.
+11. **Managed Agents PoC** — ✅ KÓD LEZÁRVA. `adapters/managed_agents_client.py` (246 LoC, Opus 4.7, beta `managed-agents-2026-04-01`) + `managed_agents/deep_web_research.yaml` + `api/routes/managed_agents.py` (SSE stream, RBAC `PermissionChecker("managed_agents", "dispatch|read")`, UUID-based task_id).
 
-12. **Skills migration** — 19 SKILL.md → `anthropics/skills` YAML frontmatter format, private `occp-skills` git repo.
+12. **Skills migration** — ✅ LEZÁRVA. `scripts/migrate_skills.py` + `skills_v2/` 19 anthropics-kompatibilis YAML frontmatter fájl + `MANIFEST.json`. Legacy `config/openclaw/skills/` megmarad forrásnak.
+
+### Iter-5 (2026-04-21) — hardening + governance polish
+
+- ✅ **Metrics bővítés**: `observability/metrics_collector.py` +6 új metrika (`occp_http_requests_total`, `occp_http_request_duration_seconds_bucket`, `occp_llm_cost_usd_total`, `occp_kill_switch_active`, `occp_kill_switch_activations_total`, `occp_pipeline_runs_total`) → Grafana dashboard 5 TODO description feloldva. `api/middleware_metrics.py` (outermost Starlette layer).
+- ✅ **Security audit → 2 HIGH fix**: `mcp_supabase._is_read_only()` stricter (CTE/multi-statement/comment-bypass blocked), `api/routes/managed_agents.py` RBAC + UUID task_id + error-body sanitization, `mcp_playwright._validate_url()` SSRF defense (IPv4/IPv6 private range + metadata host allow-list), `managed_agents_client` API key log `***REDACTED***`-ra.
+- ✅ **Production smoke tests**: `tests/smoke/test_prod_surfaces.py` 7 teszt + `--smoke` flag gate + `.github/workflows/smoke-ci.yml` nightly cron 03:00 UTC.
+- ✅ **Docs content bővítés**: 5 új MDX (`concepts/architecture`, `guides/agent-development`, `guides/mcp-tools`, `reference/troubleshooting`, `compliance/eu-ai-act`) + `meta.json` section dividers (Concepts / Guides / Deployment / Reference / Compliance / Updates). Fumadocs build: **14 MDX SSG oldal** (volt 9).
+- ✅ **Dash feature flag**: `dash/src/middleware.ts` — NEXT_PUBLIC_DASH_V2 kapcsoló, 6 vitest.
 
 ---
 

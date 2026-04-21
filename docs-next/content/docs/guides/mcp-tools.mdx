@@ -1,0 +1,136 @@
+---
+title: "MCP Tool Catalog"
+description: "Authoritative reference for every tool exposed by OCCP's MCPBridge — built-ins, WordPress, nodes, and 5 external adapters."
+---
+
+# MCP Tool Catalog
+
+This page is the **authoritative reference** for tools exposed through
+[`adapters/mcp_bridge.py`](https://github.com/azar-management-consulting/occp-core/blob/main/adapters/mcp_bridge.py).
+Every row here corresponds to a `bridge.register(...)` call in
+`build_default_bridge()`.
+
+<Callout type="info">
+  External adapters are **env-var gated** — missing credentials simply
+  skip the registration block instead of breaking startup.
+</Callout>
+
+## Built-in tools (always registered)
+
+| Tool | Namespace | Env vars | Example call | Expected response |
+|------|-----------|----------|--------------|-------------------|
+| `filesystem.read` | fs | — | `{"path":"notes.md"}` | `{path, content}` |
+| `filesystem.write` | fs | — | `{"path":"out.txt","content":"hi"}` | `{path, bytes_written}` |
+| `filesystem.list` | fs | — | `{"path":"subdir"}` | `{path, entries[]}` |
+| `http.get` | net | — | `{"url":"https://example.com"}` | `{status_code, headers, body}` |
+| `http.post` | net | — | `{"url":"...","body":{"k":"v"}}` | `{status_code, body}` |
+| `brain.status` | brain | — | `{}` | `{platform, version, bridge, timestamp}` |
+| `brain.health` | brain | — | `{}` | API `/health` payload |
+
+<Callout type="warn">
+  `filesystem.*` is chrooted to `/tmp/occp-workspace`. Path-escape
+  attempts raise `PermissionError` server-side.
+</Callout>
+
+## WordPress tools
+
+| Tool | Namespace | Env vars | Example call | Expected response |
+|------|-----------|----------|--------------|-------------------|
+| `wordpress.get_site_info` | wp | — | `{"site_url":"https://azar.hu"}` | `{name, description, url, namespaces[]}` |
+| `wordpress.get_posts` | wp | — | `{"site_url":"...","per_page":10}` | `{count, posts[]}` |
+| `wordpress.get_pages` | wp | — | `{"site_url":"...","per_page":20}` | `{count, pages[]}` |
+| `wordpress.update_post` | wp | — (uses `wp_user` + `wp_app_password` in params) | `{"site_url":"...","post_id":42,"title":"New","wp_user":"...","wp_app_password":"..."}` | `{id, title, status, link, modified}` |
+
+## Node execution tools (Tailscale mesh)
+
+| Tool | Namespace | Env vars | Example call | Expected response |
+|------|-----------|----------|--------------|-------------------|
+| `node.list` | node | — | `{}` | `{nodes[], total}` |
+| `node.status` | node | — | `{"node_id":"hetzner-brain"}` | `{node_id, reachable, output, error}` |
+| `node.exec` | node | — (SSH key mounted at `/ssh/brain_ed25519`) | `{"node_id":"imac","command":"uptime"}` | `{node_id, command, exit_code, stdout, stderr}` |
+
+<Callout type="warn">
+  `node.exec` only accepts commands whose first token is in the
+  hard-coded allowlist (`hostname`, `uptime`, `df -h`, `docker ps`,
+  `curl`, etc.). Arbitrary execution is structurally blocked.
+</Callout>
+
+## External adapter — Supabase (iter-4)
+
+- Source: `adapters/mcp_supabase.py`
+- Env vars: `OCCP_SUPABASE_URL`, `OCCP_SUPABASE_SERVICE_ROLE_KEY`
+- Read-only by policy — write SQL (`INSERT`, `UPDATE`, `DELETE`, …) is rejected.
+
+| Tool | Example call | Expected response |
+|------|--------------|-------------------|
+| `supabase.query` | `{"sql":"SELECT id FROM users LIMIT 10"}` | `{status_code, rows}` |
+| `supabase.list_tables` | `{}` | `{tables[]}` |
+| `supabase.describe_table` | `{"table":"users"}` | `{columns[]}` |
+
+## External adapter — GitHub (iter-4)
+
+- Source: `adapters/mcp_github.py`
+- Env vars: `OCCP_GITHUB_TOKEN` (fine-grained PAT, least-priv scopes)
+
+| Tool | Example call | Expected response |
+|------|--------------|-------------------|
+| `github.search_issues` | `{"query":"repo:foo/bar is:open"}` | `{total_count, items[]}` |
+| `github.get_pr` | `{"owner":"foo","repo":"bar","pr":123}` | `{number, title, state, mergeable}` |
+| `github.list_commits` | `{"owner":"foo","repo":"bar","limit":20}` | `{count, commits[]}` |
+
+## External adapter — Playwright (iter-4)
+
+- Source: `adapters/mcp_playwright.py`
+- Env vars: none (safe fallback via `httpx`; full browser spawn is a stub)
+
+| Tool | Example call | Expected response |
+|------|--------------|-------------------|
+| `playwright.goto` | `{"url":"https://docs.occp.ai"}` | `{status, title}` (stub) |
+| `playwright.screenshot` | `{"url":"...","selector":"main"}` | `{png_base64}` (stub) |
+| `playwright.extract_text` | `{"url":"...","selector":"article"}` | `{text}` |
+
+## External adapter — Cloudflare (iter-4)
+
+- Source: `adapters/mcp_cloudflare.py`
+- Env vars: `OCCP_CLOUDFLARE_API_TOKEN`
+
+| Tool | Example call | Expected response |
+|------|--------------|-------------------|
+| `cloudflare.zones_list` | `{}` | `{zones[]}` |
+| `cloudflare.dns_list` | `{"zone_id":"..."}` | `{records[]}` |
+| `cloudflare.analytics_get` | `{"zone_id":"..."}` | `{metrics}` (stub) |
+
+## External adapter — Slack (iter-4)
+
+- Source: `adapters/mcp_slack.py`
+- Env vars: `OCCP_SLACK_BOT_TOKEN`
+
+| Tool | Example call | Expected response |
+|------|--------------|-------------------|
+| `slack.post_message` | `{"channel":"C123","text":"deploy ok"}` | `{ok, ts}` |
+| `slack.search` | `{"query":"oncall error"}` | `{matches[]}` |
+| `slack.list_channels` | `{}` | `{channels[]}` |
+
+## Calling tools
+
+```python
+from adapters.mcp_bridge import build_default_bridge, ToolCall
+
+bridge = build_default_bridge()
+result = await bridge.dispatch(ToolCall(
+    tool="supabase.query",
+    params={"sql": "SELECT count(*) FROM audit_log"},
+    agent_id="brain",
+))
+print(result.status, result.result)
+```
+
+Every dispatch runs through the kill switch, the agent tool guard, the
+input sanitizer, and a per-call timeout — identical contract for
+built-ins and externals.
+
+## Next
+
+- [Agent development](/docs/guides/agent-development)
+- [Troubleshooting](/docs/reference/troubleshooting)
+- [MCP host setup](/docs/mcp)

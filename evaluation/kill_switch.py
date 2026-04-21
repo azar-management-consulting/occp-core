@@ -30,6 +30,28 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
+def _emit_gauge(active: bool) -> None:
+    """Set the kill-switch gauge metric. Import-safe / never raises."""
+    try:
+        from observability.metrics_collector import get_collector
+
+        get_collector().set_kill_switch_active(active)
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("kill_switch gauge emit failed: %s", exc)
+
+
+def _emit_activation(*, trigger: str, actor: str) -> None:
+    """Increment activations counter. Import-safe / never raises."""
+    try:
+        from observability.metrics_collector import get_collector
+
+        get_collector().record_kill_switch_activation(
+            trigger=trigger, actor=actor
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("kill_switch activation emit failed: %s", exc)
+
+
 class KillSwitchState(str, Enum):
     """Current state of the kill switch."""
 
@@ -142,6 +164,8 @@ class KillSwitch:
                 actor,
                 reason,
             )
+            _emit_gauge(True)
+            _emit_activation(trigger=trigger.value, actor=actor)
             return record
 
     def drill(
@@ -195,6 +219,7 @@ class KillSwitch:
                 reason,
                 prev.state.value if prev else "?",
             )
+            _emit_gauge(False)
             return prev
 
     # ── Introspection ────────────────────────────────────

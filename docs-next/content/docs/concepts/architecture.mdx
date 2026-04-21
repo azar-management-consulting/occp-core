@@ -1,0 +1,121 @@
+---
+title: "OCCP Architecture"
+description: "How the brain, agents, gateway, and kill switch fit together — Verified Autonomy Pipeline, data flow, multi-tenant boundaries."
+---
+
+# OCCP Architecture
+
+OCCP is a control plane, not a framework. Your agent code, your LLM
+provider, and your tools stay where they are — OCCP sits in front of
+them and enforces **plan, gate, execute, validate, ship**. This page is
+the 30,000-foot view.
+
+## Macro view
+
+```text
+          ┌────────────────────────────────────────────────┐
+          │                 API Gateway                    │
+          │   (FastAPI · RBAC · tenant isolation · TLS)    │
+          └───────────────────┬────────────────────────────┘
+                              │
+   ┌──────────────────────────┼───────────────────────────┐
+   │                          │                           │
+   ▼                          ▼                           ▼
+┌───────────┐         ┌─────────────────┐        ┌─────────────────┐
+│   Brain   │         │  Orchestrator   │        │   Kill Switch   │
+│ (Planner) │◀───────▶│   (Pipeline)    │◀──────▶│  (process-wide) │
+└─────┬─────┘         └────────┬────────┘        └─────────────────┘
+      │                        │
+      ▼                        ▼
+┌───────────┐         ┌─────────────────┐
+│ MCPBridge │         │  Policy Engine  │
+│  (tools)  │         │ (Rego + guards) │
+└─────┬─────┘         └────────┬────────┘
+      │                        │
+      ▼                        ▼
+┌──────────────────────────────────────┐
+│ Audit Store · Cost Calc · OTEL spans │
+└──────────────────────────────────────┘
+```
+
+- **Brain** — LLM-driven planner ([`orchestrator/brain_flow.py`](https://github.com/azar-management-consulting/occp-core/blob/main/orchestrator/brain_flow.py)).
+- **Orchestrator** — runs the 5-gate pipeline ([`orchestrator/pipeline.py`](https://github.com/azar-management-consulting/occp-core/blob/main/orchestrator/pipeline.py)).
+- **MCPBridge** — dispatches tool calls ([`adapters/mcp_bridge.py`](https://github.com/azar-management-consulting/occp-core/blob/main/adapters/mcp_bridge.py)).
+- **Policy Engine** — content-addressed Rego bundles + native Python guards.
+- **Kill Switch** — global hard-stop ([`evaluation/kill_switch.py`](https://github.com/azar-management-consulting/occp-core/blob/main/evaluation/kill_switch.py)).
+
+## Verified Autonomy Pipeline stages
+
+<Callout type="info">
+  Every task flows through all five stages. There is no bypass path,
+  no "trusted" tool, no admin override that skips the audit write.
+</Callout>
+
+```text
+┌─────┐   ┌──────┐   ┌─────────┐   ┌──────────┐   ┌──────┐
+│ PLAN│──▶│ GATE │──▶│ EXECUTE │──▶│ VALIDATE │──▶│ SHIP │
+└─────┘   └──────┘   └─────────┘   └──────────┘   └──────┘
+  LLM      Policy      Sandbox      Post-checks    Deploy
+  draft    + HITL      runner       + diff review  + audit
+```
+
+1. **PLAN** — Brain emits a structured plan (steps + tools + cost).
+2. **GATE** — `policy_engine/engine.py` evaluates Rego + guards; HITL
+   inserted if risk > threshold.
+3. **EXECUTE** — MCPBridge or sandbox runner performs the steps.
+4. **VALIDATE** — deterministic checks (schema, diff, test suite).
+5. **SHIP** — PR, deploy, or no-op; always audit-logged.
+
+See [Verified Autonomy](/docs/concepts/verified-autonomy) for the 5-gate contract.
+
+## Data flow
+
+Every stage emits three artefacts:
+
+- **Audit row** — append-only, Merkle-chained, 9 cost columns
+  (tokens_in/out/cached, USD/EUR, latency_ms, policy_eval_ms,
+  sandbox_ms, egress_bytes).
+- **Cost calc** — `policy_engine/budget_policy.py` deducts the actual
+  spend from the per-task budget before the next LLM call.
+- **OTEL span** — `gen_ai.*` semantic conventions, exported to
+  Phoenix / OTLP endpoint configured via `OCCP_OTLP_ENDPOINT`.
+
+## Multi-tenant boundary
+
+Every row in every table carries `tenant_id`. RBAC is enforced at the
+gateway (request → tenant), the policy engine (rule bundles scoped per
+tenant), and the audit store (Merkle root per tenant). Cross-tenant
+reads are structurally impossible — there is no "admin SQL path" that
+skips the filter.
+
+| Layer      | Isolation mechanism                         |
+| ---------- | ------------------------------------------- |
+| Gateway    | API key → tenant claim (argon2id hashed)    |
+| Policy     | Rego bundle hash scoped by tenant           |
+| Audit      | Per-tenant Merkle chain, hourly root anchor |
+| OTEL       | `tenant.id` resource attribute on all spans |
+
+## Kill switch integration points
+
+<Callout type="warn">
+  The kill switch is polled at **every autonomous entry point**, not
+  just the pipeline. Gap G-6 (iter-3) closed this.
+</Callout>
+
+All four classes below now carry `__kill_switch_guarded__ = True` and
+call `require_kill_switch_inactive()` at their main entry methods:
+
+| Component              | File                               | Method                    |
+| ---------------------- | ---------------------------------- | ------------------------- |
+| `Pipeline`             | `orchestrator/pipeline.py`         | `run()`                   |
+| `BrainFlow`            | `orchestrator/brain_flow.py`       | `process_message()`       |
+| `MCPBridge`            | `adapters/mcp_bridge.py`           | `dispatch()`              |
+| `AutoDevOrchestrator`  | `autodev/orchestrator.py`          | `execute()`               |
+
+An active kill switch raises before any external side effect in ≤ 200 ms.
+
+## Next
+
+- [Verified Autonomy Pipeline](/docs/concepts/verified-autonomy)
+- [Security model](/docs/security)
+- [EU AI Act compliance](/docs/compliance/eu-ai-act)

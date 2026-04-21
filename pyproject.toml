@@ -72,6 +72,7 @@ dev = [
     "ruff>=0.9",
     "mypy>=1.14",
     "fakeredis>=2.26.0",
+    "respx>=0.22",
 ]
 all = ["occp[llm-all,postgres,mcp,observability,enforcement,dev]"]
 
@@ -81,6 +82,9 @@ occp = "cli.main:cli"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+    "smoke: production smoke tests — run with --smoke flag only.",
+]
 
 [tool.setuptools.packages.find]
 include = [

@@ -13,11 +13,12 @@ Safety guards:
 from __future__ import annotations
 
 import logging
+import uuid
 from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -27,6 +28,8 @@ from adapters.managed_agents_client import (
     NotConfigured,
     SessionHandle,
 )
+from api.auth import get_current_user_payload
+from api.rbac import PermissionChecker
 from evaluation import get_kill_switch
 from policy_engine.budget_policy import BudgetPolicy
 
@@ -107,13 +110,20 @@ class ResearchRequest(BaseModel):
 # ── Endpoints ─────────────────────────────────────────────────
 
 
-@router.post("/managed-agents/research")
-async def research(body: ResearchRequest) -> StreamingResponse:
+@router.post(
+    "/managed-agents/research",
+    dependencies=[Depends(PermissionChecker("managed_agents", "dispatch"))],
+)
+async def research(
+    body: ResearchRequest,
+    current_user: dict = Depends(get_current_user_payload),
+) -> StreamingResponse:
     """Spawn a deep-web-research session and stream tokens back as SSE."""
     require_kill_switch_inactive()
 
     depth = body.depth
-    task_id = f"managed-agents-{depth}-{abs(hash(body.query)) % 10_000_000}"
+    # UUID-based task_id: collision-safe (was: hash() % 10M — too small to resist forced collisions).
+    task_id = f"managed-agents-{depth}-{uuid.uuid4().hex[:16]}"
     budget = _get_budget_policy()
     budget.set_task_budget(task_id, _DEPTH_BUDGET_USD[depth])
     passed, reason = budget.check(
@@ -133,7 +143,9 @@ async def research(body: ResearchRequest) -> StreamingResponse:
     try:
         handle: SessionHandle = await client.create_session(agent_config)
     except ManagedAgentsAPIError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        # Log verbatim upstream body server-side; return generic detail to client to avoid prompt/body leak.
+        logger.warning("managed-agents upstream error: %s", exc)
+        raise HTTPException(status_code=502, detail="upstream managed-agents error") from exc
 
     _session_registry[handle.session_id] = {
         "state": "running",
@@ -175,8 +187,14 @@ async def research(body: ResearchRequest) -> StreamingResponse:
     return StreamingResponse(_event_stream(), media_type="text/event-stream")
 
 
-@router.get("/managed-agents/status/{session_id}")
-async def status(session_id: str) -> dict[str, Any]:
+@router.get(
+    "/managed-agents/status/{session_id}",
+    dependencies=[Depends(PermissionChecker("managed_agents", "read"))],
+)
+async def status(
+    session_id: str,
+    current_user: dict = Depends(get_current_user_payload),
+) -> dict[str, Any]:
     record = _session_registry.get(session_id)
     if record is None:
         raise HTTPException(status_code=404, detail=f"session {session_id} not found")

@@ -103,10 +103,9 @@ class AnthropicManagedAgentsClient:
             ),
         )
         logger.info(
-            "AnthropicManagedAgentsClient initialised (beta=%s, base=%s, key=***%s)",
+            "AnthropicManagedAgentsClient initialised (beta=%s, base=%s, key=***REDACTED***)",
             self._beta_header,
             self._base_url,
-            key[-4:] if len(key) >= 4 else "****",
         )
 
     # ── lifecycle ─────────────────────────────────────────────

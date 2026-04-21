@@ -1,0 +1,169 @@
+---
+title: "Building a Custom Agent"
+description: "Extend the hello-agent starter with your own tools, policy guard, budget metadata, and planner registration."
+---
+
+# Building a Custom Agent
+
+You already ran the [first-agent walkthrough](/docs/guides/first-agent). This
+guide is the next step: a **production-shaped** custom agent with its own
+tool, policy guard, budget metadata, and OpenClaw planner registration.
+
+<Callout type="info">
+  The starter lives at `templates/hello-agent/`. We extend it in place
+  rather than reinventing the scaffold.
+</Callout>
+
+## 1 · Start from the template
+
+```bash
+cp -r templates/hello-agent my-agent
+cd my-agent
+npm install
+cp .env.example .env   # fill in OCCP_API_KEY
+```
+
+## 2 · Declare a tool
+
+Tools follow the exact shape of `src/tools/echo.js` — `name`,
+`description`, JSON-Schema `parameters`, and an `async run()`:
+
+```js
+// src/tools/refund.js
+export const refundTool = {
+  name: "refund_order",
+  description: "Issue a refund if the return window is still open.",
+  parameters: {
+    type: "object",
+    properties: {
+      order_id: { type: "string", pattern: "^ord_[A-Za-z0-9]{6,}$" },
+      amount_usd: { type: "number", minimum: 0, maximum: 10000 },
+    },
+    required: ["order_id", "amount_usd"],
+  },
+  async run({ order_id, amount_usd }) {
+    const resp = await fetch(`${process.env.STORE_API}/refunds`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order_id, amount_usd }),
+    });
+    if (!resp.ok) throw new Error(`refund failed: ${resp.status}`);
+    return await resp.json();
+  },
+};
+```
+
+## 3 · Wire a policy guard
+
+Guards live in [`policy_engine/guards.py`](https://github.com/azar-management-consulting/occp-core/blob/main/policy_engine/guards.py).
+For a refund tool you want an **amount ceiling** + **HITL above $500**:
+
+```python
+# policy_engine/guards_custom.py
+from policy_engine.guards import GuardResult
+
+class RefundCeilingGuard:
+    NAME = "refund_ceiling_guard"
+    HARD_MAX_USD = 2500.0
+    HITL_THRESHOLD_USD = 500.0
+
+    def check(self, payload: dict) -> GuardResult:
+        amount = float(payload.get("amount_usd", 0))
+        if amount > self.HARD_MAX_USD:
+            return GuardResult(False, self.NAME, f"amount ${amount} > hard max")
+        if amount > self.HITL_THRESHOLD_USD:
+            return GuardResult(False, self.NAME, "HITL required", ["hitl"])
+        return GuardResult(True, self.NAME)
+```
+
+Register it in the orchestrator's guard chain — see the existing
+`PIIGuard` and `PromptInjectionGuard` wiring for the pattern.
+
+## 4 · Declare budget metadata
+
+Tools should advertise their expected cost so `budget_policy.py` can
+pre-flight-check:
+
+```json
+{
+  "tool": "refund_order",
+  "cost_hint": {
+    "llm_input_tokens": 1200,
+    "llm_output_tokens": 400,
+    "external_usd": 0.02
+  }
+}
+```
+
+Ship this alongside the tool file as `refund.meta.json`; the loader
+picks it up automatically.
+
+## 5 · Register with the OpenClaw planner
+
+```python
+# adapters/openclaw_planner.py (snippet)
+from tools.refund import refund_tool
+
+def register_custom_tools(planner):
+    planner.add_tool(refund_tool)
+    planner.add_guard(RefundCeilingGuard())
+```
+
+## 6 · Full 50-LoC working example
+
+```js
+// my-agent/src/agent.js — end-to-end custom agent
+import { refundTool } from "./tools/refund.js";
+
+const API = process.env.OCCP_API_URL ?? "https://api.occp.ai";
+const KEY = process.env.OCCP_API_KEY;
+
+async function runTask(task) {
+  const plan = await fetch(`${API}/api/v1/brain/plan`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${KEY}` },
+    body: JSON.stringify({ task, tools: [refundTool.name] }),
+  }).then((r) => r.json());
+
+  const gate = await fetch(`${API}/api/v1/pipeline/gate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${KEY}` },
+    body: JSON.stringify({ plan_id: plan.id }),
+  }).then((r) => r.json());
+
+  if (!gate.approved) {
+    console.log(`[agent] blocked: ${gate.reason}`);
+    return { status: "blocked", reason: gate.reason };
+  }
+
+  for (const step of plan.steps) {
+    if (step.tool === "refund_order") {
+      const result = await refundTool.run(step.args);
+      await fetch(`${API}/api/v1/pipeline/record`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${KEY}` },
+        body: JSON.stringify({ plan_id: plan.id, step_id: step.id, result }),
+      });
+    }
+  }
+  return { status: "ok", plan_id: plan.id, audit_chain_id: plan.audit_chain_id };
+}
+
+const out = await runTask("Refund order ord_A42198 for $79.00");
+console.log(JSON.stringify(out, null, 2));
+```
+
+## 7 · Local test harness
+
+```bash
+npm test                          # unit tests for tools
+OCCP_API_URL=http://localhost:8000 \
+OCCP_API_KEY=occp_test_sk_local \
+  node src/agent.js               # run against a local brain
+```
+
+## Next
+
+- [MCP tool catalog](/docs/guides/mcp-tools)
+- [Writing policies](/docs/guides/policy-writing)
+- [Troubleshooting](/docs/reference/troubleshooting)

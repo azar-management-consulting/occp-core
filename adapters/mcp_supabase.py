@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from typing import Any
 
 import httpx
@@ -42,9 +43,38 @@ def _headers(key: str) -> dict[str, str]:
     }
 
 
+_WRITE_TOKEN_RE = re.compile(
+    r"\b(INSERT|UPDATE|DELETE|DROP|TRUNCATE|ALTER|CREATE|GRANT|"
+    r"REVOKE|REPLACE|RENAME|COMMENT|COPY|VACUUM|REINDEX|CLUSTER|"
+    r"SECURITY|LOCK|EXECUTE|CALL|DO)\b",
+    re.IGNORECASE,
+)
+_STMT_SEP_RE = re.compile(r";\s*\S")  # multi-statement (semicolon followed by more tokens)
+
+
+def _strip_sql_comments(sql: str) -> str:
+    # Remove /* ... */ block comments and -- line comments before scanning.
+    sql = re.sub(r"/\*.*?\*/", " ", sql, flags=re.DOTALL)
+    sql = re.sub(r"--[^\n]*", " ", sql)
+    return sql
+
+
 def _is_read_only(sql: str) -> bool:
-    normalised = sql.strip().upper()
-    return not any(normalised.startswith(kw) for kw in _WRITE_KEYWORDS)
+    """Reject any SQL containing write/DDL tokens OR multi-statement syntax.
+
+    Stricter than prefix match: catches `WITH x AS (...) DELETE ...`,
+    leading whitespace/comment bypasses, and stacked queries `SELECT 1; DROP ...`.
+    """
+    if not sql or not sql.strip():
+        return False
+    stripped = _strip_sql_comments(sql).strip()
+    if _STMT_SEP_RE.search(stripped):
+        return False
+    if _WRITE_TOKEN_RE.search(stripped):
+        return False
+    # Must start with SELECT or WITH (read CTE) after normalization.
+    head = stripped.upper().lstrip()
+    return head.startswith("SELECT") or head.startswith("WITH") or head.startswith("EXPLAIN") or head.startswith("SHOW")
 
 
 async def supabase_query(params: dict[str, Any]) -> dict[str, Any]:

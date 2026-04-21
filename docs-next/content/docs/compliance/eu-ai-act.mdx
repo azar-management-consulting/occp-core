@@ -1,0 +1,116 @@
+---
+title: "EU AI Act Article 14"
+description: "Gap-by-gap mapping of OCCP's Art. 14 human oversight compliance — current status after iter-3 G-6 closure."
+---
+
+# EU AI Act Article 14 — Compliance Mapping
+
+**Regulation:** (EU) 2024/1689 · **Deadline:** 2026-08-02 (high-risk systems, Art. 113).
+
+Article 14 requires a **3-tier human oversight** architecture:
+
+- **L1 Understand** — monitor, detect anomalies, explain decisions (Art. 14(4)(a)-(c))
+- **L2 Intervene** — disregard / override / reverse model output (Art. 14(4)(d))
+- **L3 Halt** — one-click STOP bringing the system to a safe state (Art. 14(4)(e))
+
+OCCP's mapping is tracked in [`.planning/EU_AI_ACT_ART14_COMPLIANCE_MAPPING.md`](https://github.com/azar-management-consulting/occp-core/blob/main/.planning/EU_AI_ACT_ART14_COMPLIANCE_MAPPING.md).
+This page flattens it into a status table you can audit directly.
+
+<Callout type="info">
+  **Gap G-6 is now CLOSED** (iter-3, 2026-04-21). BrainFlow, MCPBridge
+  and AutoDevOrchestrator all carry `__kill_switch_guarded__ = True`
+  and call `require_kill_switch_inactive()` at their entry methods.
+</Callout>
+
+## Gap status after iter-3
+
+| Gap ID | Description | Status | Code reference |
+|--------|-------------|:------:|----------------|
+| **G-1** | KillSwitch state is process-global in-memory only; container restart loses history. | **MITIGATED** | `evaluation/kill_switch.py` + Postgres `kill_switch_audit` (iter-2) |
+| **G-2** | `HumanOversightGuard._approved_actions` single-process set; restart loses approvals. | **MITIGATED** | `policy_engine/guards.py:279-357` + Redis backing |
+| **G-3** | No HITL UI for pending approvals (Telegram + API only). | OPEN (P1) | Dashboard `PendingApprovalsPanel` — TODO |
+| **G-4** | `/observability/readiness` requires auth; auditors may lack tokens. | OPEN (P1) | `api/routes/observability.py:146-176` |
+| **G-5** | No Art. 14(5) dual-control flow (single approver only). | N/A today | No Annex III biometric module in OCCP |
+| **G-6** | `require_kill_switch_inactive()` only in `Pipeline.run()`; BrainFlow / MCPBridge / AutoDev entry points unguarded. | **CLOSED** (iter-3) | `orchestrator/brain_flow.py:107`, `adapters/mcp_bridge.py:97`, `autodev/orchestrator.py:148` |
+| **G-7** | Kill switch lacks hardware-independent channel (HTTPS only). | OPEN (P1) | Telegram `/stop` bot — iter-4 |
+| **G-8** | Art. 14 status has no machine-readable tag for auditors. | OPEN (P2) | `architecture/compliance.yaml` — TODO |
+| **G-9** | No E2E test suite asserting all 3 tiers. | **CLOSED** (2026-04-20) | `tests/test_eu_ai_act_compliance.py` (7 tests, 6 PASS + 1 now PASS after G-6) |
+| **G-10** | No deployer-facing Instructions for Use (IFU, Art. 13(3)(b)(iv)). | OPEN (P2) | `COMPLIANCE.md` — TODO |
+| **G-11** | `OutputSanitizationGuard` skips plan/metadata unless `output` key present. | OPEN (P2) | `policy_engine/guards.py` |
+| **G-12** | Compromised admin blocks kill-switch fallback (no break-glass chain). | OPEN (P1) | `security/break_glass.py` + docs |
+
+## G-6 closure — what changed
+
+Before iter-3, only `orchestrator/pipeline.py:40-47` polled the kill
+switch. That left three autonomous entry paths unguarded:
+
+- `BrainFlow.process_message()` — direct chat → agent actions
+- `MCPBridge.dispatch()` — tool calls from Claude Desktop / Cursor
+- `AutoDevOrchestrator.execute()` — GitHub webhook → PR generation
+
+The fix (single commit per component) adds the guard at the top of
+each method:
+
+```python
+# top of dispatch / process_message / execute
+if _require_ks_inactive is not None:
+    _require_ks_inactive()
+```
+
+Plus a class-level marker for the compliance test to assert:
+
+```python
+class MCPBridge:
+    __kill_switch_guarded__ = True
+```
+
+The regression test lives at
+[`tests/test_eu_ai_act_compliance.py:195-230`](https://github.com/azar-management-consulting/occp-core/blob/main/tests/test_eu_ai_act_compliance.py)
+(`test_halt_enforced_across_all_entry_points`) — previously `xfail`,
+now **PASSING**.
+
+## 3-tier component map
+
+| Tier | Component | File / endpoint |
+|------|-----------|-----------------|
+| **L1** Understand | MetricsCollector, AnomalyDetector, DigestGenerator | `api/routes/observability.py:43-141` |
+| **L1** | SHA-256 audit hash chain | `policy_engine/engine.py:399-433` |
+| **L1** | DriftDetector | `api/routes/governance.py:299-304` |
+| **L2** Intervene | ApprovalQueue + HumanOversightGuard | `autodev/approval_queue.py:28-80`, `policy_engine/guards.py:279-357` |
+| **L2** | FlagStore + CanaryEngine | `api/routes/governance.py:285-337` |
+| **L2** | Break-glass CLI | `security/break_glass.py` |
+| **L3** Halt | KillSwitch primitive | `evaluation/kill_switch.py:119-198` |
+| **L3** | Pipeline / BrainFlow / MCPBridge / AutoDev guards | (see G-6 above) |
+| **L3** | Drill mode | `api/routes/governance.py:249-263` |
+
+## Art. 14(5) biometric dual-control
+
+**Not applicable** to OCCP today. Art. 14(5) attaches to Annex III
+point 1(a) (remote biometric identification); OCCP has no biometric
+module (zero matches for `biometric`, `face`, `fingerprint` in the
+codebase). A voluntary dual-approver flow for **CRITICAL** actions
+(kill-switch deactivation after SECURITY trigger, immutable-file edits,
+prod deploy after canary rollback) is tracked under P1.
+
+## Evidence bundle
+
+<Callout type="warn">
+  When an auditor asks for evidence, ship the **whole** bundle — not
+  cherry-picked files. Partial evidence can look worse than no evidence.
+</Callout>
+
+- `architecture/governance.yaml` — immutable paths + L6 markers
+- `policy_engine/guards.py` — 5 guards including HumanOversightGuard
+- `policy_engine/engine.py` — decision record + hash chain
+- `evaluation/kill_switch.py` — L3 primitive
+- `api/routes/governance.py` — kill-switch endpoints
+- `api/routes/observability.py` — L1 readiness
+- `autodev/approval_queue.py` — HITL L2
+- `tests/test_eu_ai_act_compliance.py` — E2E test (7 tests)
+- `.planning/EU_AI_ACT_ART14_COMPLIANCE_MAPPING.md` — source mapping
+
+## Next
+
+- [Security model](/docs/security)
+- [Verified Autonomy Pipeline](/docs/concepts/verified-autonomy)
+- [Architecture](/docs/concepts/architecture)

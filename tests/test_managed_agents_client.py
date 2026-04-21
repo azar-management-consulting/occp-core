@@ -244,6 +244,7 @@ async def test_api_key_not_logged_in_full(
     try:
         combined = " ".join(r.getMessage() for r in caplog.records)
         assert "sk-ant-verysecretkey12345" not in combined
-        assert "2345" in combined  # only the last 4 may appear
+        assert "2345" not in combined  # not even the last 4
+        assert "REDACTED" in combined
     finally:
         await client.aclose()

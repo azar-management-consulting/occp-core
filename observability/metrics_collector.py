@@ -37,6 +37,30 @@ _DEFAULT_HIST_BUCKETS_MS = (
     1000.0, 2500.0, 5000.0, 10000.0, 30000.0,
 )
 
+# Prometheus-standard seconds buckets for HTTP latency.
+_HTTP_HIST_BUCKETS_SECONDS = (
+    0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0,
+)
+
+# ── Grafana SLO dashboard metric names (occp-slo.json) ────────
+# Keep in sync with infra/grafana/dashboards/occp-slo.json.
+HTTP_REQUESTS_TOTAL = "occp_http_requests_total"
+HTTP_REQUEST_DURATION_SECONDS = "occp_http_request_duration_seconds"
+LLM_COST_USD_TOTAL = "occp_llm_cost_usd_total"
+KILL_SWITCH_ACTIVE = "occp_kill_switch_active"
+KILL_SWITCH_ACTIVATIONS_TOTAL = "occp_kill_switch_activations_total"
+PIPELINE_RUNS_TOTAL = "occp_pipeline_runs_total"
+
+# HELP strings emitted for each metric in the exposition format.
+_SLO_METRIC_HELP: dict[str, str] = {
+    HTTP_REQUESTS_TOTAL: "Total HTTP requests by method, path and status",
+    HTTP_REQUEST_DURATION_SECONDS: "HTTP request duration in seconds",
+    LLM_COST_USD_TOTAL: "Total LLM spend in USD by model_id",
+    KILL_SWITCH_ACTIVE: "Kill switch state (1=active, 0=inactive)",
+    KILL_SWITCH_ACTIVATIONS_TOTAL: "Total kill switch activations by trigger and actor",
+    PIPELINE_RUNS_TOTAL: "Total pipeline runs by result (pass|fail|halted|gated)",
+}
+
 
 def _labels_key(labels: dict[str, str] | None) -> tuple[tuple[str, str], ...]:
     """Return a hashable key for a label set."""
@@ -106,6 +130,91 @@ class MetricsCollector:
         self._gauges: dict[str, Gauge] = {}
         self._histograms: dict[str, Histogram] = {}
         self._startup_ts = time.time()
+        self._register_slo_metrics()
+
+    # ── Grafana SLO metric pre-registration ───────────────────
+    def _register_slo_metrics(self) -> None:
+        """Pre-register the 6 Grafana-SLO metrics so they appear in
+        ``/metrics`` even when no event has fired yet (Prometheus scrape
+        consistency + Grafana panel stability).
+        """
+        for name in (
+            HTTP_REQUESTS_TOTAL,
+            LLM_COST_USD_TOTAL,
+            KILL_SWITCH_ACTIVATIONS_TOTAL,
+            PIPELINE_RUNS_TOTAL,
+        ):
+            self._counters[name] = Counter(
+                name=name, help_text=_SLO_METRIC_HELP[name]
+            )
+        self._gauges[KILL_SWITCH_ACTIVE] = Gauge(
+            name=KILL_SWITCH_ACTIVE, help_text=_SLO_METRIC_HELP[KILL_SWITCH_ACTIVE]
+        )
+        # Ensure default value exists so gauge is emitted even on cold start.
+        self._gauges[KILL_SWITCH_ACTIVE].set(0.0)
+        self._histograms[HTTP_REQUEST_DURATION_SECONDS] = Histogram(
+            name=HTTP_REQUEST_DURATION_SECONDS,
+            help_text=_SLO_METRIC_HELP[HTTP_REQUEST_DURATION_SECONDS],
+            buckets=_HTTP_HIST_BUCKETS_SECONDS,
+        )
+
+    # ── Typed helpers for the 6 Grafana-SLO metrics ───────────
+    def record_http_request(
+        self, *, method: str, path: str, status: int, duration_seconds: float
+    ) -> None:
+        """Record one HTTP request — increments total + observes duration."""
+        labels = {"method": method, "path": path, "status": str(status)}
+        self.counter(
+            HTTP_REQUESTS_TOTAL,
+            1,
+            labels,
+            help_text=_SLO_METRIC_HELP[HTTP_REQUESTS_TOTAL],
+        )
+        self.histogram(
+            HTTP_REQUEST_DURATION_SECONDS,
+            duration_seconds,
+            {"method": method, "path": path},
+            help_text=_SLO_METRIC_HELP[HTTP_REQUEST_DURATION_SECONDS],
+            buckets=_HTTP_HIST_BUCKETS_SECONDS,
+        )
+
+    def record_llm_cost(self, *, model_id: str, cost_usd: float) -> None:
+        """Increment the LLM cost counter (USD) for *model_id*."""
+        if cost_usd <= 0:
+            return
+        self.counter(
+            LLM_COST_USD_TOTAL,
+            float(cost_usd),
+            {"model_id": model_id},
+            help_text=_SLO_METRIC_HELP[LLM_COST_USD_TOTAL],
+        )
+
+    def set_kill_switch_active(self, active: bool) -> None:
+        """Set the kill-switch gauge (1=active, 0=inactive)."""
+        self.gauge(
+            KILL_SWITCH_ACTIVE,
+            1.0 if active else 0.0,
+            None,
+            help_text=_SLO_METRIC_HELP[KILL_SWITCH_ACTIVE],
+        )
+
+    def record_kill_switch_activation(self, *, trigger: str, actor: str) -> None:
+        """Increment the kill-switch activations counter."""
+        self.counter(
+            KILL_SWITCH_ACTIVATIONS_TOTAL,
+            1,
+            {"trigger": trigger, "actor": actor},
+            help_text=_SLO_METRIC_HELP[KILL_SWITCH_ACTIVATIONS_TOTAL],
+        )
+
+    def record_pipeline_run(self, *, result: str) -> None:
+        """Increment the pipeline runs counter. ``result`` ∈ {pass,fail,halted,gated}."""
+        self.counter(
+            PIPELINE_RUNS_TOTAL,
+            1,
+            {"result": result},
+            help_text=_SLO_METRIC_HELP[PIPELINE_RUNS_TOTAL],
+        )
 
     # ── Counter ───────────────────────────────────────────────
     def counter(
@@ -294,6 +403,7 @@ class MetricsCollector:
             self._gauges.clear()
             self._histograms.clear()
             self._startup_ts = time.time()
+            self._register_slo_metrics()
 
 
 # ── Singleton accessor ────────────────────────────────────────

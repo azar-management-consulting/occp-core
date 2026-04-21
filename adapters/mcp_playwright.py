@@ -16,8 +16,11 @@ optional selectolax (if importable) for a usable best-effort path.
 
 from __future__ import annotations
 
+import ipaddress
 import logging
+import socket
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 
@@ -26,9 +29,62 @@ logger = logging.getLogger(__name__)
 _DEFAULT_TIMEOUT = 15.0
 _MAX_BODY = 4096
 
+# SSRF defense: block all private / link-local / loopback / cloud metadata ranges.
+_BLOCKED_NETWORKS = [
+    ipaddress.ip_network(n)
+    for n in (
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16",
+        "127.0.0.0/8",
+        "169.254.0.0/16",  # link-local + AWS/GCP/Azure IMDS
+        "::1/128",
+        "fc00::/7",
+        "fe80::/10",
+        "100.64.0.0/10",  # CGNAT
+        "0.0.0.0/8",
+    )
+]
+_BLOCKED_HOSTS = {"localhost", "metadata.google.internal", "metadata.goog"}
+
+
+def _is_blocked_ip(ip_str: str) -> bool:
+    try:
+        addr = ipaddress.ip_address(ip_str)
+    except ValueError:
+        return True  # refuse malformed
+    return any(addr in net for net in _BLOCKED_NETWORKS)
+
 
 def _validate_url(url: str) -> bool:
-    return isinstance(url, str) and (url.startswith("http://") or url.startswith("https://"))
+    """Validate url: must be http(s), host must resolve to a public IP."""
+    if not isinstance(url, str):
+        return False
+    if not (url.startswith("http://") or url.startswith("https://")):
+        return False
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return False
+    host = (parsed.hostname or "").lower().strip()
+    if not host or host in _BLOCKED_HOSTS:
+        return False
+    # If host is a literal IP, validate directly.
+    try:
+        ipaddress.ip_address(host)
+        return not _is_blocked_ip(host)
+    except ValueError:
+        pass
+    # Otherwise resolve every A/AAAA and refuse if any is private.
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except socket.gaierror:
+        return False
+    for family, *_rest, sockaddr in infos:
+        ip = sockaddr[0]
+        if _is_blocked_ip(ip):
+            return False
+    return True
 
 
 async def playwright_goto(params: dict[str, Any]) -> dict[str, Any]:
@@ -62,8 +118,9 @@ async def playwright_extract_text(params: dict[str, Any]) -> dict[str, Any]:
     if not _validate_url(url):
         return {"status": "error", "error": "valid http(s) url required"}
 
+    # follow_redirects=False — each hop could land on a private IP; manual validation only.
     try:
-        async with httpx.AsyncClient(timeout=_DEFAULT_TIMEOUT, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=_DEFAULT_TIMEOUT, follow_redirects=False) as client:
             resp = await client.get(url, headers={"User-Agent": "OCCP-MCP/1.0"})
     except httpx.HTTPError as exc:
         return {"status": "error", "error": f"fetch failed: {exc}"}
