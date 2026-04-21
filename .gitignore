@@ -62,6 +62,13 @@ uv.lock
 # Next.js generated types
 dash/next-env.d.ts
 
+# docs-next (Fumadocs + Scalar)
+docs-next/.next/
+docs-next/node_modules/
+docs-next/.source/
+docs-next/next-env.d.ts
+docs-next/.contentlayer/
+
 # Stale pip artifacts
 =*
 
@@ -97,3 +104,12 @@ OCCP_SYSTEM_MANUAL.md
 # Claude Code agent run transcripts (never committed)
 .claude/
 */.claude/
+
+# landing-next (Next.js 15)
+landing-next/.next/
+landing-next/node_modules/
+landing-next/next-env.d.ts
+landing-next/.turbo/
+
+# templates/*/node_modules
+templates/**/node_modules/

@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@theme {
+  /* OCCP brand — verified-green, less neon than legacy #33ff33 */
+  --color-brand: oklch(0.72 0.18 145);
+  --color-brand-subtle: oklch(0.95 0.05 145);
+  --color-warn: oklch(0.78 0.16 70);
+  --color-danger: oklch(0.62 0.22 27);
+
+  /* Neutrals (Linear-inspired) */
+  --color-bg: oklch(0.14 0.01 260);
+  --color-bg-elev: oklch(0.18 0.01 260);
+  --color-border-subtle: oklch(0.28 0.01 260);
+  --color-fg: oklch(0.96 0.01 260);
+  --color-fg-muted: oklch(0.70 0.01 260);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-bg: oklch(0.99 0 0);
+    --color-bg-elev: oklch(0.97 0 0);
+    --color-border-subtle: oklch(0.88 0 0);
+    --color-fg: oklch(0.18 0.01 260);
+    --color-fg-muted: oklch(0.40 0.01 260);
+  }
+}
+
+html {
+  background: var(--color-bg);
+  color: var(--color-fg);
+}
+
+body {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+code, pre, .mono {
+  font-family: var(--font-geist-mono), ui-monospace, "Cascadia Code", monospace;
+}
+
+/* Subtle cursor-blink accent for H1 last word (terminal DNA nod) */
+.cursor-blink::after {
+  content: "_";
+  color: var(--color-brand);
+  animation: blink 1.2s step-end infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
