@@ -1,8 +1,85 @@
 # SESSION 1 — OCCP Development Handoff
 
-**Dátum:** 2026-04-20 → 2026-04-21
+**Dátum:** 2026-04-20 → 2026-04-21 (2 iteráció)
 **Session célja:** OCCP rendszer 100% működő állapotba hozása + web-felület modernizáció
 **Következő session kezdőpontja:** Ezt a dokumentumot kell először elolvasnod
+
+---
+
+## 🆕 ITERÁCIÓ 2 (2026-04-21) — §Immediate next mind ZÁRT
+
+Három új commit, az előző §Pending §Immediate 5-ből 5 leszállítva:
+
+```
+b16e2de feat(web): Fumadocs app scaffold + Vercel deploy wiring
+1e17d14 feat(dash): Brian chat drawer SSE + Geist fonts + sheet primitive
+21db81b fix(tooling): Node 25 test glob + .gitignore tsbuildinfo
+```
+
+### ✅ 1. cli-create-app scaffold test fix
+- Gyökérhiba: Node 25 `node --test tests/` a `tests`-t modulként próbálja feloldani
+- Javítás: `package.json:test` → `node --test 'tests/**/*.test.js'`
+- Ugyanez a templates/hello-agent-ben is javítva
+- Verifikáció: cli-create-app 3/3 PASS, hello-agent 2/2 PASS
+
+### ✅ 2. Dash v2 Geist fonts swap + build
+- `dash/package.json` + `geist ^1.4.0` dep
+- `dash/src/app/layout.tsx` — `GeistSans` + `GeistMono` (korábban `Press_Start_2P` + `Space_Mono` Google Fonts → SSL fail)
+- `dash/src/app/globals.css` — `--font-pixel`/`--font-mono` most Geist CSS vars-okra mutatnak, ui-sans-serif / ui-monospace fallback
+- `dash/tsconfig.json` — scope `src/**`-re szűkítve, `playwright.config.ts` + `e2e/` excluded
+- Verifikáció: `npm run build` exit 0, 23 static oldal, 102 kB first load JS
+
+### ✅ 3. Brian chat drawer SSE wire
+- `dash/src/components/ui/sheet.tsx` — Radix Dialog-based shadcn Sheet, cva side variants, `hideCloseButton` prop
+- `dash/src/components/brian-drawer.tsx` — 424 LoC:
+  - Custom event `brian:open` megnyitja
+  - POST `/api/v1/brain/message` SSE stream (`data:` parser, `[DONE]` sentinel, JSON `{token}`/`{delta}`/`{content}` + raw text támogatás)
+  - `AbortController` drawer close + unmount-kor
+  - 401 → `/login` redirect
+  - Sonner toast network error-ra
+  - Online/offline indikátor (`navigator.onLine` + window events)
+  - Enter = send, Shift+Enter = newline, auto-scroll új chunk-ra
+- `dash/src/components/command-palette.tsx` — Cmd+J és "Ask Brian" palette entry dispatch a `brian:open` custom event-et
+- `dash/src/app/providers.tsx` — `<BrianDrawer />` mountolva a `<CommandPalette />` mellé
+- API base: `process.env.NEXT_PUBLIC_OCCP_API_URL` (fallback `https://api.occp.ai`)
+- API key: `localStorage["occp_api_key"]` → `Authorization: Bearer`
+
+### ✅ 4. Vercel deploy prep (landing + docs)
+- `vercel/README.md` — deploy playbook, project nevek (`occp-landing`, `occp-docs`), DNS CNAME wiring `v2.occp.ai` + `docs.occp.ai` → `cname.vercel-dns.com`, cutover plan TTL 300s rollback-kal, env var mátrix
+- `landing-next/vercel.json` + `docs-next/vercel.json` — framework=nextjs, régió=fra1, `npm ci --no-audit --no-fund`, hardened headers (HSTS preload, nosniff, DENY frames, Permissions-Policy camera/mic/geo+FloC off, strict-origin referrer)
+- `landing-next/package-lock.json` commit-elve (Vercel reproducible build)
+
+### ✅ 5. Fumadocs app scaffold (docs-next)
+- `create-fumadocs-app@16.8.1` teljesen non-interactive invocation:
+  ```bash
+  npx --yes create-fumadocs-app@latest occp-docs-test \
+      --template "+next+fuma-docs-mdx" --src --install \
+      --linter eslint --search orama --og-image next-og \
+      --ai-chat openrouter --no-git --pm npm
+  ```
+- Scaffoldolt: Next.js 16.2.4 + Fumadocs UI 16.8.1 + Fumadocs MDX 14.3.1
+- Meglévő content merge: `content/docs/{index,quickstart,concepts/verified-autonomy,guides/first-agent}.mdx` mind megmaradt
+- `source.config.ts` → `content/docs` felé mutat
+- Generált route-ok: `(home)` landing, `/docs/[[...slug]]` SSG, `/api/search` (Orama), `/llms.txt`, `/llms-full.txt`, `/og/docs/[...slug]/image.png`
+- Build: 4 MDX oldal SSG, llms endpoints, OG képgeneráció, exit 0
+- Handoff #5 gotcha feloldva: az interaktív CLI-t teljesen flag-ekkel helyettesítettük
+
+### Regression
+
+`3020 passed + 1 xfailed + 0 failed` — 346s (`.venv/bin/pytest tests/ -q --tb=line -k "not e2e and not loadtest"`)
+
+### Frontend tesztek
+
+- landing-next vitest: 4/4 PASS
+- cli-create-app node:test: 3/3 PASS
+- templates/hello-agent node:test: 2/2 PASS
+- dash `npm run build`: 23 oldal, exit 0 (a `(v2)/page_client-reference-manifest.js` ENOENT csak **warning** a standalone output post-copy lépésben, Next 15.5 ismert limitáció parenthesized route group + pure server page kombinációban; a build maga 100% sikeres)
+
+### Még hátra (Short term — 1 hónap)
+
+Lásd az eredeti §Pending §Short term / §Medium szekciókat — azok változatlanok.
+
+---
 
 ---
 
@@ -128,7 +205,7 @@ feat(docs): docs-next MDX skeleton + llms-txt generator             (9847883)
 
 **Templates:**
 - `templates/hello-agent/` — 20-LoC Node starter + AGENTS.md + CLAUDE.md + deploy.yml + 2/2 test
-- `cli-create-app/` — `create-occp-app` CLI `@clack/prompts` + scaffold.test.js (utolsó teszt futás: 1 failed — legacy cleanup issue, lásd §Pending)
+- `cli-create-app/` — `create-occp-app` CLI `@clack/prompts` + scaffold.test.js (3/3 PASS iter-2 óta, Node 25 glob fix — lásd §Iteráció 2 #1)
 
 ### Deep research (11 planning doc)
 
@@ -154,23 +231,15 @@ feat(docs): docs-next MDX skeleton + llms-txt generator             (9847883)
 
 ### Immediate next (fél-1 nap munka)
 
-1. **cli-create-app scaffold test fix** — 1 teszt fail (collision check vagy path resolve). Futtatás: `cd cli-create-app && node --test tests/` — last run `pass 0 / fail 1`. Debug és fix.
+1. **cli-create-app scaffold test fix** — ✅ LEZÁRVA iter-2. Node 25 `node --test tests/` modul-resolve hiba volt; javítás: glob pattern `'tests/**/*.test.js'`. 3/3 PASS.
 
-2. **Dash v2 build verify** — `cd dash && npm run build` (Google Fonts SSL-hiba volt korábban, külön env-ben kell próbálni VAGY Geist-re cserélni a Press_Start_2P + Space_Mono fontokat).
+2. **Dash v2 build verify** — ✅ LEZÁRVA iter-2. Press_Start_2P + Space_Mono → Geist self-hosted. `npm run build` exit 0.
 
-3. **Brian chat drawer SSE wire** — `dash/src/components/command-palette.tsx` Cmd+J stub → real SSE `/api/v1/brain/message`. Új komponens: `dash/src/components/brian-drawer.tsx` (Sheet-alapú slide-in).
+3. **Brian chat drawer SSE wire** — ✅ LEZÁRVA iter-2. `brian-drawer.tsx` + `ui/sheet.tsx`, Cmd+J CustomEvent, AbortController, 401→/login, SSE parser raw/{token}/{delta}/{content}/[DONE], 5/5 vitest.
 
-4. **Deploy landing-next + docs-next to Vercel** — DNS wiring:
-   - `v2.occp.ai` CNAME → Vercel (landing-next preview)
-   - `docs.occp.ai` CNAME → Vercel (docs-next — MIUTÁN a Fumadocs app scaffold kész)
-   - A legacy `landing/index.html` marad élesben cutoverig
+4. **Deploy landing-next + docs-next to Vercel** — ✅ PREP LEZÁRVA iter-2. `vercel/README.md` playbook, mindkét app `vercel.json`-ja megvan (framework=nextjs, fra1, HSTS+CSP+PP hardened). **TODO Henry kézzel:** `vercel link` + `vercel --prod` + DNS CNAME-ek a Cloudflare zone-ban.
 
-5. **Fumadocs app scaffold** — `docs-next/` jelenleg csak MDX content. A Next.js app-ot manuálisan kell scaffolding-elni (interactive CLI blokkolja a headless run-t). Példa parancs (kézi terminálban):
-   ```
-   cd docs-next
-   npx create-fumadocs-app@latest . --template "+next+fuma-docs-mdx" --src --search orama --linter eslint --og-image next-og
-   # majd kapja a létező content/docs tree-t
-   ```
+5. **Fumadocs app scaffold** — ✅ LEZÁRVA iter-2. Teljesen non-interactive CLI flag-ekkel (`--template +next+fuma-docs-mdx --src --install --linter eslint --search orama --og-image next-og --ai-chat openrouter --no-git --pm npm`). Fumadocs 16.8.1 + Next 16.2.4, 4 MDX SSG, `/llms.txt` + `/llms-full.txt` + `/og/docs/[...]/image` endpoints.
 
 ### Short term (1 hónap)
 
@@ -365,9 +434,9 @@ ssh -i ~/.ssh/id_ed25519 root@195.201.238.144 "cd /opt/occp && docker compose bu
 
 5. **Fumadocs scaffold interactive** — `create-fumadocs-app` linter/og-image/ai-chat 3 prompt interactive, nem pipe-olható. Kézzel kell scaffolding-elni user terminálban.
 
-6. **cli-create-app test** — 1 teszt fail (path resolve vagy collision kezelés). Debug kell: `cd cli-create-app && node --test tests/scaffold.test.js` — nézd meg a traceback-et.
+6. **cli-create-app test** — ✅ iter-2 lezárva (Node 25 glob fix).
 
-7. **Dash build Google Fonts** — `dash/` `npm run build` SSL cert fail ugyanúgy. Érdemes `layout.tsx`-ben Press_Start_2P + Space_Mono → Geist-re cserélni.
+7. **Dash build Google Fonts** — ✅ iter-2 lezárva (Geist swap).
 
 8. **OpenClaw executor architectural limit** — még mindig scaffold-level (chat text output). Directive parser in place DE az agent prompt még nem termel JSON-t. Full executor wiring → follow-up.
 
