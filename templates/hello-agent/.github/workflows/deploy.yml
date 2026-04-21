@@ -1,0 +1,29 @@
+name: Deploy to OCCP
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Smoke test
+        env:
+          OCCP_API_KEY: ${{ secrets.OCCP_API_KEY }}
+        run: node src/agent.js
+      - name: Notify OCCP deploy webhook
+        env:
+          OCCP_DEPLOY_TOKEN: ${{ secrets.OCCP_DEPLOY_TOKEN }}
+        run: |
+          curl -X POST "https://api.occp.ai/api/v1/deploy/github" \
+            -H "Authorization: Bearer $OCCP_DEPLOY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"repo\":\"$GITHUB_REPOSITORY\",\"sha\":\"$GITHUB_SHA\"}"

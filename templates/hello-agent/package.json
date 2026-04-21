@@ -1,0 +1,16 @@
+{
+  "name": "hello-agent",
+  "version": "0.1.0",
+  "description": "OCCP starter template — your first verified agent in 60 seconds.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node src/agent.js",
+    "test": "node --test tests/"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
