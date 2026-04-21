@@ -22,6 +22,12 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from store.conversation_store import ConversationStore
 
+# L6 kill switch — process-global hard-stop (import-safe)
+try:
+    from evaluation.kill_switch import require_kill_switch_inactive as _require_ks_inactive
+except Exception:  # noqa: BLE001
+    _require_ks_inactive = None  # type: ignore[assignment]
+
 if TYPE_CHECKING:
     from adapters.confirmation_gate import ConfirmationGate
     from orchestrator.project_manager import ProjectManager
@@ -98,6 +104,8 @@ class BrainFlowEngine:
         confirmation_gate: Human approval gate.
     """
 
+    __kill_switch_guarded__ = True
+
     def __init__(
         self,
         task_router: TaskRouter,
@@ -140,6 +148,10 @@ class BrainFlowEngine:
             - conversation_id: str
             - metadata: dict
         """
+        # EU AI Act Art.14(4)(e): kill-switch guard at entry point
+        if _require_ks_inactive is not None:
+            _require_ks_inactive()
+
         # Expire stale conversations
         self._expire_conversations(user_id)
 
@@ -1058,3 +1070,8 @@ class BrainFlowEngine:
     def _generate_task_id() -> str:
         """Generate a unique task ID."""
         return uuid.uuid4().hex[:16]
+
+
+# Module-level alias so `from orchestrator.brain_flow import BrainFlow` works
+# (EU AI Act Art.14 test expects this name).
+BrainFlow = BrainFlowEngine

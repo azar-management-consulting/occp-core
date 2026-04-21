@@ -18,6 +18,16 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Prompt version — bump this string whenever the system prompt changes.
+# The version is embedded in the prompt header so it surfaces in planner
+# logs and in OpenClaw session JSONL dumps for traceability.
+# History:
+#   (unset)                     → original prose-leaning prompt (pre-2026-04)
+#   "2026-04-21-strict-json"    → strict JSON-only directive output (this file)
+# ---------------------------------------------------------------------------
+OPENCLAW_PROMPT_VERSION: str = "2026-04-21-strict-json"
+
 
 # Structured tool schema injected into agent prompts so that agents can
 # emit execution directives (MCP tools/call-style) rather than prose.
@@ -120,16 +130,158 @@ AVAILABLE_TOOLS_SCHEMA: dict[str, Any] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Response schema — MUST match the keys consumed by
+# ``OpenClawExecutor._parse_execution_directives``:
+#   * top-level key:  "directives"  (array)
+#   * directive keys: "tool", "args", "risk"
+#   * alt directive:  "exec_type" (accepted by executor as a tool alias)
+# The executor's fenced-JSON regex requires the block to contain either
+# "directives" or "exec_type" — keep at least one of those keys present.
+# ---------------------------------------------------------------------------
+RESPONSE_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "required": ["strategy", "description", "steps"],
+    "properties": {
+        "strategy": {"type": "string", "description": "Brief name of the approach"},
+        "description": {"type": "string", "description": "One-sentence summary"},
+        "steps": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Ordered action strings",
+        },
+        "directives": {
+            "type": "array",
+            "description": (
+                "OPTIONAL structured MCP tool-calls executed by the Brain "
+                "after policy approval. Omit or use [] if the task is "
+                "purely analytical."
+            ),
+            "items": {
+                "type": "object",
+                "required": ["tool", "args"],
+                "properties": {
+                    "tool": {
+                        "type": "string",
+                        "description": (
+                            "Whitelisted tool name from available_tools "
+                            "(e.g. 'wordpress.get_site_info'). Alias: "
+                            "'exec_type' — same semantics."
+                        ),
+                    },
+                    "args": {"type": "object"},
+                    "risk": {
+                        "type": "string",
+                        "enum": ["low", "medium", "high"],
+                    },
+                },
+            },
+        },
+    },
+}
+
+
+# ---------------------------------------------------------------------------
+# Few-shot examples — wire-format identical to what the executor parser
+# expects (fenced ```json``` block containing the object). Keep them short
+# to stay cache-friendly.
+# ---------------------------------------------------------------------------
+POSITIVE_EXAMPLE_1: dict[str, Any] = {
+    "strategy": "wp-site-inspect",
+    "description": "Fetch magyarorszag.ai site info via MCP Bridge.",
+    "steps": [
+        "Call wordpress.get_site_info for magyarorszag.ai",
+        "Return summary fields to user",
+    ],
+    "directives": [
+        {
+            "tool": "wordpress.get_site_info",
+            "args": {"site": "magyarorszag.ai"},
+            "risk": "low",
+        }
+    ],
+}
+
+POSITIVE_EXAMPLE_2: dict[str, Any] = {
+    "strategy": "analyze-only",
+    "description": "Explain caching strategy; no side effects required.",
+    "steps": [
+        "Summarize cache layers",
+        "Recommend TTL values",
+    ],
+    "directives": [],
+}
+
+# Negative: prose + markdown fence with language tag 'text' + missing keys.
+NEGATIVE_EXAMPLE_BAD_OUTPUT: str = (
+    "Sure! Here is the plan:\n"
+    "1. Check site\n"
+    "2. Update post\n"
+    "```text\n{strategy: wp}\n```"
+)
+NEGATIVE_EXAMPLE_REASON: str = (
+    "FAILS because: (a) conversational prose before/after JSON, "
+    "(b) not a valid JSON object (unquoted keys), "
+    "(c) fence language is 'text' not 'json', "
+    "(d) missing required keys: description, steps, "
+    "(e) executor's _FENCED_JSON_RE will NOT match — parser falls through "
+    "to chat-text branch and directives are lost."
+)
+
+
 def _render_tools_schema_block() -> str:
-    """Render the stable tool-schema system block (cache-friendly)."""
-    return (
-        "[SYSTEM: available tools]\n"
-        "You have access to the following MCP Bridge tools. Emit structured\n"
-        "execution directives inside a fenced ```json block at the END of your\n"
-        "response when the task requires action. The Brain will route directives\n"
-        "through policy + MCP dispatch. Do NOT invent tool names.\n\n"
+    """Render the stable tool-schema + strict-JSON system block.
+
+    Cache-friendly: all contents are deterministic JSON (stable key order)
+    and a fixed prompt-version header.
+    """
+    header = (
+        f"[SYSTEM: OpenClaw Planner v{OPENCLAW_PROMPT_VERSION}]\n"
+        "HARD CONSTRAINT — JSON-ONLY OUTPUT\n"
+        "You MUST respond with a single JSON object conforming to the schema\n"
+        "below, wrapped in a fenced ```json``` block. NO markdown outside the\n"
+        "fence, NO prose, NO explanation, NO apology, NO preface. The first\n"
+        "three characters of your response MUST be the backtick sequence\n"
+        "that opens the fence. The last three MUST close it.\n"
+        "The object MUST contain the key \"directives\" (array, may be empty)\n"
+        "so that the executor's JSON parser matches the fenced block.\n"
+    )
+
+    tools_block = (
+        "\n[SYSTEM: available tools]\n"
+        "Tool names in 'directives[].tool' MUST come from this whitelist.\n"
+        "Do NOT invent tool names. Unknown tools are silently dropped by the\n"
+        "executor (audit-logged).\n\n"
         + json.dumps(AVAILABLE_TOOLS_SCHEMA, indent=2, ensure_ascii=False)
     )
+
+    schema_block = (
+        "\n\n[SYSTEM: response schema — JSONSchema draft-07]\n"
+        + json.dumps(RESPONSE_SCHEMA, indent=2, ensure_ascii=False)
+    )
+
+    examples_block = (
+        "\n\n[SYSTEM: one-shot examples — COPY THIS WIRE FORMAT EXACTLY]\n\n"
+        "# POSITIVE EXAMPLE 1 — action task with one directive\n"
+        "User: Get site info for magyarorszag.ai.\n"
+        "Assistant:\n"
+        "```json\n"
+        + json.dumps(POSITIVE_EXAMPLE_1, indent=2, ensure_ascii=False)
+        + "\n```\n\n"
+        "# POSITIVE EXAMPLE 2 — analytical task, empty directives\n"
+        "User: Explain our caching strategy.\n"
+        "Assistant:\n"
+        "```json\n"
+        + json.dumps(POSITIVE_EXAMPLE_2, indent=2, ensure_ascii=False)
+        + "\n```\n\n"
+        "# NEGATIVE EXAMPLE — DO NOT EMIT THIS\n"
+        "Assistant:\n"
+        + NEGATIVE_EXAMPLE_BAD_OUTPUT
+        + "\n"
+        "# " + NEGATIVE_EXAMPLE_REASON + "\n"
+    )
+
+    return header + tools_block + schema_block + examples_block
 
 
 class OpenClawPlanner:
@@ -180,6 +332,14 @@ class OpenClawPlanner:
         # Build planning prompt
         prompt = self._build_planning_prompt(task)
 
+        # NOTE on structured-output flags:
+        #   OpenClaw Gateway's chat.send RPC does NOT expose an OpenAI-style
+        #   ``response_format={"type": "json_object"}`` nor an Anthropic-style
+        #   ``tools`` + forced ``tool_choice`` argument — the upstream agent
+        #   picks its own LLM backend. We therefore rely on the strict system
+        #   prompt (_render_tools_schema_block) + fenced-JSON examples that
+        #   match ``OpenClawExecutor._FENCED_JSON_RE`` exactly. If OpenClaw
+        #   later exposes a JSON-mode knob in ``params``, wire it in here.
         try:
             result = await conn.send_chat(
                 message=prompt,
@@ -228,22 +388,15 @@ class OpenClawPlanner:
     def _build_planning_prompt(self, task: Task) -> str:
         """Build a structured planning prompt for the OpenClaw agent.
 
-        The prompt starts with a stable, cache-friendly tool schema block so
-        that the agent can emit MCP-style execution directives, then lists
-        the plan fields and task context.
+        The prompt starts with a stable, cache-friendly system block that
+        enforces JSON-only output (schema + positive/negative one-shots),
+        then appends task context, and closes with a reminder that the
+        response MUST be a single fenced ```json``` block and nothing else.
         """
         lines = [
             _render_tools_schema_block(),
             "",
-            "Create an execution plan for the following task.",
-            "Respond with a JSON object containing:",
-            '  - "strategy": a brief name for the approach',
-            '  - "description": one-sentence summary',
-            '  - "steps": array of strings, each being a short action description',
-            '  - "directives": OPTIONAL array of structured tool calls '
-            "({tool, args, risk}) — only include if the task requires side "
-            "effects. Tool names MUST come from the schema above.",
-            "",
+            "[TASK CONTEXT]",
             f"Task Name: {task.name}",
             f"Task Description: {task.description}",
             f"Agent Type: {task.agent_type}",
@@ -255,6 +408,15 @@ class OpenClawPlanner:
                 val = task.metadata.get(key)
                 if val:
                     lines.append(f"{key.capitalize()}: {val}")
+
+        # Final reminder — the model tends to drift into prose without this.
+        lines.extend([
+            "",
+            "[OUTPUT DIRECTIVE]",
+            "Emit EXACTLY ONE fenced ```json``` block and nothing else.",
+            "The JSON object MUST include the key \"directives\" (even if []).",
+            "No prose. No apology. No trailing explanation.",
+        ])
 
         return "\n".join(lines)
 

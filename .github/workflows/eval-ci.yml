@@ -1,0 +1,67 @@
+name: Eval CI (offline)
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  eval-offline:
+    name: Offline eval suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Cache pip + .venv
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-py313-eval-${{ hashFiles('pyproject.toml', 'uv.lock', 'requirements-dev.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-py313-eval-
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f requirements-dev.txt ]; then
+            uv pip install --system -e . -r requirements-dev.txt
+          elif grep -q '^\[project.optional-dependencies\]' pyproject.toml \
+            && grep -q '^dev\s*=' pyproject.toml; then
+            uv pip install --system -e ".[dev]"
+          else
+            uv pip install --system -e . pytest pytest-asyncio httpx respx pyyaml
+          fi
+
+      - name: Run offline eval suite
+        id: eval
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p .artifacts
+          pytest tests/eval/ -q --tb=short | tee .artifacts/eval-output.txt
+
+      - name: Upload pytest output on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-ci-pytest-output
+          path: .artifacts/eval-output.txt
+          if-no-files-found: ignore
+          retention-days: 14

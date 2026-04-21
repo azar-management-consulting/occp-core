@@ -1,0 +1,16 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "quickstart",
+    "---Concepts---",
+    "concepts",
+    "---Guides---",
+    "guides",
+    "---Reference---",
+    "api-reference",
+    "mcp",
+    "security",
+    "changelog"
+  ]
+}

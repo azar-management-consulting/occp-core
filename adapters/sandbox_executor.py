@@ -10,6 +10,11 @@ and kernel capabilities.  Override via ``SandboxConfig.backend``.
 
 Per-agent sandbox policies allow each agent type to have different isolation
 settings (backend, time_limit, memory_limit, network access).
+
+Note: this executor runs *shell commands only*, not LLM calls, so
+BudgetPolicy pre-flight check() and post-flight record_spend() are NOT
+wired here. LLM spend is accounted for in :mod:`adapters.openclaw_executor`
+and any future LLM-facing executors.
 """
 
 from __future__ import annotations

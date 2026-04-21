@@ -34,6 +34,12 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Callable, Protocol
 
+# L6 kill switch — process-global hard-stop (import-safe)
+try:
+    from evaluation.kill_switch import require_kill_switch_inactive as _require_ks_inactive
+except Exception:  # noqa: BLE001
+    _require_ks_inactive = None  # type: ignore[assignment]
+
 logger = logging.getLogger(__name__)
 
 
@@ -87,6 +93,8 @@ class MCPBridge:
         - audit_store.append(entry) → traceability
     """
 
+    __kill_switch_guarded__ = True
+
     def __init__(
         self,
         *,
@@ -119,6 +127,10 @@ class MCPBridge:
 
     async def dispatch(self, call: ToolCall) -> ToolResult:
         """Execute a tool call with full policy chain + audit."""
+        # EU AI Act Art.14(4)(e): kill-switch guard at entry point
+        if _require_ks_inactive is not None:
+            _require_ks_inactive()
+
         self._stats["total"] += 1
         start = time.monotonic()
 

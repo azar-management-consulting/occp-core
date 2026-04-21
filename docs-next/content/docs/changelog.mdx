@@ -1,0 +1,87 @@
+---
+title: "Changelog"
+description: "Release history for OCCP — reverse chronological."
+---
+
+# Changelog
+
+Every release is tagged in
+[`azar-management-consulting/occp-core`](https://github.com/azar-management-consulting/occp-core/releases).
+This page mirrors the last five versions with migration notes.
+
+## v0.10.1 — 2026-04-20
+
+**Headline features**
+
+- `UV_COMPILE_BYTECODE=1` default in Docker images — cold start down
+  ~38 %.
+- OpenTelemetry `gen_ai.*` semantic conventions adopted across the
+  orchestrator (plan, verify, execute spans).
+- **Redis-backed kill switch** — arm latency now ≤ 200 ms tenant-wide
+  (was ~2 s via SQLite polling).
+
+**Breaking changes**
+
+- None.
+
+**Migration notes**
+
+- If you self-host, set `OCCP_REDIS_URL` before upgrading; the app
+  refuses to boot without it on v0.10.1+.
+
+---
+
+## v0.10.0 — 2026-04-20
+
+**Headline features**
+
+- **Audit cost attribution** — 9 new cost columns (`tokens_in`,
+  `tokens_out`, `tokens_cached`, `cost_usd`, `cost_eur`, `latency_ms`,
+  `policy_eval_ms`, `sandbox_ms`, `egress_bytes`).
+- **Kill switch (Art. 14)** — first public release, closes Gap G-6.
+- **Skill pruning** — orchestrator drops unused MCP tools from the
+  system prompt to save ~22 % tokens on long sessions.
+
+**Breaking changes**
+
+- `audit.row.cost` column removed; split into the 9 new columns.
+  Migration script: `occp migrate audit-costs-split`.
+
+**Migration notes**
+
+- Dashboards reading the old `cost` column must switch to
+  `cost_usd + cost_eur` or the new `total_cost` view.
+
+---
+
+## v0.9.4 — 2026-03-29
+
+- Policy bundles gained content-addressed hashes in the audit row.
+- New `occp policy diff` CLI command.
+- Fixed: plan stream SSE heartbeat was dropped behind certain CDN
+  configurations.
+
+---
+
+## v0.9.3 — 2026-03-12
+
+- First-class **MCP server** (`@occp/mcp-server`) with 12 tools.
+  (Expanded to 14 in v0.10.0.)
+- Quickstart onboarding wizard in the dashboard.
+- Fixed: GitHub OAuth callback loop on Safari 18.
+
+---
+
+## v0.9.2 — 2026-02-25
+
+- Introduced `occp_test_sk_` sandbox keys.
+- Added the public `/status` endpoint and a CI badge.
+- Hetzner `fsn1` primary + `nbg1` read replica wired up.
+
+---
+
+## Earlier
+
+Pre-0.9 releases predate the public preview — see the
+[GitHub Releases](https://github.com/azar-management-consulting/occp-core/releases)
+page for the full history.

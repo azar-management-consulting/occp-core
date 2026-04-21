@@ -31,6 +31,22 @@ from typing import TYPE_CHECKING, Any
 
 from orchestrator.exceptions import ExecutionError
 
+# L6 budget policy — pre-flight + post-flight USD budget enforcement for
+# LLM calls dispatched to the OpenClaw Gateway. Imported lazily so unit
+# tests without the policy_engine available do not break.
+try:
+    from policy_engine.budget_policy import (
+        BudgetExceededError as _BudgetExceededError,
+        CacheBreakdown as _CacheBreakdown,
+        estimate_tokens as _estimate_tokens,
+        get_budget_policy as _get_budget_policy,
+    )
+except Exception:  # noqa: BLE001 — never fail-open on import
+    _BudgetExceededError = None  # type: ignore[assignment]
+    _CacheBreakdown = None  # type: ignore[assignment]
+    _estimate_tokens = None  # type: ignore[assignment]
+    _get_budget_policy = None  # type: ignore[assignment]
+
 if TYPE_CHECKING:
     from orchestrator.models import Task
 
@@ -813,6 +829,39 @@ class OpenClawExecutor:
             # Build the message with task context
             message = self._build_message(task)
 
+            # ── L6 Pre-flight budget check ──────────────────────────
+            # Pipeline attaches the BudgetPolicy handle + budget task-id
+            # via task.metadata. If absent (e.g. executor is invoked
+            # outside the pipeline), fall back to the process-global
+            # singleton. Never fail-open: a refused check surfaces as
+            # BudgetExceededError which propagates out of execute().
+            budget_policy, budget_task_id, budget_model = (
+                self._resolve_budget_handle(task)
+            )
+            estimated_tokens = self._estimate_prompt_tokens(message)
+            if budget_policy is not None:
+                passed, reason = budget_policy.check(
+                    budget_task_id,
+                    estimated_tokens=estimated_tokens,
+                    model=budget_model,
+                )
+                if not passed:
+                    # Do NOT record_spend on refusal — nothing was spent.
+                    if _BudgetExceededError is not None:
+                        raise _BudgetExceededError(
+                            task_id=budget_task_id,
+                            reason=reason or "budget_check_failed",
+                            spent_usd=budget_policy.get_spend(budget_task_id),
+                            estimated_usd=0.0,
+                            budget_usd=budget_policy.get_task_budget(
+                                budget_task_id
+                            ),
+                        )
+                    raise ExecutionError(
+                        task.id,
+                        f"budget_check_failed: {reason}",
+                    )
+
             # Send via chat.send and wait for result
             result = await self._conn.send_chat(
                 message=message,
@@ -850,6 +899,52 @@ class OpenClawExecutor:
                     [d["tool"] for d in execution_directives],
                 )
 
+            # ── L6 Post-flight spend recording ──────────────────────
+            # The OpenClaw Gateway does not currently return token usage
+            # in the chat.final payload (see adapters/openclaw_executor.py
+            # issue tracker). Until it does, we attribute spend using
+            # an estimate: input = prompt tokens we sent, output = tokens
+            # we can count in the returned text. Anthropic usage fields
+            # (cache_read_input_tokens / cache_creation_input_tokens) are
+            # taken from the gateway response if present, else 0.
+            if budget_policy is not None:
+                usage_payload = self._extract_usage(result)
+                in_toks = usage_payload.get("input_tokens", estimated_tokens)
+                out_toks = usage_payload.get(
+                    "output_tokens",
+                    self._estimate_prompt_tokens(output),
+                )
+                cache_read = usage_payload.get("cache_read_input_tokens", 0)
+                cache_write = usage_payload.get(
+                    "cache_creation_input_tokens", 0
+                )
+                try:
+                    if _CacheBreakdown is not None:
+                        budget_policy.record_spend(
+                            budget_task_id,
+                            model=budget_model,
+                            cache_breakdown=_CacheBreakdown(
+                                input_tokens=int(in_toks),
+                                output_tokens=int(out_toks),
+                                cache_read_input_tokens=int(cache_read),
+                                cache_creation_input_tokens=int(cache_write),
+                            ),
+                        )
+                    else:
+                        budget_policy.record_spend(
+                            budget_task_id,
+                            model=budget_model,
+                            input_tokens=int(in_toks),
+                            output_tokens=int(out_toks),
+                        )
+                except Exception as spend_exc:  # noqa: BLE001
+                    # Accounting failure must NEVER crash a task.
+                    logger.warning(
+                        "OpenClaw: budget.record_spend failed task=%s: %s",
+                        budget_task_id,
+                        spend_exc,
+                    )
+
             logger.info(
                 "OpenClaw: task=%s agent=%s completed in %.1fs",
                 task.id,
@@ -872,6 +967,14 @@ class OpenClawExecutor:
             self._circuit.record_failure()
             raise
         except Exception as exc:
+            # Let budget refusals propagate verbatim — they are policy
+            # signals, not executor faults, and the circuit breaker
+            # must not trip on them.
+            if (
+                _BudgetExceededError is not None
+                and isinstance(exc, _BudgetExceededError)
+            ):
+                raise
             self._circuit.record_failure()
             latency = time.monotonic() - t0
             logger.error(
@@ -1204,6 +1307,92 @@ class OpenClawExecutor:
         text = cls._extract_text(result)
         directives = cls._parse_execution_directives(text) if text else []
         return {"output": text, "execution_directives": directives}
+
+    # ------------------------------------------------------------------
+    # L6 budget policy helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _resolve_budget_handle(task: Task) -> tuple[Any, str, str]:
+        """Return ``(policy, task_id, model)`` for budget accounting.
+
+        Lookup order:
+          1. ``task.metadata["_budget_policy"]`` — attached by the
+             pipeline when ``OCCP_BUDGET_POLICY_ENABLED`` is set.
+          2. Process-global singleton :func:`get_budget_policy` —
+             used when the executor is driven outside the pipeline
+             (e.g. direct CLI invocation, Brain dispatch).
+          3. Return ``(None, task.id, "sonnet")`` when the policy
+             module is unavailable (import failed).
+
+        The model name defaults to ``task.metadata["_model_id"]``
+        (populated by :mod:`adapters.model_router`) or, failing that,
+        ``"sonnet"`` — the fleet-wide default.
+        """
+        meta = task.metadata or {}
+        policy = meta.get("_budget_policy")
+        task_id = str(meta.get("_budget_task_id") or task.id)
+        model = str(meta.get("_model_id") or meta.get("model_id") or "sonnet")
+
+        if policy is None and _get_budget_policy is not None:
+            try:
+                policy = _get_budget_policy()
+            except Exception as exc:  # noqa: BLE001 — fail-closed to no-op
+                logger.debug(
+                    "OpenClaw: budget singleton init skipped (%s)", exc
+                )
+                policy = None
+
+        return policy, task_id, model
+
+    @staticmethod
+    def _estimate_prompt_tokens(text: str) -> int:
+        """Estimate tokens in *text* using the budget_policy helper.
+
+        Falls back to a coarse ``len(text) // 4`` heuristic when the
+        module is unavailable. Zero-safe: returns 0 for empty text.
+        """
+        if not text:
+            return 0
+        if _estimate_tokens is not None:
+            try:
+                return int(_estimate_tokens(text))
+            except Exception:  # noqa: BLE001 — never break execute()
+                pass
+        return max(1, len(text) // 4)
+
+    @staticmethod
+    def _extract_usage(result: dict[str, Any]) -> dict[str, int]:
+        """Pull Anthropic-style usage fields from a gateway response.
+
+        The OpenClaw Gateway MAY forward ``usage`` inside the chat.final
+        payload. We tolerantly look under a few common locations and
+        return an empty dict on miss. Missing fields are caller-filled
+        from the prompt estimate.
+        """
+        if not isinstance(result, dict):
+            return {}
+        usage: Any = result.get("usage")
+        if not isinstance(usage, dict):
+            msg = result.get("message")
+            if isinstance(msg, dict):
+                usage = msg.get("usage")
+        if not isinstance(usage, dict):
+            return {}
+
+        def _int(key: str) -> int:
+            val = usage.get(key, 0)
+            try:
+                return int(val or 0)
+            except (TypeError, ValueError):
+                return 0
+
+        return {
+            "input_tokens": _int("input_tokens"),
+            "output_tokens": _int("output_tokens"),
+            "cache_read_input_tokens": _int("cache_read_input_tokens"),
+            "cache_creation_input_tokens": _int("cache_creation_input_tokens"),
+        }
 
     async def startup(self) -> None:
         """Start persistent connection with auto-reconnect."""

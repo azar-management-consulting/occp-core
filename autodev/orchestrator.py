@@ -50,6 +50,12 @@ from autodev.verification_gate import VerificationGate, VerificationReport, get_
 from evaluation.kill_switch import get_kill_switch, KillSwitchActive
 from evaluation.self_modifier import get_self_modifier
 
+# L6 kill switch — process-global hard-stop (import-safe)
+try:
+    from evaluation.kill_switch import require_kill_switch_inactive as _require_ks_inactive
+except Exception:  # noqa: BLE001
+    _require_ks_inactive = None  # type: ignore[assignment]
+
 logger = logging.getLogger(__name__)
 
 
@@ -139,6 +145,8 @@ class AutoDevRun:
 class AutoDevOrchestrator:
     """End-to-end auto-dev pipeline coordinator."""
 
+    __kill_switch_guarded__ = True
+
     def __init__(
         self,
         *,
@@ -187,6 +195,10 @@ class AutoDevOrchestrator:
         - Budget must allow a new run
         - Diff must be non-empty
         """
+        # EU AI Act Art.14(4)(e): kill-switch guard at entry point
+        if _require_ks_inactive is not None:
+            _require_ks_inactive()
+
         # Kill-switch pre-flight
         ks = get_kill_switch()
         if ks.is_active():

@@ -1,0 +1,5 @@
+{"id": "eval-001", "input": "Refactor wp-web agent to use Redis cache", "expected": {"task_count_min": 2, "task_count_max": 6, "must_contain_any": ["redis", "cache", "wp-web"], "risk_level": "medium"}}
+{"id": "eval-002", "input": "Add a new policy rule blocking outbound HTTP to 10.0.0.0/8", "expected": {"task_count_min": 2, "task_count_max": 5, "must_contain_any": ["policy", "rule", "block"], "risk_level": "high"}}
+{"id": "eval-003", "input": "Check SLO burn on api service over last 6h", "expected": {"task_count_min": 2, "task_count_max": 6, "must_contain_any": ["slo", "burn", "api"], "risk_level": "low"}}
+{"id": "eval-004", "input": "Triage failing audit entry #42 and propose remediation", "expected": {"task_count_min": 2, "task_count_max": 6, "must_contain_any": ["audit", "triage", "remediation"], "risk_level": "medium"}}
+{"id": "eval-005", "input": "Configure MCP server for Slack integration with OAuth", "expected": {"task_count_min": 3, "task_count_max": 7, "must_contain_any": ["mcp", "slack", "oauth"], "risk_level": "medium"}}

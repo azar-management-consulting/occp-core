@@ -1,0 +1,92 @@
+---
+title: "Security & Compliance"
+description: "Authentication, RBAC, audit chain, kill switch, EU data residency, and responsible disclosure."
+---
+
+# Security & Compliance
+
+OCCP is designed to be **the safe default** for running autonomous
+agents in regulated European environments. This page documents the
+guarantees the platform makes and the threat model behind them.
+
+<Callout type="warn">
+  Security is a shared responsibility. OCCP enforces the control plane;
+  *your* agent code and *your* tools must still be written defensively.
+</Callout>
+
+## Authentication
+
+- **API keys** — prefixed `occp_live_sk_` (live) or `occp_test_sk_`
+  (sandbox). Shown once, stored hashed (argon2id). Keys are scoped to a
+  tenant and can be revoked in one click.
+- **GitHub OAuth** — the recommended path for dashboard sign-in; no
+  passwords are stored.
+- **SSO (OIDC / SAML)** — available on the Enterprise tier via the
+  policy engine's identity bundle.
+
+## Authorization
+
+RBAC is enforced by the **policy engine** (OPA/Rego, content-addressed
+bundles). Out-of-the-box roles:
+
+| Role       | Can run | Can approve HITL | Can edit policy | Can arm kill switch |
+| ---------- | :-----: | :--------------: | :-------------: | :-----------------: |
+| Viewer     | —       | —                | —               | —                   |
+| Operator   | yes     | —                | —               | —                   |
+| Approver   | yes     | yes              | —               | —                   |
+| Admin      | yes     | yes              | yes             | yes                 |
+
+Custom roles are just Rego rules — see
+[Writing policies](/docs/guides/policy-writing).
+
+## Audit
+
+- Append-only SQLite log, **Merkle-chained** per tenant, hashes rooted
+  hourly to a public ledger endpoint.
+- Each row has **9 cost columns**: `tokens_in`, `tokens_out`,
+  `tokens_cached`, `cost_usd`, `cost_eur`, `latency_ms`,
+  `policy_eval_ms`, `sandbox_ms`, `egress_bytes`.
+- Export via `GET /api/v1/audit?format=ndjson` or dashboard CSV.
+- Independent verification: any operator can fetch a Merkle proof for
+  any entry and validate it without trusting OCCP servers.
+
+## Kill Switch (Art. 14 Verified Autonomy)
+
+- Global per-tenant flag, stored in Redis + mirrored to SQLite.
+- Armed state blocks **all** new `EXECUTE` transitions within ≤ 200 ms.
+- Exposed read-only via MCP (`killswitch.status`) and writable via
+  `POST /api/v1/admin/kill-switch` for users with the `Admin` role.
+- Every arm/disarm emits an `OTEL gen_ai.killswitch` span and an audit
+  row — the action itself is auditable.
+
+## Data Residency
+
+- Primary region: **Hetzner `fsn1` (Falkenstein, Germany)** — EU-only.
+- Secondary read replicas: **Hetzner `nbg1`** (Nuremberg).
+- No data leaves the EU at rest or in transit between regions.
+- Outbound LLM calls respect per-tenant provider allowlists (e.g.
+  Anthropic EU, OpenAI EU residency, OpenRouter EU-only models).
+
+## EU AI Act Art. 14 — Gap G-6
+
+Gap **G-6** ("continuous human oversight of runaway loops") was flagged
+in the initial compliance audit and is now **mitigated in iter-2**: the
+kill switch is content-addressed, cryptographically signed, and its
+status is polled by every pipeline gate at sub-second cadence.
+
+See
+[`.planning/EU_AI_ACT_ART14_COMPLIANCE_MAPPING.md`](https://github.com/azar-management-consulting/occp-core/blob/main/.planning/EU_AI_ACT_ART14_COMPLIANCE_MAPPING.md).
+
+## Responsible Disclosure
+
+Report vulnerabilities to **[security@azar.hu](mailto:security@azar.hu)**.
+
+- PGP key: [keys.openpgp.org/vks/v1/by-fingerprint/…](https://keys.openpgp.org)
+- SLA: acknowledgement within 24 h, triage within 72 h.
+- Safe harbour: good-faith research on `staging.api.occp.ai` is welcome
+  and will not result in legal action.
+
+## Next
+
+- [Verified Autonomy](/docs/concepts/verified-autonomy)
+- [Changelog](/docs/changelog)

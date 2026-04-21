@@ -190,12 +190,13 @@ async def test_transparency_metadata_on_automated_actions():
 # ─────────────────────────────────────────────────────────
 # GAP G-6: halt enforcement across all entry points
 # ─────────────────────────────────────────────────────────
-@pytest.mark.xfail(
-    reason="Gap G-6: brain_flow/mcp_bridge/autodev do not yet call require_kill_switch_inactive()",
-    strict=False,
-)
 def test_halt_enforced_across_all_entry_points():
-    """Art.14(4)(e): halt must cover ALL operations, not just Pipeline."""
+    """Art.14(4)(e): halt must cover ALL operations, not just Pipeline.
+
+    Gap G-6 closed 2026-04-21: BrainFlow, MCPBridge, AutoDevOrchestrator
+    now each carry __kill_switch_guarded__ = True and call
+    require_kill_switch_inactive() at their main entry methods.
+    """
     ks = get_kill_switch()
     ks.activate(trigger=KillSwitchTrigger.MANUAL, actor="test", reason="coverage")
 

@@ -1,0 +1,99 @@
+---
+title: "Model Context Protocol"
+description: "Connect OCCP to Claude Desktop, Cursor, and VSCode via MCP — 14 tools out of the box."
+---
+
+# Model Context Protocol
+
+OCCP ships a first-party **MCP server** that exposes the control plane to
+any MCP-capable host (Claude Desktop, Cursor, VSCode, Zed, Windsurf). It
+is the fastest way to let your local AI assistant *plan, verify, and
+execute* through the Verified Autonomy Pipeline.
+
+<Callout type="info">
+  Every tool call issued over MCP still flows through the same
+  PLAN → VERIFY → APPROVE → EXECUTE → AUDIT pipeline — no bypass, no
+  shadow path.
+</Callout>
+
+## The 14 tools
+
+| Tool                    | Purpose                                              |
+| ----------------------- | ---------------------------------------------------- |
+| `filesystem.read`       | Read a workspace file (scoped by policy).            |
+| `filesystem.write`      | Write with diff + policy gate.                       |
+| `http.get`              | Outbound GET, domain-allowlisted.                    |
+| `http.post`             | Outbound POST, payload scanned for PII/secrets.      |
+| `brain.status`          | Returns control-plane health summary.                |
+| `brain.health`          | Deep health: policy engine, audit DB, OTEL exporter. |
+| `node.list`             | List execution nodes (sandboxes / runners).          |
+| `node.status`           | Per-node metrics (CPU, RSS, queue depth).            |
+| `node.exec`             | Run a verified command on a node.                    |
+| `wp.get_site_info`      | WordPress site metadata (multi-site aware).          |
+| `wp.list_posts`         | Query posts with policy-filtered fields.             |
+| `audit.query`           | Search the Merkle audit chain.                       |
+| `policy.evaluate`       | Dry-run a plan against current policy bundle.        |
+| `killswitch.status`     | Read-only kill-switch state (Art. 14).               |
+
+## Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json`
+(macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+
+```json
+{
+  "mcpServers": {
+    "occp": {
+      "command": "npx",
+      "args": ["-y", "@occp/mcp-server"],
+      "env": {"OCCP_API_KEY": "<YOUR_KEY>"}
+    }
+  }
+}
+```
+
+Restart Claude Desktop. The OCCP tools appear in the hammer menu.
+
+## Cursor
+
+Settings → **MCP** → *Add new server*, then paste the same JSON block
+(Cursor uses the identical schema).
+
+## VSCode
+
+With the **Copilot Chat MCP preview** or the community `mcp-host`
+extension:
+
+```json
+{
+  "mcp.servers": {
+    "occp": {
+      "command": "npx",
+      "args": ["-y", "@occp/mcp-server"],
+      "env": {"OCCP_API_KEY": "${env:OCCP_API_KEY}"}
+    }
+  }
+}
+```
+
+## Local development
+
+Run the server directly, e.g. against a staging API:
+
+```bash
+OCCP_API_KEY=occp_live_sk_... \
+OCCP_API_URL=https://staging.api.occp.ai \
+npx @occp/mcp-server --log-level debug
+```
+
+## Security notes
+
+- The server never stores the API key on disk — only in-process env.
+- Every tool invocation emits an OTEL `gen_ai.tool.call` span.
+- Domain allow/deny lists are enforced by the policy engine, not the
+  client.
+
+## Next
+
+- [Writing policies](/docs/guides/policy-writing)
+- [Security & compliance](/docs/security)
