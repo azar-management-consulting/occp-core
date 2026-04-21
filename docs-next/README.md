@@ -1,45 +1,47 @@
-# docs-next — docs.occp.ai (Fumadocs skeleton)
+# docs-next — docs.occp.ai
 
-Source for `docs.occp.ai`, built per `.planning/OCCP_DOCS_10_2026.md`:
-**Fumadocs + Scalar OpenAPI + Inkeep AI search**.
+Fumadocs 16 + Next.js 16 app for `docs.occp.ai`. Built per
+`.planning/OCCP_DOCS_10_2026.md` — Fumadocs + Scalar OpenAPI + AI chat.
 
-**Status:** content skeleton only — the Fumadocs Next.js app is deferred
-to a follow-up session (the `create-fumadocs-app` CLI requires interactive
-prompts that block headless runs). This directory contains the MDX content
-that will be wired into the site once the scaffold lands.
-
-## Structure
+## Layout
 
 ```
 docs-next/
-├── README.md                   (this file)
-├── content/docs/
-│   ├── index.mdx               Landing  ("Get started in 60s")
-│   ├── quickstart.mdx          5-min first verified action
+├── content/docs/              MDX source (owned by us)
+│   ├── index.mdx              "Get started in 60s"
+│   ├── quickstart.mdx         5-min first verified action
 │   ├── concepts/
-│   │   ├── index.mdx
 │   │   └── verified-autonomy.mdx
-│   ├── guides/
-│   │   └── first-agent.mdx
-│   ├── api-reference.mdx       → Scalar embed (configured in app/)
-│   ├── mcp.mdx                 Claude Desktop / Cursor / VSCode
-│   ├── security.mdx
-│   └── changelog.mdx
-└── scripts/
-    └── generate-llms-txt.js    Build-time llms.txt + llms-full.txt
+│   └── guides/
+│       └── first-agent.mdx
+├── src/
+│   ├── app/                   Fumadocs-generated app router
+│   ├── components/
+│   └── lib/
+├── scripts/
+│   └── generate-llms-txt.js   Standalone llms.txt generator (dev aid)
+├── public/
+│   ├── llms.txt
+│   └── llms-full.txt
+├── source.config.ts           content/docs → collections
+├── next.config.mjs
+├── postcss.config.mjs
+├── tsconfig.json
+├── eslint.config.mjs
+└── package.json
 ```
 
-## Next steps to ship
+## Local dev
 
-1. Scaffold Fumadocs app in the same directory:
-   ```bash
-   npx create-fumadocs-app@latest . --template "+next+fuma-docs-mdx" \
-       --src --search orama --linter eslint --og-image next-og
-   ```
-2. Run `npm i @scalar/nextjs-api-reference` for the OpenAPI page.
-3. Point `source.config.ts` at `./content/docs`.
-4. Deploy to Vercel under `docs.occp.ai`.
+```bash
+cd docs-next
+npm install
+npm run dev          # http://localhost:3000
+npm run build        # production build
+npm run types:check  # tsc --noEmit + MDX typegen
+```
 
-Full information architecture (8 top sections), content-calendar
-(10 weeks), and AI-search integration (Inkeep) are documented in
-`.planning/OCCP_DOCS_10_2026.md`.
+## Deploy
+
+Target: `docs.occp.ai` on Vercel. See `../vercel/README.md` for DNS +
+project wiring. Runtime: Node 20+, build cmd `npm run build`.
