@@ -1,0 +1,49 @@
+---
+title: Verified Autonomy
+description: The 5-gate pipeline that makes autonomous agents defensible.
+---
+
+# Verified Autonomy
+
+The **Verified Autonomy Pipeline** (VAP) is the core OCCP primitive. Every
+task an agent accepts flows through five gates before any external side
+effect is allowed:
+
+1. **PLAN** — LLM drafts the steps it intends to take.
+2. **VERIFY** — deterministic checks (schema, policy, cost, blast radius)
+   run against the plan.
+3. **APPROVE** — if policy requires human-in-the-loop (HITL), the task
+   pauses for an operator. Low-risk actions auto-approve.
+4. **EXECUTE** — the plan runs. Every tool call is observable via
+   OpenTelemetry spans (`gen_ai.*` semantic conventions).
+5. **AUDIT** — the complete chain (PLAN → VERIFY → APPROVE → EXECUTE
+   results) is signed, hashed, and appended to a tamper-evident log.
+
+## Why five gates
+
+Autonomous agent incidents in production share a common shape: an agent
+does "the right thing" for 99 inputs and something catastrophic for the
+100th. The 2025 "$47k runaway loop" and the 2026 "procurement agent
+double-ordering" postmortems both trace back to missing **policy** or
+missing **audit**.
+
+OCCP makes these two gates non-bypassable:
+
+- The policy engine is **content-addressed** — changes to a rule require
+  a new hash, and every gate decision logs which hash evaluated it.
+- The audit log uses a Merkle chain — operators can independently
+  verify that entries haven't been tampered with after the fact.
+
+## Mapping to EU AI Act Art. 14
+
+Article 14 requires human oversight that can:
+
+1. **Understand** the system's capabilities → OCCP exposes every plan
+   before execution.
+2. **Intervene or halt** → the APPROVE gate is a pause point; the
+   Kill Switch is a global halt.
+3. **Override decisions** → rejected plans return to PLAN with the
+   operator's rationale captured in the audit chain.
+
+See [`.planning/EU_AI_ACT_ART14_COMPLIANCE_MAPPING.md`](https://github.com/azar-management-consulting/occp-core/blob/main/.planning/EU_AI_ACT_ART14_COMPLIANCE_MAPPING.md)
+for the full compliance mapping.

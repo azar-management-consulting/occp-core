@@ -1,0 +1,16 @@
+# OCCP — OpenCloud Control Plane
+
+> Agent Control Plane with Verified Autonomy Pipeline.
+> Every autonomous action verified, logged, and reversible — before it runs.
+
+## Documentation
+
+- [OCCP Docs](https://docs.occp.ai/docs/index.md): The Agent Control Plane with Verified Autonomy Pipeline.
+- [Verified Autonomy](https://docs.occp.ai/docs/concepts/verified-autonomy.md): The 5-gate pipeline that makes autonomous agents defensible.
+- [Your first agent — from zero to deployed](https://docs.occp.ai/docs/guides/first-agent.md): A 10-minute walkthrough from `create-occp-app` to a live agent.
+- [Quickstart](https://docs.occp.ai/docs/quickstart.md): Run your first verified agent action in under 5 minutes.
+
+## Optional
+
+- [API Reference (OpenAPI JSON)](https://api.occp.ai/api/v1/openapi.json)
+- [GitHub Repository](https://github.com/azar-management-consulting/occp-core)

@@ -1,0 +1,41 @@
+---
+title: OCCP Docs
+description: The Agent Control Plane with Verified Autonomy Pipeline.
+---
+
+# Get started in 60 seconds
+
+OCCP is the open-source control plane for autonomous AI agents. Every
+action your agent takes is **planned, policy-gated, executed, validated,
+and audit-logged** — all before the agent "commits" anything irreversible.
+
+## Install
+
+```bash
+pip install occp
+# or
+npm install @occp/sdk
+```
+
+## Your first verified run
+
+```python
+from occp import ControlPlane
+
+cp = ControlPlane(policy="policies/finance.rego")
+
+result = cp.run(
+    agent="claude-opus-4-7",
+    task="Refund order #4521 if return window is open",
+)
+
+# PLAN → VERIFY → APPROVE → EXECUTE → AUDIT
+print(result.audit_chain_id)
+```
+
+## Next
+
+- [Quickstart — 5 minute walkthrough](/docs/quickstart)
+- [Core concepts](/docs/concepts)
+- [Guides](/docs/guides)
+- [API reference](/docs/api-reference)

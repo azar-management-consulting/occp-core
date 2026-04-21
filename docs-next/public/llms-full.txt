@@ -1,0 +1,233 @@
+# Verified Autonomy
+
+# Verified Autonomy
+
+The **Verified Autonomy Pipeline** (VAP) is the core OCCP primitive. Every
+task an agent accepts flows through five gates before any external side
+effect is allowed:
+
+1. **PLAN** — LLM drafts the steps it intends to take.
+2. **VERIFY** — deterministic checks (schema, policy, cost, blast radius)
+   run against the plan.
+3. **APPROVE** — if policy requires human-in-the-loop (HITL), the task
+   pauses for an operator. Low-risk actions auto-approve.
+4. **EXECUTE** — the plan runs. Every tool call is observable via
+   OpenTelemetry spans (`gen_ai.*` semantic conventions).
+5. **AUDIT** — the complete chain (PLAN → VERIFY → APPROVE → EXECUTE
+   results) is signed, hashed, and appended to a tamper-evident log.
+
+## Why five gates
+
+Autonomous agent incidents in production share a common shape: an agent
+does "the right thing" for 99 inputs and something catastrophic for the
+100th. The 2025 "$47k runaway loop" and the 2026 "procurement agent
+double-ordering" postmortems both trace back to missing **policy** or
+missing **audit**.
+
+OCCP makes these two gates non-bypassable:
+
+- The policy engine is **content-addressed** — changes to a rule require
+  a new hash, and every gate decision logs which hash evaluated it.
+- The audit log uses a Merkle chain — operators can independently
+  verify that entries haven't been tampered with after the fact.
+
+## Mapping to EU AI Act Art. 14
+
+Article 14 requires human oversight that can:
+
+1. **Understand** the system's capabilities → OCCP exposes every plan
+   before execution.
+2. **Intervene or halt** → the APPROVE gate is a pause point; the
+   Kill Switch is a global halt.
+3. **Override decisions** → rejected plans return to PLAN with the
+   operator's rationale captured in the audit chain.
+
+See [`.planning/EU_AI_ACT_ART14_COMPLIANCE_MAPPING.md`](https://github.com/azar-management-consulting/occp-core/blob/main/.planning/EU_AI_ACT_ART14_COMPLIANCE_MAPPING.md)
+for the full compliance mapping.
+
+
+# Your first agent — from zero to deployed
+
+# Your first agent
+
+This guide assumes you've finished the [Quickstart](/docs/quickstart) and
+have a working API key.
+
+## 1 · Scaffold the project
+
+```bash
+npx create-occp-app@latest my-agent --template hello-agent --ts
+cd my-agent
+npm install
+```
+
+Or, if you prefer a manual setup, clone the reference template:
+
+```bash
+git clone https://github.com/azar-management-consulting/occp-core
+cp -r occp-core/templates/hello-agent my-agent
+cd my-agent
+```
+
+## 2 · Wire credentials
+
+```bash
+cp .env.example .env
+# edit .env → OCCP_API_KEY=occp_live_sk_...
+```
+
+## 3 · Run it
+
+```bash
+npm start
+```
+
+Expected output:
+
+```
+[hello-agent] sending task to https://api.occp.ai ...
+[hello-agent] pipeline result: pass
+[hello-agent] output: Hello from your first OCCP agent ✓
+```
+
+## 4 · Add a tool
+
+Drop a file under `src/tools/` using the `echo.js` shape:
+
+```js
+export const myTool = {
+  name: "search_docs",
+  description: "Search OCCP documentation",
+  parameters: {
+    type: "object",
+    properties: { query: { type: "string" } },
+    required: ["query"],
+  },
+  async run({ query }) {
+    const response = await fetch(
+      `https://docs.occp.ai/api/search?q=${encodeURIComponent(query)}`,
+    );
+    return response.json();
+  },
+};
+```
+
+## 5 · Deploy
+
+Push the repo to GitHub and click **Deploy to OCCP** from the dashboard.
+The workflow in `.github/workflows/deploy.yml` handles the rest.
+
+## Further reading
+
+- [Writing policies](/docs/guides/policy-writing)
+- [MCP integration](/docs/mcp)
+- [Audit chain verification](/docs/concepts/verified-autonomy)
+
+
+# OCCP Docs
+
+# Get started in 60 seconds
+
+OCCP is the open-source control plane for autonomous AI agents. Every
+action your agent takes is **planned, policy-gated, executed, validated,
+and audit-logged** — all before the agent "commits" anything irreversible.
+
+## Install
+
+```bash
+pip install occp
+# or
+npm install @occp/sdk
+```
+
+## Your first verified run
+
+```python
+from occp import ControlPlane
+
+cp = ControlPlane(policy="policies/finance.rego")
+
+result = cp.run(
+    agent="claude-opus-4-7",
+    task="Refund order #4521 if return window is open",
+)
+
+# PLAN → VERIFY → APPROVE → EXECUTE → AUDIT
+print(result.audit_chain_id)
+```
+
+## Next
+
+- [Quickstart — 5 minute walkthrough](/docs/quickstart)
+- [Core concepts](/docs/concepts)
+- [Guides](/docs/guides)
+- [API reference](/docs/api-reference)
+
+
+# Quickstart
+
+# Quickstart
+
+This page walks you from zero to your first successful **PLAN → VERIFY →
+APPROVE → EXECUTE → AUDIT** cycle in under 5 minutes.
+
+## 1 · Sign in
+
+Click [Start free on the dashboard](https://dash.occp.ai/onboarding/start)
+and authenticate with GitHub.
+
+> OAuth is the recommended path. No credit card. No email verification
+> step blocks you — that happens async.
+
+## 2 · Generate an API key
+
+From the onboarding wizard, click **Generate your first API key**. The
+key is shown only once and starts with `occp_live_sk_`.
+
+Save it to a `.env` file:
+
+```bash
+OCCP_API_KEY=occp_live_sk_xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+## 3 · Install the SDK
+
+```bash
+# Python
+pip install occp
+
+# Node / TypeScript
+npm install @occp/sdk
+```
+
+## 4 · Run a verified task
+
+```python
+from occp import ControlPlane
+import os
+
+cp = ControlPlane(api_key=os.environ["OCCP_API_KEY"])
+
+result = cp.run(
+    agent="claude-opus-4-7",
+    task="Say hello and confirm the pipeline is working.",
+)
+
+print(result.status)          # 'pass'
+print(result.audit_chain_id)  # tamper-evident chain id
+```
+
+## 5 · View the audit trail
+
+Head to the [Audit page](https://dash.occp.ai/audit) on the dashboard.
+Your run is listed there with signed evidence for every stage.
+
+Done — you've just run a fully governed autonomous action.
+
+## What to read next
+
+- [Verified Autonomy — core concept](/docs/concepts/verified-autonomy)
+- [Writing policies](/docs/guides/policy-writing)
+- [Deploying agents via GitHub](/docs/guides/first-agent)
+
+
