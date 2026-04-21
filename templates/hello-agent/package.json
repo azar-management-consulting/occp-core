@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "start": "node src/agent.js",
-    "test": "node --test tests/"
+    "test": "node --test 'tests/**/*.test.js'"
   },
   "dependencies": {},
   "engines": {

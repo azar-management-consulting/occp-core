@@ -113,3 +113,9 @@ landing-next/.turbo/
 
 # templates/*/node_modules
 templates/**/node_modules/
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# create-occp-app tests scratch
+cli-create-app/node_modules/
