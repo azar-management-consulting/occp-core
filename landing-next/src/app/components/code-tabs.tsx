@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 type Lang = "python" | "ts" | "curl";
 
@@ -37,14 +38,15 @@ const { auditChainId } = await cp.run({
   }'`,
 };
 
-const LABEL: Record<Lang, string> = {
-  python: "Python",
-  ts: "TypeScript",
-  curl: "cURL",
-};
-
 export function CodeTabs() {
+  const t = useTranslations("codeTabs");
   const [active, setActive] = useState<Lang>("python");
+
+  const LABEL: Record<Lang, string> = {
+    python: t("tabPython"),
+    ts: t("tabTs"),
+    curl: t("tabCurl"),
+  };
 
   return (
     <div className="w-full overflow-hidden rounded-lg border border-border-subtle bg-bg-elev shadow-xl">

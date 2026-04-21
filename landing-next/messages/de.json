@@ -1,0 +1,47 @@
+{
+  "metadata": {
+    "title": "OCCP — OpenCloud Control Plane | Plattform für Agenten-Governance",
+    "description": "OCCP ist die Verified Autonomy Pipeline für KI-Agenten. Jede autonome Aktion wird vor der Ausführung überprüft. Richtliniengesteuerte, audit-protokollierte, unternehmenstaugliche Governance für LLM-basierte Systeme.",
+    "ogTitle": "OCCP — OpenCloud Control Plane | Plattform für Agenten-Governance",
+    "ogDescription": "Jede autonome Aktion wird vor der Ausführung überprüft. Richtliniengesteuert, audit-protokolliert, unternehmenstauglich. Die Control Plane, die KI-Agenten steuert.",
+    "twitterTitle": "OCCP — OpenCloud Control Plane",
+    "twitterDescription": "Jede autonome Aktion wird vor der Ausführung überprüft. Richtliniengesteuert, audit-protokolliert, unternehmenstauglich.",
+    "keywords": {
+      "k1": "KI-Agenten-Governance",
+      "k2": "Control Plane",
+      "k3": "LLM-Richtlinien-Engine",
+      "k4": "Verified Autonomy Pipeline",
+      "k5": "Enterprise-KI",
+      "k6": "OCCP"
+    }
+  },
+  "hero": {
+    "badge": "v1.0 · Open Source · SOC2 Typ II · EU AI Act Art. 14",
+    "headlinePrefix": "Liefern Sie KI-Agenten, die Sie",
+    "headlineHighlight": "im Audit verteidigen können",
+    "subtitle": "Jede autonome Aktion überprüft, protokolliert und reversibel — bevor sie läuft. Die Open-Source Agent Control Plane mit einer 5-stufigen Verified Autonomy Pipeline. Richtliniengesteuert. Manipulationssicher. Self-hosted oder managed.",
+    "ctaPrimary": "Kostenlos starten — ohne Kreditkarte",
+    "ctaSecondary": "Dokumentation lesen",
+    "ctaGithub": "★ Auf GitHub sternen",
+    "builtOn": "Basiert auf",
+    "builtOnList": "OpenAI · Anthropic · MCP · OpenTelemetry · FastAPI · Postgres"
+  },
+  "codeTabs": {
+    "tabPython": "Python",
+    "tabTs": "TypeScript",
+    "tabCurl": "cURL"
+  },
+  "pipeline": {
+    "ariaLabel": "Verified Autonomy Pipeline: Plan, Gate, Execute, Validate, Ship",
+    "stagePlan": "Plan",
+    "stageGate": "Gate",
+    "stageExecute": "Execute",
+    "stageValidate": "Validate",
+    "stageShip": "Ship",
+    "ariaPlan": "Plan-Stufe",
+    "ariaGate": "Policy-Gate-Stufe",
+    "ariaExecute": "Execute-Stufe",
+    "ariaValidate": "Validate-Stufe",
+    "ariaShip": "Ship-Stufe"
+  }
+}

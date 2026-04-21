@@ -22,6 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { PageHeader } from "@/components/page-header";
 
 type KPI = {
   label: string;
@@ -68,15 +69,10 @@ const SHORTCUTS: Shortcut[] = [
 export default function AdminV2Page() {
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">
-          <Shield className="inline-block mr-2 -mt-1" aria-hidden="true" /> Admin
-        </h1>
-        <p className="text-[var(--fg-muted,#a1a1aa)]">
-          Platform-wide users, orgs and usage.
-        </p>
-      </div>
+      <PageHeader
+        title="Admin"
+        description="Platform-wide users, orgs and usage."
+      />
 
       {/* KPI grid */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -104,10 +100,17 @@ export default function AdminV2Page() {
         {SHORTCUTS.map((s) => {
           const Icon = s.icon;
           return (
-            <Link key={s.href} href={s.href} className="group block">
-              <Card className="h-full group-hover:border-white/40">
+            <Link
+              key={s.href}
+              href={s.href}
+              className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent,#6366f1)] rounded-xl"
+            >
+              <Card className="h-full transition-colors duration-150 group-hover:border-white/40">
                 <CardHeader className="flex flex-row items-start gap-4 space-y-0">
-                  <Icon className="mt-1 text-[var(--fg-muted,#a1a1aa)] group-hover:text-white" aria-hidden="true" />
+                  <Icon
+                    className="mt-1 transition-colors duration-150 text-[var(--fg-muted,#a1a1aa)] group-hover:text-white"
+                    aria-hidden="true"
+                  />
                   <div>
                     <CardTitle className="text-base font-semibold">
                       {s.title}

@@ -1,17 +1,18 @@
-import { RootProvider } from 'fumadocs-ui/provider/next';
+import type { Viewport } from 'next';
 import './global.css';
-import { Inter } from 'next/font/google';
 
-const inter = Inter({
-  subsets: ['latin'],
-});
+/**
+ * Root layout — minimal. Real <html>/<body>/metadata lives under
+ * `src/app/[lang]/layout.tsx` where we know the active language.
+ */
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0a0a0a' },
+  ],
+  colorScheme: 'dark light',
+};
 
-export default function Layout({ children }: LayoutProps<'/'>) {
-  return (
-    <html lang="en" className={inter.className} suppressHydrationWarning>
-      <body className="flex flex-col min-h-screen">
-        <RootProvider>{children}</RootProvider>
-      </body>
-    </html>
-  );
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return children;
 }

@@ -21,7 +21,8 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.5.5",
-    "@radix-ui/react-tabs": "^1.1.2"
+    "@radix-ui/react-tabs": "^1.1.2",
+    "next-intl": "^4.9.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

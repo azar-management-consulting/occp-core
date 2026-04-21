@@ -16,6 +16,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/page-header";
+import { LiveBadge } from "@/components/live-badge";
+import { EmptyState } from "@/components/empty-state";
 
 type RunStatus = "running" | "passed" | "failed" | "halted";
 
@@ -58,28 +61,18 @@ const STATUS_STYLES: Record<RunStatus, string> = {
 export default function PipelineV2Page() {
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            <GitBranch className="inline-block mr-2 -mt-1" aria-hidden="true" /> Pipeline
-          </h1>
-          <p className="text-[var(--fg-muted,#a1a1aa)]">
-            Verified Autonomy runs. Press{" "}
-            <kbd className="rounded border border-[var(--border-subtle,#52525b)] px-1.5 py-0.5 text-xs">
-              N
-            </kbd>{" "}
-            for a new task.
-          </p>
-        </div>
-        <div className="flex gap-2">
+      <PageHeader
+        title="Pipeline"
+        description="Verified Autonomy runs."
+        badge={<LiveBadge variant="live" />}
+        actions={
           <Button asChild>
-            <Link href="/pipeline?new=1">
+            <Link href="/v2/pipeline?new=1">
               <Plus aria-hidden="true" /> New task
             </Link>
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Filter tabs */}
       <nav aria-label="Filter pipeline runs" className="flex gap-1 border-b border-[var(--border-subtle,#52525b)]">
@@ -88,11 +81,11 @@ export default function PipelineV2Page() {
             key={f.key}
             href={f.key === "all" ? "?" : `?status=${f.key}`}
             aria-current={i === 0 ? "page" : undefined}
-            className={`px-4 py-2 text-sm border-b-2 -mb-px transition-colors ${
+            className={`px-4 py-2 text-sm border-b-2 -mb-px transition-colors duration-150 ease-out ${
               i === 0
                 ? "border-white text-white"
                 : "border-transparent text-[var(--fg-muted,#a1a1aa)] hover:text-white"
-            }`}
+            } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent,#6366f1)] rounded-t`}
           >
             {f.label}{" "}
             <span className="ml-1 text-xs text-[var(--fg-muted,#a1a1aa)]" aria-label={`${f.count} results`}>
@@ -112,56 +105,72 @@ export default function PipelineV2Page() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm font-mono" aria-label="Pipeline runs">
-              <thead className="text-xs uppercase tracking-wider text-[var(--fg-muted,#a1a1aa)]">
-                <tr className="border-b border-[var(--border-subtle,#52525b)]">
-                  <th scope="col" className="py-2 pr-4 text-left font-medium">ID</th>
-                  <th scope="col" className="py-2 pr-4 text-left font-medium">Status</th>
-                  <th scope="col" className="py-2 pr-4 text-left font-medium">Agent</th>
-                  <th scope="col" className="py-2 pr-4 text-left font-medium">Started</th>
-                  <th scope="col" className="py-2 pr-4 text-left font-medium">Duration</th>
-                  <th scope="col" className="py-2 pr-4 text-right font-medium">Tokens</th>
-                  <th scope="col" className="py-2 text-right font-medium">Cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {RUNS.map((r) => (
-                  <tr
-                    key={r.id}
-                    className="border-b border-[var(--border-subtle,#52525b)] last:border-0 hover:bg-white/[0.02]"
-                  >
-                    <td className="py-3 pr-4">
-                      <Link
-                        href={`/pipeline/${r.id}`}
-                        className="underline-offset-2 hover:underline"
-                      >
-                        {r.id}
-                      </Link>
-                    </td>
-                    <td className="py-3 pr-4">
-                      <span
-                        className={`inline-block rounded border px-2 py-0.5 text-xs uppercase tracking-wider ${STATUS_STYLES[r.status]}`}
-                      >
-                        {r.status}
-                      </span>
-                    </td>
-                    <td className="py-3 pr-4">{r.agent}</td>
-                    <td className="py-3 pr-4 text-[var(--fg-muted,#a1a1aa)]">
-                      {r.started}
-                    </td>
-                    <td className="py-3 pr-4">{r.duration}</td>
-                    <td className="py-3 pr-4 text-right">
-                      {r.tokens.toLocaleString("en-US")}
-                    </td>
-                    <td className="py-3 text-right">
-                      ${r.costUsd.toFixed(2)}
-                    </td>
+          {/* TODO: swap mock check when API wires */}
+          {RUNS.length === 0 ? (
+            <EmptyState
+              icon={GitBranch}
+              title="No pipeline runs yet"
+              description="Kick off your first Verified Autonomy task to see it here."
+              action={
+                <Button asChild>
+                  <Link href="/v2/pipeline?new=1">
+                    <Plus aria-hidden="true" /> New task
+                  </Link>
+                </Button>
+              }
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm font-mono" aria-label="Pipeline runs">
+                <thead className="text-xs uppercase tracking-wider text-[var(--fg-muted,#a1a1aa)]">
+                  <tr className="border-b border-[var(--border-subtle,#52525b)]">
+                    <th scope="col" className="py-2 pr-4 text-left font-medium">ID</th>
+                    <th scope="col" className="py-2 pr-4 text-left font-medium">Status</th>
+                    <th scope="col" className="py-2 pr-4 text-left font-medium">Agent</th>
+                    <th scope="col" className="py-2 pr-4 text-left font-medium">Started</th>
+                    <th scope="col" className="py-2 pr-4 text-left font-medium">Duration</th>
+                    <th scope="col" className="py-2 pr-4 text-right font-medium">Tokens</th>
+                    <th scope="col" className="py-2 text-right font-medium">Cost</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {RUNS.map((r) => (
+                    <tr
+                      key={r.id}
+                      className="border-b border-[var(--border-subtle,#52525b)] last:border-0 hover:bg-white/[0.02] transition-colors duration-150"
+                    >
+                      <td className="py-3 pr-4">
+                        <Link
+                          href={`/pipeline/${r.id}`}
+                          className="underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent,#6366f1)] rounded-sm"
+                        >
+                          {r.id}
+                        </Link>
+                      </td>
+                      <td className="py-3 pr-4">
+                        <span
+                          className={`inline-block rounded border px-2 py-0.5 text-xs uppercase tracking-wider ${STATUS_STYLES[r.status]}`}
+                        >
+                          {r.status}
+                        </span>
+                      </td>
+                      <td className="py-3 pr-4">{r.agent}</td>
+                      <td className="py-3 pr-4 text-[var(--fg-muted,#a1a1aa)]">
+                        {r.started}
+                      </td>
+                      <td className="py-3 pr-4">{r.duration}</td>
+                      <td className="py-3 pr-4 text-right">
+                        {r.tokens.toLocaleString("en-US")}
+                      </td>
+                      <td className="py-3 text-right">
+                        ${r.costUsd.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

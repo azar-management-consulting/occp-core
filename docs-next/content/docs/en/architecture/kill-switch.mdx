@@ -1,0 +1,230 @@
+---
+title: Kill Switch
+description: The Redis-backed, fail-secure hard-stop every autonomous OCCP component honours — triggers, operation, and recovery.
+---
+
+# Kill Switch
+
+Every production AI agent needs a **hard stop with state capture**. OCCP's
+kill switch is a process-global, fail-secure primitive that every pipeline
+entry point — MCP bridge, orchestrator, brain flow — checks before doing
+anything observable.
+
+**Rule #1:** the switch itself is not writable by the agents it controls.
+It lives behind the governance API and has no MCP tool binding.
+
+<Callout type="warn">
+  When the kill switch is **ACTIVE**, `MCPBridge.dispatch()` raises
+  `KillSwitchActiveError` before the tool impl is even looked up. Pipelines
+  that ignore the raise are CODEOWNERS-blocked from merging
+  (`architecture/governance.yaml`).
+</Callout>
+
+---
+
+## What triggers it
+
+The `KillSwitchTrigger` enum (see `evaluation/kill_switch.py:63`) lists the
+activation classes OCCP currently understands:
+
+| Trigger | Who fires it | Typical cause |
+|---------|--------------|---------------|
+| `MANUAL` | Henry (or any operator with `governance:killswitch`) | Incident response, scheduled drill turning real |
+| `ANOMALY` | `anomaly_detector` | Critical finding (cost spike, tool-call spike, PII leak) |
+| `CANARY_FAILURE` | `canary_engine` | Canary rollout hit its rollback verdict |
+| `ERROR_SPIKE` | Observability alert | Error rate threshold exceeded per-agent or per-tool |
+| `SECURITY` | `input_sanitizer` / policy engine | Injection attempt or policy-critical block |
+| `DRILL` | Tests | Logs but does **not** block (used for tabletop exercises) |
+
+<Callout type="info">
+  `BUDGET`, `PIPELINE_FAIL`, and `GATE_ABORT` triggers are planned
+  additions — today they map onto `ANOMALY` or `ERROR_SPIKE` respectively.
+  Track the enum at
+  [`evaluation/kill_switch.py`](https://github.com/azar-management-consulting/occp-core/blob/main/evaluation/kill_switch.py).
+</Callout>
+
+---
+
+## Backends
+
+OCCP supports two interchangeable backends (see
+`evaluation/kill_switch_redis.py`):
+
+- **`memory`** *(default)* — process-local state. Fine for single-replica
+  dev, tests, and the `occp run` CLI.
+- **`redis`** — shared state across every replica. Required in production
+  because a partial flip (one pod honouring the switch, another ignoring
+  it) would be worse than no switch at all.
+
+Selected by env:
+
+```bash
+OCCP_KILL_SWITCH_BACKEND=redis
+OCCP_KILL_SWITCH_REDIS_URL=redis://redis:6379/0
+```
+
+If the `redis` package is unavailable or the URL refuses the connection,
+`RedisKillSwitch` **fails secure**: it delegates every call to the
+in-memory fallback and logs a warning. Operations never silently continue
+while thinking they are protected.
+
+---
+
+## Activate / deactivate
+
+### Via the governance API
+
+Mounted by `api/routes/governance.py`. Auth is operator-level (`governance:*`).
+
+```bash
+# Activate
+curl -X POST https://brain.occp.ai/api/v1/governance/kill_switch/activate \
+  -H "Authorization: Bearer $OCCP_OPERATOR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "trigger": "manual",
+    "reason": "investigating runaway agent on tenant #42",
+    "evidence": {"run_id": "r_01HY…"}
+  }'
+
+# Current state + last 10 activations
+curl https://brain.occp.ai/api/v1/governance/kill_switch/status \
+  -H "Authorization: Bearer $OCCP_OPERATOR_TOKEN"
+
+# Deactivate (audit-grade reason is mandatory)
+curl -X POST https://brain.occp.ai/api/v1/governance/kill_switch/deactivate \
+  -H "Authorization: Bearer $OCCP_OPERATOR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"reason": "runaway contained; policy updated; canary re-armed"}'
+```
+
+Endpoints (all under `/api/v1`):
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET`  | `/governance/kill_switch/status` | Current state + recent history |
+| `GET`  | `/governance/kill_switch/stats` | Counters (activations, time-in-state) |
+| `POST` | `/governance/kill_switch/activate` | Hard stop |
+| `POST` | `/governance/kill_switch/drill` | Log-only activation (tabletop) |
+| `POST` | `/governance/kill_switch/deactivate` | Clear |
+
+### Via the dashboard
+
+The dash surfaces the same endpoints in **Mission Control → Kill Switch**.
+The big red button sends an `activate` with `trigger: "manual"` and the
+operator's handle as `actor`. The dash is the recommended path because it
+pre-fills the audit evidence fields (run id, trace id, affected agents)
+from whatever is on screen.
+
+---
+
+## Audit trail
+
+Every `activate` / `drill` / `deactivate` writes an immutable record
+(`KillSwitchActivation`) with:
+
+- `state` (INACTIVE / ACTIVE / DRILL),
+- `trigger` (`manual`, `anomaly`, `canary_failure`, …),
+- `actor` (operator handle or detector id),
+- `reason` (free text, mandatory),
+- `evidence` (arbitrary JSON — run id, trace id, alert id),
+- `activated_at` (UTC ISO-8601),
+- and on deactivation: `deactivated_at`, `deactivated_by`,
+  `deactivation_reason`.
+
+The record is written to:
+
+1. The in-process history ring (last 10 — served by
+   `/kill_switch/status`).
+2. Redis `LPUSH` into `occp:ks:history` (when the redis backend is active).
+3. The global audit store with the same Merkle chain as VAP gate decisions —
+   see [Verified Autonomy](../concepts/verified-autonomy).
+
+This mapping to EU AI Act Art. 14(4)(e) is enforced in `adapters/mcp_bridge.py`
+itself — the `__kill_switch_guarded__ = True` attribute is checked in the
+compliance test suite so no new entry point can skip the guard.
+
+---
+
+## Recovery after activation
+
+The switch **never auto-deactivates**. Recovery is a deliberate, human-led
+sequence:
+
+<Steps>
+
+<Step>
+### 1. Contain
+
+Keep the switch ON until you have answered: *what tripped it, who tripped
+it, what was in-flight*. The `/status` endpoint exposes the current
+activation plus the history ring, which is usually enough for the first
+five minutes.
+</Step>
+
+<Step>
+### 2. Cooldown window
+
+OCCP enforces a **10 minute cooldown** after deactivation during which
+auto-triggers (`ANOMALY`, `CANARY_FAILURE`, `ERROR_SPIKE`, `SECURITY`) are
+**double-counted** against their thresholds. The goal is to make a flapping
+detector re-fire the switch quickly rather than settle into a half-on state.
+</Step>
+
+<Step>
+### 3. Dead-man timer
+
+If Brain hasn't heartbeated to Redis for **> 60 s** while the switch is ON,
+consumers treat the state as **ACTIVE** — better a false positive than a
+silent un-flip during a network partition. The timer is implemented in
+`kill_switch_redis.py` via `EXPIRE` on the state key.
+</Step>
+
+<Step>
+### 4. Deactivate with rationale
+
+```bash
+curl -X POST https://brain.occp.ai/api/v1/governance/kill_switch/deactivate \
+  -H "Authorization: Bearer $OCCP_OPERATOR_TOKEN" \
+  -d '{"reason": "incident #2026-04-21-001 closed; tool rate limit tightened"}'
+```
+
+The `reason` is required and appended to the audit chain — the closure
+narrative is part of the compliance artefact the regulator sees.
+</Step>
+
+<Step>
+### 5. Re-arm canaries
+
+After deactivation, any paused canary rollouts stay paused. Re-arm them
+explicitly via the dash or `occp canary resume <id>` — OCCP will not
+auto-resume deployments that were in flight when the switch fired.
+</Step>
+
+</Steps>
+
+---
+
+## Drill mode
+
+Use `DRILL` for tabletop exercises — it writes a full activation record
+(including evidence) and flips metrics, but **does not** block operations.
+Run one quarterly; the EU AI Act Art. 14 assessor expects evidence that
+operators can actually use the switch without reading the runbook for the
+first time under stress.
+
+```bash
+curl -X POST https://brain.occp.ai/api/v1/governance/kill_switch/drill \
+  -H "Authorization: Bearer $OCCP_OPERATOR_TOKEN" \
+  -d '{"reason": "Q2-2026 scheduled drill"}'
+```
+
+---
+
+## Source pointers
+
+- `evaluation/kill_switch.py` — in-memory switch, enums, history ring
+- `evaluation/kill_switch_redis.py` — Redis backend + failsafe fallback
+- `api/routes/governance.py` — HTTP surface
+- `adapters/mcp_bridge.py:97` — `__kill_switch_guarded__` enforcement
+- `.planning/EU_AI_ACT_ART14_COMPLIANCE_MAPPING.md` — regulator mapping

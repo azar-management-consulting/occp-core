@@ -16,6 +16,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/page-header";
+import { LiveBadge } from "@/components/live-badge";
+import { EmptyState } from "@/components/empty-state";
 
 type Decision = "allow" | "deny" | "approve" | "n/a";
 
@@ -48,24 +51,19 @@ const DECISION_STYLES: Record<Decision, string> = {
 export default function AuditV2Page() {
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            <ScrollText className="inline-block mr-2 -mt-1" aria-hidden="true" /> Audit log
-          </h1>
-          <p className="text-[var(--fg-muted,#a1a1aa)]">
-            Immutable, hash-chained decision record. {ENTRIES.length} most
-            recent entries.
-          </p>
-        </div>
-        {/* TODO(a11y): href="#" is a stub — replace with /api/audit/export once endpoint is wired */}
-        <Button asChild variant="outline">
-          <Link href="#">
-            <Download aria-hidden="true" /> Export CSV
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        title="Audit log"
+        description={`Immutable, hash-chained decision record. ${ENTRIES.length} most recent entries.`}
+        badge={<LiveBadge variant="live" />}
+        actions={
+          /* TODO(a11y): href="#" is a stub — replace with /api/audit/export once endpoint is wired */
+          <Button asChild variant="outline">
+            <Link href="#">
+              <Download aria-hidden="true" /> Export CSV
+            </Link>
+          </Button>
+        }
+      />
 
       {/* Search bar */}
       <form action="/audit" className="flex items-center gap-2">
@@ -83,7 +81,7 @@ export default function AuditV2Page() {
             name="q"
             type="search"
             placeholder="Search by task_id, actor, action…"
-            className="w-full rounded border border-[var(--border-subtle,#52525b)] bg-transparent py-2 pl-9 pr-3 text-sm outline-none focus:border-white/60 focus-visible:ring-2 focus-visible:ring-[var(--accent,#6366f1)]"
+            className="w-full rounded border border-[var(--border-subtle,#52525b)] bg-transparent py-2 pl-9 pr-3 text-sm outline-none transition-colors duration-150 focus:border-white/60 focus-visible:ring-2 focus-visible:ring-[var(--accent,#6366f1)]"
           />
         </div>
         <Button type="submit" variant="outline">
@@ -98,48 +96,57 @@ export default function AuditV2Page() {
           <CardDescription>Reverse chronological.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm font-mono" aria-label="Audit log entries">
-              <thead className="text-xs uppercase tracking-wider text-[var(--fg-muted,#a1a1aa)]">
-                <tr className="border-b border-[var(--border-subtle,#52525b)]">
-                  <th scope="col" className="py-2 pr-4 text-left font-medium">Timestamp</th>
-                  <th scope="col" className="py-2 pr-4 text-left font-medium">Task</th>
-                  <th scope="col" className="py-2 pr-4 text-left font-medium">Actor</th>
-                  <th scope="col" className="py-2 pr-4 text-left font-medium">Action</th>
-                  <th scope="col" className="py-2 text-left font-medium">Decision</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ENTRIES.map((e) => (
-                  <tr
-                    key={`${e.ts}-${e.taskId}-${e.action}`}
-                    className="border-b border-[var(--border-subtle,#52525b)] last:border-0 hover:bg-white/[0.02]"
-                  >
-                    <td className="py-3 pr-4 text-[var(--fg-muted,#a1a1aa)]">
-                      {e.ts}
-                    </td>
-                    <td className="py-3 pr-4">
-                      <Link
-                        href={`/pipeline/${e.taskId}`}
-                        className="underline-offset-2 hover:underline"
-                      >
-                        {e.taskId}
-                      </Link>
-                    </td>
-                    <td className="py-3 pr-4">{e.actor}</td>
-                    <td className="py-3 pr-4">{e.action}</td>
-                    <td className="py-3">
-                      <span
-                        className={`inline-block rounded border px-2 py-0.5 text-xs uppercase tracking-wider ${DECISION_STYLES[e.decision]}`}
-                      >
-                        {e.decision}
-                      </span>
-                    </td>
+          {/* TODO: swap mock check when API wires */}
+          {ENTRIES.length === 0 ? (
+            <EmptyState
+              icon={ScrollText}
+              title="No audit entries yet"
+              description="Policy decisions and pipeline events will appear here once activity starts."
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm font-mono" aria-label="Audit log entries">
+                <thead className="text-xs uppercase tracking-wider text-[var(--fg-muted,#a1a1aa)]">
+                  <tr className="border-b border-[var(--border-subtle,#52525b)]">
+                    <th scope="col" className="py-2 pr-4 text-left font-medium">Timestamp</th>
+                    <th scope="col" className="py-2 pr-4 text-left font-medium">Task</th>
+                    <th scope="col" className="py-2 pr-4 text-left font-medium">Actor</th>
+                    <th scope="col" className="py-2 pr-4 text-left font-medium">Action</th>
+                    <th scope="col" className="py-2 text-left font-medium">Decision</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {ENTRIES.map((e) => (
+                    <tr
+                      key={`${e.ts}-${e.taskId}-${e.action}`}
+                      className="border-b border-[var(--border-subtle,#52525b)] last:border-0 hover:bg-white/[0.02] transition-colors duration-150"
+                    >
+                      <td className="py-3 pr-4 text-[var(--fg-muted,#a1a1aa)]">
+                        {e.ts}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <Link
+                          href={`/pipeline/${e.taskId}`}
+                          className="underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent,#6366f1)] rounded-sm"
+                        >
+                          {e.taskId}
+                        </Link>
+                      </td>
+                      <td className="py-3 pr-4">{e.actor}</td>
+                      <td className="py-3 pr-4">{e.action}</td>
+                      <td className="py-3">
+                        <span
+                          className={`inline-block rounded border px-2 py-0.5 text-xs uppercase tracking-wider ${DECISION_STYLES[e.decision]}`}
+                        >
+                          {e.decision}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

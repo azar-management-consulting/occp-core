@@ -183,6 +183,17 @@ export function CommandPalette() {
           </CommandItem>
         </CommandGroup>
       </CommandList>
+
+      {/* Keyboard hint bar — bottom of palette */}
+      <div
+        className="flex items-center gap-3 border-t border-[var(--border-subtle,#52525b)] px-4 py-2 text-xs text-[var(--fg-muted,#a1a1aa)]"
+        aria-hidden="true"
+      >
+        <span><kbd className="font-mono">↑↓</kbd> Navigate</span>
+        <span><kbd className="font-mono">↵</kbd> Select</span>
+        <span><kbd className="font-mono">⌘K</kbd> Close</span>
+        <span><kbd className="font-mono">Esc</kbd> Dismiss</span>
+      </div>
     </CommandDialog>
   );
 }

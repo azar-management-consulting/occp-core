@@ -1,5 +1,5 @@
 /**
- * Dashboard v2 — parallel route behind flag NEXT_PUBLIC_DASH_V2=true.
+ * Dashboard v2 — Mission Control home.
  *
  * Opt-in redesign per .planning/OCCP_DASHBOARD_10_2026.md §4 Home view:
  * - 4 KPI cards (Active Agents, Tasks 24h, Token Spend $, SLO Burn)
@@ -30,6 +30,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SpendSparkline } from "@/components/spend-sparkline";
+import { PageHeader } from "@/components/page-header";
+import { LiveBadge } from "@/components/live-badge";
 
 // Mock data placeholders — replace with SSE subscriptions in follow-up.
 const KPIs = [
@@ -70,38 +72,30 @@ const RECENT_EVENTS = [
 export default function DashboardV2Home() {
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            Mission Control
-          </h1>
-          <p className="text-[var(--fg-muted,#a1a1aa)]">
-            All autonomous activity in one pane. Press{" "}
-            <kbd className="rounded border border-[var(--border-subtle,#52525b)] px-1.5 py-0.5 text-xs">
-              ⌘K
-            </kbd>{" "}
-            for the command palette.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button asChild>
-            <Link href="/pipeline">
-              <Plus aria-hidden="true" /> New task
-            </Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/admin/users">
-              <UserPlus aria-hidden="true" /> Invite user
-            </Link>
-          </Button>
-          <Button asChild variant="ghost">
-            <Link href="/audit">
-              <FileText aria-hidden="true" /> Audit
-            </Link>
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Mission Control"
+        description="All autonomous activity in one pane."
+        badge={<LiveBadge variant="live" />}
+        actions={
+          <>
+            <Button asChild>
+              <Link href="/v2/pipeline">
+                <Plus aria-hidden="true" /> New task
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/admin/users">
+                <UserPlus aria-hidden="true" /> Invite user
+              </Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link href="/v2/audit">
+                <FileText aria-hidden="true" /> Audit
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
       {/* KPI grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -136,6 +130,7 @@ export default function DashboardV2Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* TODO: swap mock check when API wires */}
             <ul className="space-y-2 font-mono text-sm">
               {RECENT_EVENTS.map((e, i) => (
                 <li

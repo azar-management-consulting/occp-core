@@ -21,6 +21,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { PageHeader } from "@/components/page-header";
 
 type Tile = {
   href: string;
@@ -29,7 +30,6 @@ type Tile = {
   icon: LucideIcon;
 };
 
-/* Mock data — replace with SSE/fetch */
 const TILES: Tile[] = [
   {
     href: "/settings/llm",
@@ -60,15 +60,10 @@ const TILES: Tile[] = [
 export default function SettingsV2Page() {
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">
-          <Settings className="inline-block mr-2 -mt-1" aria-hidden="true" /> Settings
-        </h1>
-        <p className="text-[var(--fg-muted,#a1a1aa)]">
-          Configure providers, tokens, tool policies and your profile.
-        </p>
-      </div>
+      <PageHeader
+        title="Settings"
+        description="Configure providers, tokens, tool policies and your profile."
+      />
 
       {/* Tile grid */}
       <div className="grid gap-4 md:grid-cols-2">
@@ -78,11 +73,14 @@ export default function SettingsV2Page() {
             <Link
               key={t.href}
               href={t.href}
-              className="group block transition-colors"
+              className="group block transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent,#6366f1)] rounded-xl"
             >
-              <Card className="h-full group-hover:border-white/40">
+              <Card className="h-full transition-colors duration-150 group-hover:border-white/40">
                 <CardHeader className="flex flex-row items-start gap-4 space-y-0">
-                  <Icon className="mt-1 text-[var(--fg-muted,#a1a1aa)] group-hover:text-white" aria-hidden="true" />
+                  <Icon
+                    className="mt-1 transition-colors duration-150 text-[var(--fg-muted,#a1a1aa)] group-hover:text-white"
+                    aria-hidden="true"
+                  />
                   <div>
                     <CardTitle className="text-base font-semibold">
                       {t.title}

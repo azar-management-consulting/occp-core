@@ -15,6 +15,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/page-header";
+import { LiveBadge } from "@/components/live-badge";
+import { EmptyState } from "@/components/empty-state";
 
 type AgentStatus = "active" | "idle";
 
@@ -42,70 +45,76 @@ const AGENTS: Agent[] = [
 export default function AgentsV2Page() {
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            <Cpu className="inline-block mr-2 -mt-1" aria-hidden="true" /> Agents
-          </h1>
-          <p className="text-[var(--fg-muted,#a1a1aa)]">
-            {AGENTS.length} agents registered. Press{" "}
-            <kbd className="rounded border border-[var(--border-subtle,#52525b)] px-1.5 py-0.5 text-xs">
-              G A
-            </kbd>{" "}
-            anywhere to jump here.
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/agents?new=1">
-            <Plus aria-hidden="true" /> Register agent
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        title="Agents"
+        description={`${AGENTS.length} agents registered.`}
+        badge={<LiveBadge variant="live" />}
+        actions={
+          <Button asChild>
+            <Link href="/agents?new=1">
+              <Plus aria-hidden="true" /> Register agent
+            </Link>
+          </Button>
+        }
+      />
 
       {/* Agent grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {AGENTS.map((a) => (
-          <Card key={a.type}>
-            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-              <div>
-                <CardTitle className="text-sm font-medium">
-                  {a.displayName}
-                </CardTitle>
-                <CardDescription className="mt-1 font-mono text-xs">
-                  {a.type}
-                </CardDescription>
-              </div>
-              <span
-                className={`rounded border px-2 py-0.5 text-[10px] uppercase tracking-wider ${
-                  a.status === "active"
-                    ? "border-green-500/30 bg-green-500/10 text-green-400"
-                    : "border-[var(--border-subtle,#52525b)] bg-white/5 text-[var(--fg-muted,#a1a1aa)]"
-                }`}
-              >
-                {a.status}
-              </span>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-3 text-xs text-[var(--fg-muted,#a1a1aa)]">
-                {a.description}
-              </p>
-              <div className="flex items-center justify-between border-t border-[var(--border-subtle,#52525b)] pt-3 text-xs font-mono">
+      {/* TODO: swap mock check when API wires */}
+      {AGENTS.length === 0 ? (
+        <EmptyState
+          icon={Cpu}
+          title="No agents registered"
+          description="Register your first agent to start running autonomous tasks."
+          action={
+            <Button asChild>
+              <Link href="/agents?new=1">
+                <Plus aria-hidden="true" /> Register agent
+              </Link>
+            </Button>
+          }
+        />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {AGENTS.map((a) => (
+            <Card
+              key={a.type}
+              className="transition-colors duration-150 hover:border-white/30"
+            >
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                 <div>
-                  <div className="text-[var(--fg-muted,#a1a1aa)]">Last run</div>
-                  <div className="mt-0.5">{a.lastRun}</div>
+                  <CardTitle className="text-sm font-medium">
+                    {a.displayName}
+                  </CardTitle>
+                  <CardDescription className="mt-1 font-mono text-xs">
+                    {a.type}
+                  </CardDescription>
                 </div>
-                <div className="text-right">
-                  <div className="text-[var(--fg-muted,#a1a1aa)]">Success</div>
-                  <div className="mt-0.5 font-bold">
-                    {(a.successRate * 100).toFixed(0)}%
+                <LiveBadge
+                  variant={a.status === "active" ? "live" : "idle"}
+                  label={a.status}
+                />
+              </CardHeader>
+              <CardContent>
+                <p className="mb-3 text-xs text-[var(--fg-muted,#a1a1aa)]">
+                  {a.description}
+                </p>
+                <div className="flex items-center justify-between border-t border-[var(--border-subtle,#52525b)] pt-3 text-xs font-mono">
+                  <div>
+                    <div className="text-[var(--fg-muted,#a1a1aa)]">Last run</div>
+                    <div className="mt-0.5">{a.lastRun}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[var(--fg-muted,#a1a1aa)]">Success</div>
+                    <div className="mt-0.5 font-bold">
+                      {(a.successRate * 100).toFixed(0)}%
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

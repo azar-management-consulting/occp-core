@@ -1,0 +1,229 @@
+---
+title: MCP Tool Catalog
+description: Every tool registered on the OCCP MCP bridge — grouped by namespace, with parameters, env requirements, and safety notes.
+---
+
+# MCP Tool Catalog
+
+OCCP exposes a **server-side MCP bridge** (`adapters/mcp_bridge.py`) that lets
+agents call tools through a single, audited dispatcher. Every tool:
+
+- runs through `AgentToolGuard.check_access` (least-privilege ACL),
+- passes the `InputSanitizer` (OWASP ASI01 / LLM-injection guard),
+- is wrapped by the global [kill switch](./architecture/kill-switch) — if the
+  switch is active, **every** `dispatch()` raises before the impl runs,
+- and is written to the audit log with `call_id`, `status`, `duration_ms`.
+
+The bridge registers a built-in set of tools plus env-gated adapters for
+external SaaS MCP servers. Adapters that lack their secret variable are
+**silently skipped at startup** — your deployment only surfaces what you
+have credentials for.
+
+<Callout type="info">
+  Source of truth: [`adapters/mcp_bridge.py`](https://github.com/azar-management-consulting/occp-core/blob/main/adapters/mcp_bridge.py)
+  and the five adapters under [`adapters/mcp_*.py`](https://github.com/azar-management-consulting/occp-core/tree/main/adapters).
+  This catalog is generated from those files; when the code changes, this page must change too.
+</Callout>
+
+---
+
+## `filesystem.*`
+
+Sandboxed file access confined to `/tmp/occp-workspace`. Path-escape attempts
+(`../`, absolute paths pointing outside the root) raise `PermissionError`
+before any read or write.
+
+| Tool | Description | Env required |
+|------|-------------|--------------|
+| `filesystem.read` | Read a UTF-8 file from the workspace. Returns `{path, content}`. | — |
+| `filesystem.write` | Write string content to a file under the workspace; creates parent dirs. Returns `{path, bytes_written}`. | — |
+| `filesystem.list` | List directory entries (alphabetical). Returns `{path, entries[]}`. | — |
+
+```python
+# Example dispatch
+from adapters.mcp_bridge import ToolCall, build_default_bridge
+
+bridge = build_default_bridge()
+result = await bridge.dispatch(ToolCall(
+    tool="filesystem.write",
+    params={"path": "reports/plan.md", "content": "# plan\n- step 1"},
+    agent_id="brain",
+))
+```
+
+---
+
+## `http.*`
+
+Generic outbound HTTP with a 15 s timeout. URLs must start with `http://` or
+`https://`; response bodies are truncated to 10 000 chars to keep audit
+payloads bounded.
+
+| Tool | Description | Env required |
+|------|-------------|--------------|
+| `http.get` | GET a URL, return `{status_code, headers, body}`. | — |
+| `http.post` | POST a JSON body, return `{status_code, body}`. | — |
+
+---
+
+## `brain.*`
+
+Introspection tools for the OCCP Brain itself — used by the dashboard and
+self-check agents.
+
+| Tool | Description | Env required |
+|------|-------------|--------------|
+| `brain.status` | Platform identity card: `{platform, version, bridge, timestamp}`. | — |
+| `brain.health` | Proxy to `/api/v1/health` on `127.0.0.1:8000`. | — |
+
+---
+
+## `node.*`
+
+SSH-based execution against the OCCP mesh (iMac, MBP, Hetzner Brain, Hetzner
+OpenClaw). The impl uses keys mounted at `/ssh/brain_ed25519` and enforces
+`StrictHostKeyChecking=accept-new`.
+
+| Tool | Description | Env required |
+|------|-------------|--------------|
+| `node.list` | Return all known mesh nodes and their role tags. | — |
+| `node.status` | Probe reachability of one `node_id` via SSH (10 s timeout). | SSH key mounted |
+| `node.exec` | Run a command on a mesh node. **Allowlist-gated** — only `hostname`, `uptime`, `uname -a`, `df -h`, `free -h`, `docker ps`, `docker compose ps`, `ls`, `cat`, `head`, `tail`, `curl`, `python3 --version`, `node --version`, `sw_vers`. | SSH key mounted |
+
+<Callout type="warn">
+  `node.exec` is **not** a shell. Anything outside the allowlist is rejected
+  with `{"error": "command '<x>' not in safe allowlist"}` — Brain cannot run
+  arbitrary code on mesh nodes.
+</Callout>
+
+---
+
+## `wordpress.*`
+
+Two registrations exist side-by-side:
+
+1. The built-in REST client (enabled unconditionally) — read-only helpers
+   against a site's public `/wp-json/` endpoints.
+2. The `mcp_wordpress` adapter (enabled when `OCCP_WP_SITES` or any
+   `OCCP_WP_<SLUG>_URL` is set) — authenticated writes using WordPress
+   Application Passwords. When enabled, it **overrides** the read-only
+   registrations for the same tool names.
+
+| Tool | Description | Env required |
+|------|-------------|--------------|
+| `wordpress.get_site_info` | Site metadata from `/wp-json/`. | — (auth adapter upgrades) |
+| `wordpress.get_posts` | List posts for a site. | — (auth adapter upgrades) |
+| `wordpress.get_pages` | List pages for a site. | — (auth adapter upgrades) |
+| `wordpress.update_post` | Update a post. Read-only stub unless adapter is configured. | `OCCP_WP_SITES` **or** `OCCP_WP_<SLUG>_URL` + `_USER` + `_APP_PASSWORD` |
+| `wordpress.create_post` | Create a new post (Application-Password auth). | `OCCP_WP_SITES` or per-slug vars |
+| `wordpress.search` | Search across a site's indexed content. | `OCCP_WP_SITES` or per-slug vars |
+
+```json
+// OCCP_WP_SITES example
+[
+  {
+    "slug": "azar",
+    "url": "https://azar.hu",
+    "user": "brain-bot",
+    "app_password": "abcd efgh ijkl mnop qrst uvwx"
+  }
+]
+```
+
+---
+
+## `supabase.*`
+
+Read-only SQL against your Supabase project via the PostgREST `execute_sql`
+RPC. Write / DDL tokens and multi-statement SQL are rejected **before** the
+request leaves OCCP.
+
+| Tool | Description | Env required |
+|------|-------------|--------------|
+| `supabase.query` | Execute a read-only SQL statement. | `OCCP_SUPABASE_URL`, `OCCP_SUPABASE_SERVICE_ROLE_KEY` |
+| `supabase.list_tables` | List tables in a schema (default `public`). | same as above |
+| `supabase.describe_table` | Column names, types, nullability, defaults. | same as above |
+
+<Callout type="info">
+  The read-only filter lives in `adapters/mcp_supabase.py::_is_read_only`
+  — any change to it requires a policy review (it is one of the two
+  places the audit Merkle chain can't undo a mistake).
+</Callout>
+
+---
+
+## `github.*`
+
+GitHub REST API v3 over a single Bearer token. Results are shaped down to
+what agents actually need (no raw API sprawl).
+
+| Tool | Description | Env required |
+|------|-------------|--------------|
+| `github.search_issues` | Search issues/PRs in a repo by query string + state. | `OCCP_GITHUB_TOKEN` |
+| `github.get_pr` | Fetch one PR with head/base refs, draft flag, diff stats. | `OCCP_GITHUB_TOKEN` |
+| `github.list_commits` | List recent commits (`per_page`, optional `since`). | `OCCP_GITHUB_TOKEN` |
+
+---
+
+## `playwright.*`
+
+Browser-automation surface. Registered unconditionally — the implementations
+fall back to stubs when no sidecar is wired, so they are safe to expose.
+
+| Tool | Description | Env required |
+|------|-------------|--------------|
+| `playwright.goto` | Navigate to a URL (stub until sidecar is wired). | — |
+| `playwright.screenshot` | Return a placeholder pointing at the sidecar command. | — |
+| `playwright.extract_text` | Real HTML fetch (httpx). With `selectolax` installed + a `selector`, returns extracted node texts; otherwise returns truncated raw body. | — (optional `selectolax`) |
+
+```bash
+# Recommended sidecar for full automation
+npx @playwright/mcp@latest --port 8931
+```
+
+---
+
+## `cloudflare.*`
+
+Cloudflare v4 REST API. Token is a scoped API Token — never a global key.
+
+| Tool | Description | Env required |
+|------|-------------|--------------|
+| `cloudflare.zones_list` | List zones (id, name, status, plan). | `OCCP_CLOUDFLARE_API_TOKEN` |
+| `cloudflare.dns_list` | List DNS records for a zone. | `OCCP_CLOUDFLARE_API_TOKEN` |
+| `cloudflare.analytics_get` | Analytics (stub — GraphQL query pending schema lock). | `OCCP_CLOUDFLARE_API_TOKEN` |
+
+---
+
+## `slack.*`
+
+Slack Web API over a bot token. Scopes needed: `chat:write`, `channels:history`,
+`groups:history`, `channels:read`, `groups:read`.
+
+| Tool | Description | Env required |
+|------|-------------|--------------|
+| `slack.post_message` | Post a message to a channel. | `OCCP_SLACK_BOT_TOKEN` |
+| `slack.search` | Channel-scoped keyword search via `conversations.history`. | `OCCP_SLACK_BOT_TOKEN` |
+| `slack.list_channels` | List non-archived public + private channels. | `OCCP_SLACK_BOT_TOKEN` |
+
+---
+
+## Add your own
+
+The bridge ships a `register()` method that accepts any
+`async (params) -> Any` callable under a `namespace.method` name.
+
+```python
+# adapters/mcp_my_service.py
+async def my_service_fetch(params: dict) -> dict:
+    return {"ok": True, "params": params}
+
+def register_my_service_tools(bridge) -> None:
+    bridge.register("myservice.fetch", my_service_fetch)
+```
+
+Then wire it in `build_default_bridge()` behind an env-var guard so a
+missing secret never breaks startup. See the
+[agent development guide](./guides/agent-development) for the full
+walkthrough: ACL entries, sanitizer allow-lists, policy rules, and
+audit expectations.

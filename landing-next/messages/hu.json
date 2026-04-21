@@ -1,0 +1,47 @@
+{
+  "metadata": {
+    "title": "OCCP — OpenCloud Control Plane | Ügynök-irányítási platform",
+    "description": "Az OCCP a Verified Autonomy Pipeline AI ügynökökhöz. Minden autonóm művelet ellenőrzött végrehajtás előtt. Policy-vezérelt, audit-naplózott, vállalati szintű irányítás LLM-alapú rendszerekhez.",
+    "ogTitle": "OCCP — OpenCloud Control Plane | Ügynök-irányítási platform",
+    "ogDescription": "Minden autonóm művelet ellenőrzött végrehajtás előtt. Policy-vezérelt, audit-naplózott, vállalati szinten kész. A control plane, amely kormányozza az AI ügynököket.",
+    "twitterTitle": "OCCP — OpenCloud Control Plane",
+    "twitterDescription": "Minden autonóm művelet ellenőrzött végrehajtás előtt. Policy-vezérelt, audit-naplózott, vállalati szinten kész.",
+    "keywords": {
+      "k1": "AI ügynök irányítás",
+      "k2": "control plane",
+      "k3": "LLM policy motor",
+      "k4": "verified autonomy pipeline",
+      "k5": "vállalati AI",
+      "k6": "OCCP"
+    }
+  },
+  "hero": {
+    "badge": "v1.0 · Nyílt forráskód · SOC2 Type II · EU AI Act 14. cikk",
+    "headlinePrefix": "Szállíts olyan AI ügynököket, amelyeket",
+    "headlineHighlight": "auditon is megvédesz",
+    "subtitle": "Minden autonóm művelet ellenőrzött, naplózott és visszafordítható — még mielőtt lefutna. A nyílt forráskódú Agent Control Plane 5-kapus Verified Autonomy Pipeline-nal. Policy-vezérelt. Manipuláció-biztos. Saját szerveren vagy menedzselten.",
+    "ctaPrimary": "Ingyenes indítás — bankkártya nélkül",
+    "ctaSecondary": "Dokumentáció",
+    "ctaGithub": "★ Csillagozd a GitHubon",
+    "builtOn": "Alapok",
+    "builtOnList": "OpenAI · Anthropic · MCP · OpenTelemetry · FastAPI · Postgres"
+  },
+  "codeTabs": {
+    "tabPython": "Python",
+    "tabTs": "TypeScript",
+    "tabCurl": "cURL"
+  },
+  "pipeline": {
+    "ariaLabel": "Verified Autonomy Pipeline: Terv, Kapu, Végrehajtás, Validáció, Kiszállítás",
+    "stagePlan": "Terv",
+    "stageGate": "Kapu",
+    "stageExecute": "Végrehajtás",
+    "stageValidate": "Validáció",
+    "stageShip": "Kiszállítás",
+    "ariaPlan": "Terv szakasz",
+    "ariaGate": "Policy kapu szakasz",
+    "ariaExecute": "Végrehajtás szakasz",
+    "ariaValidate": "Validáció szakasz",
+    "ariaShip": "Kiszállítás szakasz"
+  }
+}

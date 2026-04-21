@@ -1,0 +1,47 @@
+{
+  "metadata": {
+    "title": "OCCP — OpenCloud Control Plane | Agent Governance Platform",
+    "description": "OCCP is the Verified Autonomy Pipeline for AI agents. Every autonomous action verified before execution. Policy-enforced, audit-logged, enterprise-ready governance for LLM-powered systems.",
+    "ogTitle": "OCCP — OpenCloud Control Plane | Agent Governance Platform",
+    "ogDescription": "Every autonomous action verified before execution. Policy-enforced, audit-logged, enterprise-ready. The control plane that governs AI agents.",
+    "twitterTitle": "OCCP — OpenCloud Control Plane",
+    "twitterDescription": "Every autonomous action verified before execution. Policy-enforced, audit-logged, enterprise-ready.",
+    "keywords": {
+      "k1": "AI agent governance",
+      "k2": "control plane",
+      "k3": "LLM policy engine",
+      "k4": "verified autonomy pipeline",
+      "k5": "enterprise AI",
+      "k6": "OCCP"
+    }
+  },
+  "hero": {
+    "badge": "v1.0 · Open Source · SOC2 Type II · EU AI Act Art. 14",
+    "headlinePrefix": "Ship AI agents you can",
+    "headlineHighlight": "defend in an audit",
+    "subtitle": "Every autonomous action verified, logged, and reversible — before it runs. The open-source Agent Control Plane with a 5-gate Verified Autonomy Pipeline. Policy-enforced. Tamper-evident. Self-hosted or managed.",
+    "ctaPrimary": "Start free — no credit card",
+    "ctaSecondary": "Read the docs",
+    "ctaGithub": "★ Star on GitHub",
+    "builtOn": "Built on",
+    "builtOnList": "OpenAI · Anthropic · MCP · OpenTelemetry · FastAPI · Postgres"
+  },
+  "codeTabs": {
+    "tabPython": "Python",
+    "tabTs": "TypeScript",
+    "tabCurl": "cURL"
+  },
+  "pipeline": {
+    "ariaLabel": "Verified Autonomy Pipeline: Plan, Gate, Execute, Validate, Ship",
+    "stagePlan": "Plan",
+    "stageGate": "Gate",
+    "stageExecute": "Execute",
+    "stageValidate": "Validate",
+    "stageShip": "Ship",
+    "ariaPlan": "Plan stage",
+    "ariaGate": "Policy gate stage",
+    "ariaExecute": "Execute stage",
+    "ariaValidate": "Validate stage",
+    "ariaShip": "Ship stage"
+  }
+}

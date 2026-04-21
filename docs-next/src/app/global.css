@@ -2,6 +2,29 @@
 @import 'fumadocs-ui/css/neutral.css';
 @import 'fumadocs-ui/css/preset.css';
 
+/* ─────────────────────────────────────────────────────────────
+   OCCP brand accents — layered on top of Fumadocs neutral preset
+   ───────────────────────────────────────────────────────────── */
+:root {
+  /* Brand OKLCH green — matches landing / mission-control accent */
+  --color-fd-primary: oklch(0.72 0.18 145);
+  --occp-brand: oklch(0.72 0.18 145);
+  --occp-brand-dim: oklch(0.58 0.14 145);
+  --occp-ring: oklch(0.72 0.18 145 / 0.35);
+}
+
+.dark {
+  --color-fd-primary: oklch(0.78 0.18 145);
+  --occp-brand: oklch(0.78 0.18 145);
+  --occp-brand-dim: oklch(0.62 0.14 145);
+  --occp-ring: oklch(0.78 0.18 145 / 0.45);
+}
+
+/* Dark-mode default (matches landing). RootProvider still allows user toggle. */
+html:not(.light):not(.dark) {
+  color-scheme: dark;
+}
+
 html {
   scrollbar-gutter: stable;
 }
@@ -9,4 +32,46 @@ html {
 html > body[data-scroll-locked] {
   margin-right: 0px !important;
   --removed-body-scroll-bar-size: 0px !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Subtle gradient accent on the first word of every H1.
+   Pure CSS — no JS, no MDX component churn.
+   Works with Fumadocs' `h1` default output (which wraps heading
+   text in an anchor link span); we target the rendered <h1>.
+   ───────────────────────────────────────────────────────────── */
+article h1:first-word,
+.fd-prose h1:first-word {
+  /* ::first-word is not real — kept as documentation.
+     Actual implementation below uses a CSS-only trick via
+     a linear-gradient on the whole h1 and falls back cleanly. */
+}
+
+article h1,
+.fd-prose h1 {
+  background: linear-gradient(
+    110deg,
+    var(--occp-brand) 0%,
+    var(--color-fd-foreground) 35%,
+    var(--color-fd-foreground) 100%
+  );
+  background-size: 100% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Keep inline <code> inside an H1 readable (no gradient clip on code). */
+article h1 code,
+.fd-prose h1 code {
+  background: var(--color-fd-muted);
+  color: var(--color-fd-foreground);
+  -webkit-text-fill-color: var(--color-fd-foreground);
+}
+
+/* Focus ring picks up brand colour for interactive doc widgets. */
+:where(a, button, summary, [role='tab']):focus-visible {
+  outline: 2px solid var(--occp-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
 }

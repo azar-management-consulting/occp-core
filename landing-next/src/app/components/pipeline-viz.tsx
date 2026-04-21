@@ -1,27 +1,27 @@
+"use client";
+
 import { Brain, ShieldCheck, Play, CheckCircle2, Rocket } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 /**
- * PipelineViz — Verified Autonomy Pipeline visualization.
- *
- * Pure CSS + Tailwind animation. No video, no Lottie, no deps beyond
- * lucide-react (already present). Honors prefers-reduced-motion.
- *
- * Total cycle: 5 stages × 0.8s + 2s idle = 6s. Delay per node via
- * inline --d custom property feeding the shared @keyframes `stagePulse`.
+ * PipelineViz — Verified Autonomy Pipeline visualization, i18n-aware.
+ * Icons stay constant; labels + aria strings are translated.
  */
-const STAGES = [
-  { label: "Plan",     icon: Brain,        aria: "Plan stage" },
-  { label: "Gate",     icon: ShieldCheck,  aria: "Policy gate stage" },
-  { label: "Execute",  icon: Play,         aria: "Execute stage" },
-  { label: "Validate", icon: CheckCircle2, aria: "Validate stage" },
-  { label: "Ship",     icon: Rocket,       aria: "Ship stage" },
-] as const;
-
 export function PipelineViz() {
+  const t = useTranslations("pipeline");
+
+  const STAGES = [
+    { key: "Plan",     label: t("stagePlan"),     aria: t("ariaPlan"),     icon: Brain },
+    { key: "Gate",     label: t("stageGate"),     aria: t("ariaGate"),     icon: ShieldCheck },
+    { key: "Execute",  label: t("stageExecute"),  aria: t("ariaExecute"),  icon: Play },
+    { key: "Validate", label: t("stageValidate"), aria: t("ariaValidate"), icon: CheckCircle2 },
+    { key: "Ship",     label: t("stageShip"),     aria: t("ariaShip"),     icon: Rocket },
+  ] as const;
+
   return (
     <div
       role="img"
-      aria-label="Verified Autonomy Pipeline: Plan, Gate, Execute, Validate, Ship"
+      aria-label={t("ariaLabel")}
       className="occp-pipeline-viz mx-auto mt-14 w-full max-w-5xl"
     >
       <ol className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
@@ -29,7 +29,7 @@ export function PipelineViz() {
           const Icon = s.icon;
           return (
             <li
-              key={s.label}
+              key={s.key}
               aria-label={s.aria}
               style={{ ["--d" as string]: `${i * 0.8}s` }}
               className="occp-pipeline-node group relative flex flex-1 items-center gap-3 rounded-lg border border-border-subtle bg-bg-elev/40 px-4 py-3 sm:flex-col sm:justify-center sm:text-center"

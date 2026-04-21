@@ -15,6 +15,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/empty-state";
 
 type MCPStatus = "connected" | "disconnected";
 
@@ -47,22 +49,17 @@ export default function MCPV2Page() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            <Plug className="inline-block mr-2 -mt-1" aria-hidden="true" /> MCP servers
-          </h1>
-          <p className="text-[var(--fg-muted,#a1a1aa)]">
-            {connected} of {SERVERS.length} servers online.
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/mcp?new=1">
-            <Plus aria-hidden="true" /> Connect server
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        title="MCP servers"
+        description={`${connected} of ${SERVERS.length} servers online.`}
+        actions={
+          <Button asChild>
+            <Link href="/mcp?new=1">
+              <Plus aria-hidden="true" /> Connect server
+            </Link>
+          </Button>
+        }
+      />
 
       {/* Servers table */}
       <Card>
@@ -73,43 +70,59 @@ export default function MCPV2Page() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm font-mono" aria-label="MCP server connections">
-              <thead className="text-xs uppercase tracking-wider text-[var(--fg-muted,#a1a1aa)]">
-                <tr className="border-b border-[var(--border-subtle,#52525b)]">
-                  <th scope="col" className="py-2 pr-4 text-left font-medium">Name</th>
-                  <th scope="col" className="py-2 pr-4 text-left font-medium">Status</th>
-                  <th scope="col" className="py-2 pr-4 text-right font-medium">Tools</th>
-                  <th scope="col" className="py-2 pr-4 text-left font-medium">Last ping</th>
-                  <th scope="col" className="py-2 text-left font-medium">Version</th>
-                </tr>
-              </thead>
-              <tbody>
-                {SERVERS.map((s) => (
-                  <tr
-                    key={s.name}
-                    className="border-b border-[var(--border-subtle,#52525b)] last:border-0 hover:bg-white/[0.02]"
-                  >
-                    <td className="py-3 pr-4 font-bold">{s.name}</td>
-                    <td className="py-3 pr-4">
-                      <span
-                        className={`inline-block rounded border px-2 py-0.5 text-xs uppercase tracking-wider ${STATUS_STYLES[s.status]}`}
-                      >
-                        {s.status}
-                      </span>
-                    </td>
-                    <td className="py-3 pr-4 text-right">{s.toolsCount}</td>
-                    <td className="py-3 pr-4 text-[var(--fg-muted,#a1a1aa)]">
-                      {s.lastPing}
-                    </td>
-                    <td className="py-3 text-[var(--fg-muted,#a1a1aa)]">
-                      {s.version}
-                    </td>
+          {/* TODO: swap mock check when API wires */}
+          {SERVERS.length === 0 ? (
+            <EmptyState
+              icon={Plug}
+              title="No MCP servers connected"
+              description="Connect your first MCP server to start routing tool calls."
+              action={
+                <Button asChild>
+                  <Link href="/mcp?new=1">
+                    <Plus aria-hidden="true" /> Connect server
+                  </Link>
+                </Button>
+              }
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm font-mono" aria-label="MCP server connections">
+                <thead className="text-xs uppercase tracking-wider text-[var(--fg-muted,#a1a1aa)]">
+                  <tr className="border-b border-[var(--border-subtle,#52525b)]">
+                    <th scope="col" className="py-2 pr-4 text-left font-medium">Name</th>
+                    <th scope="col" className="py-2 pr-4 text-left font-medium">Status</th>
+                    <th scope="col" className="py-2 pr-4 text-right font-medium">Tools</th>
+                    <th scope="col" className="py-2 pr-4 text-left font-medium">Last ping</th>
+                    <th scope="col" className="py-2 text-left font-medium">Version</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {SERVERS.map((s) => (
+                    <tr
+                      key={s.name}
+                      className="border-b border-[var(--border-subtle,#52525b)] last:border-0 hover:bg-white/[0.02] transition-colors duration-150"
+                    >
+                      <td className="py-3 pr-4 font-bold">{s.name}</td>
+                      <td className="py-3 pr-4">
+                        <span
+                          className={`inline-block rounded border px-2 py-0.5 text-xs uppercase tracking-wider ${STATUS_STYLES[s.status]}`}
+                        >
+                          {s.status}
+                        </span>
+                      </td>
+                      <td className="py-3 pr-4 text-right">{s.toolsCount}</td>
+                      <td className="py-3 pr-4 text-[var(--fg-muted,#a1a1aa)]">
+                        {s.lastPing}
+                      </td>
+                      <td className="py-3 text-[var(--fg-muted,#a1a1aa)]">
+                        {s.version}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
