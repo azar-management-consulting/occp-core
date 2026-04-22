@@ -1,7 +1,11 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+# `npm install` instead of `npm ci` — Docker's isolated environment sometimes
+# resolves different transitive versions than a developer workstation even
+# with the same lock file (e.g. platform-specific @swc/helpers). Install
+# reconciles; CI slower but deploy-reliable.
+RUN npm install --no-audit --no-fund --prefer-offline
 
 FROM node:22-alpine AS builder
 WORKDIR /app
