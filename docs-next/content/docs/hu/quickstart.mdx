@@ -1,0 +1,68 @@
+---
+title: Gyorsindító
+description: Futtassa az első igazolt ügynökműveletet 5 percen belül.
+---
+
+# Gyorsindító
+
+Ez az oldal nullától viszi végig az első sikeres **PLAN → VERIFY → APPROVE →
+EXECUTE → AUDIT** cikluson 5 perc alatt.
+
+## 1 · Bejelentkezés
+
+Kattintson az [Ingyenes indítás a vezérlőpulton](https://dash.occp.ai/onboarding/start)
+linkre, és jelentkezzen be GitHub-fiókkal.
+
+> Az OAuth az ajánlott útvonal. Bankkártya nem szükséges. Nincs blokkoló
+> e-mail visszaigazolási lépés — ez aszinkron módon történik.
+
+## 2 · API-kulcs létrehozása
+
+A beállítási varázslóban kattintson az **Első API-kulcs létrehozása** gombra.
+A kulcs csak egyszer jelenik meg, és `occp_live_sk_` előtaggal kezdődik.
+
+Mentse egy `.env` fájlba:
+
+```bash
+OCCP_API_KEY=occp_live_sk_xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+## 3 · Az SDK telepítése
+
+```bash
+# Python
+pip install occp
+
+# Node / TypeScript
+npm install @occp/sdk
+```
+
+## 4 · Igazolt feladat futtatása
+
+```python
+from occp import ControlPlane
+import os
+
+cp = ControlPlane(api_key=os.environ["OCCP_API_KEY"])
+
+result = cp.run(
+    agent="claude-opus-4-7",
+    task="Say hello and confirm the pipeline is working.",
+)
+
+print(result.status)          # 'pass'
+print(result.audit_chain_id)  # tamper-evident chain id
+```
+
+## 5 · Az auditnapló megtekintése
+
+Lépjen a vezérlőpult [Audit oldalára](https://dash.occp.ai/audit). A futtatás
+ott szerepel, minden szakaszhoz aláírt bizonyítékkal.
+
+Kész — az imént teljes körűen felügyelt autonóm műveletet futtatott.
+
+## Mit olvasson ezután?
+
+- [Igazolt autonómia — alapfogalom](/docs/concepts/verified-autonomy)
+- [Házirendek írása](/docs/guides/policy-writing)
+- [Ügynökök telepítése GitHubon keresztül](/docs/guides/first-agent)

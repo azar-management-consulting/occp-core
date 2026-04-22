@@ -7,6 +7,8 @@ services:
       - "127.0.0.1:${OCCP_API_PORT:-8000}:8000"
     volumes:
       - occp-data:/app/data
+    env_file:
+      - .env
     environment:
       - OCCP_ENV=${OCCP_ENV:-development}
       - OCCP_DATABASE_URL=sqlite+aiosqlite:///data/occp.db
@@ -27,7 +29,6 @@ services:
       retries: 3
     security_opt:
       - no-new-privileges:true
-      - seccomp=unconfined
     read_only: true
     tmpfs:
       - /tmp
@@ -53,6 +54,55 @@ services:
     read_only: true
     tmpfs:
       - /tmp
+    restart: unless-stopped
+
+  landing:
+    build:
+      context: ./landing-next
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_OCCP_API_URL: ${NEXT_PUBLIC_OCCP_API_URL:-https://api.occp.ai}
+    ports:
+      - "127.0.0.1:${OCCP_LANDING_PORT:-3100}:3000"
+    environment:
+      - NEXT_PUBLIC_OCCP_API_URL=${NEXT_PUBLIC_OCCP_API_URL:-https://api.occp.ai}
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    restart: unless-stopped
+
+  docs:
+    build:
+      context: ./docs-next
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_OCCP_API_URL: ${NEXT_PUBLIC_OCCP_API_URL:-https://api.occp.ai}
+    ports:
+      - "127.0.0.1:${OCCP_DOCS_PORT:-3200}:3000"
+    environment:
+      - NEXT_PUBLIC_OCCP_API_URL=${NEXT_PUBLIC_OCCP_API_URL:-https://api.occp.ai}
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.8-alpine
+    ports:
+      - "127.0.0.1:${CADDY_HTTP_PORT:-3300}:80"
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      landing:
+        condition: service_started
+      docs:
+        condition: service_started
     restart: unless-stopped
 
   # Development mode: mounts source code
@@ -94,3 +144,5 @@ services:
 volumes:
   occp-data:
   dash_node_modules:
+  caddy-data:
+  caddy-config:

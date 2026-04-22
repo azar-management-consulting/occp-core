@@ -80,6 +80,9 @@ docs-next/.contentlayer/
 OCCP_SYSTEM_MANUAL.md
 .planning/OCCP_OPERATIONAL_DESCRIPTION_*.md
 .planning/L6_HANDOVER_*.md
+.planning/OCCP_HANDOFF_*.md
+.planning/*_PRIVATE.md
+.planning/*_SECRET.md
 
 # iCloud/Finder duplicate artifacts
 * 2.py

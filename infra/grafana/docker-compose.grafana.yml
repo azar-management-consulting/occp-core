@@ -1,7 +1,7 @@
 # OCCP Grafana observability stack — Grafana 11 + Prometheus + Alertmanager
 # Usage: docker compose -f infra/grafana/docker-compose.grafana.yml up -d
 # Requires: .env.grafana (copy from .env.grafana.example)
-# Network: occp-obs (external — shared with Phoenix/Langfuse compose in infra/observability/)
+# Network: occp-core_default (external — OCCP main network; enables Prometheus→api scrape)
 
 version: "3.8"
 
@@ -12,7 +12,7 @@ services:
     container_name: occp-grafana
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     env_file:
       - .env.grafana
     environment:
@@ -29,7 +29,7 @@ services:
       - ./dashboards:/etc/grafana/provisioning/dashboards
       - grafana-data:/var/lib/grafana
     networks:
-      - occp-obs
+      - occp-core_default
     depends_on:
       prometheus:
         condition: service_healthy
@@ -48,7 +48,7 @@ services:
     container_name: occp-prometheus
     restart: unless-stopped
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
@@ -61,7 +61,7 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     networks:
-      - occp-obs
+      - occp-core_default
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/-/healthy || exit 1"]
       interval: 15s
@@ -77,7 +77,7 @@ services:
     container_name: occp-alertmanager
     restart: unless-stopped
     ports:
-      - "9093:9093"
+      - "127.0.0.1:9093:9093"
     command:
       - "--config.file=/etc/alertmanager/alertmanager.yml"
       - "--storage.path=/alertmanager"
@@ -86,7 +86,7 @@ services:
       - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       - alertmanager-data:/alertmanager
     networks:
-      - occp-obs
+      - occp-core_default
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:9093/-/healthy || exit 1"]
       interval: 15s
@@ -106,6 +106,6 @@ volumes:
     driver: local
 
 networks:
-  occp-obs:
+  occp-core_default:
+    name: occp-core_default
     external: true
-    name: occp-obs

@@ -9,6 +9,10 @@ concurrency:
   group: production
   cancel-in-progress: false
 
+# Least-privilege default token scope (SOC2 CC7.2).
+permissions:
+  contents: read
+
 jobs:
   test:
     uses: ./.github/workflows/ci.yml
@@ -17,30 +21,57 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
     steps:
+      # Mask the secret early so any accidental echo is redacted in logs.
+      - name: Mask Anthropic API key
+        if: env.ANTHROPIC_API_KEY != ''
+        run: echo "::add-mask::${ANTHROPIC_API_KEY}"
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
       - name: Deploy to Hetzner
-        uses: appleboy/ssh-action@v1
+        # SHA-pinned appleboy/ssh-action v1.2.0 (Nov 2025) — no floating tag.
+        uses: appleboy/ssh-action@2ead5a36553fad2f77b34b8afe7bae0fb4e04fd4
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           envs: ANTHROPIC_API_KEY
+          # Safer secret write: python3 does exact string replace, immune to
+          # sed metacharacter injection (`|`, `&`, `$`, newlines) that would
+          # otherwise corrupt .env or leak into logs.
           script: |
+            set -euo pipefail
             cd /opt/occp
-            git pull origin main
-            # Sync Anthropic key to .env if provided via GitHub secret
-            if [ -n "$ANTHROPIC_API_KEY" ]; then
-              grep -q "OCCP_ANTHROPIC_API_KEY" .env 2>/dev/null && \
-                sed -i "s|^OCCP_ANTHROPIC_API_KEY=.*|OCCP_ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY|" .env || \
-                echo "OCCP_ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY" >> .env
+            git pull --ff-only origin main
+            if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+              python3 - <<'PYEOF'
+            import os, pathlib
+            key = os.environ["ANTHROPIC_API_KEY"]
+            env = pathlib.Path(".env")
+            lines = env.read_text().splitlines() if env.exists() else []
+            out, seen = [], False
+            for line in lines:
+                if line.startswith("OCCP_ANTHROPIC_API_KEY="):
+                    out.append(f"OCCP_ANTHROPIC_API_KEY={key}")
+                    seen = True
+                else:
+                    out.append(line)
+            if not seen:
+                out.append(f"OCCP_ANTHROPIC_API_KEY={key}")
+            env.write_text("\n".join(out) + "\n")
+            env.chmod(0o600)
+            PYEOF
             fi
             docker compose build --no-cache
-            # Fix volume ownership for non-root container user (occp:1001)
             docker run --rm -v occp_occp-data:/data alpine chown -R 1001:1001 /data
             docker compose up -d
-            # Sync landing page to Apache webroot
-            cp /opt/occp/landing/index.html /var/www/occp.ai/web/
-            cp /opt/occp/llms.txt /var/www/occp.ai/web/ 2>/dev/null || true
+            if [ -f /opt/occp/landing/index.html ]; then
+              cp /opt/occp/landing/index.html /var/www/occp.ai/web/ || true
+              cp /opt/occp/llms.txt /var/www/occp.ai/web/ 2>/dev/null || true
+            fi
             sleep 10
             curl -sf http://localhost:8000/api/v1/health || exit 1
             curl -sf http://localhost:3000/ || exit 1

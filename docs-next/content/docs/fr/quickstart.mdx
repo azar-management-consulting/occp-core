@@ -1,0 +1,69 @@
+---
+title: Démarrage rapide
+description: Exécutez votre première action d'agent vérifiée en moins de 5 minutes.
+---
+
+# Démarrage rapide
+
+Cette page vous mène de zéro au premier cycle **PLAN → VERIFY → APPROVE →
+EXECUTE → AUDIT** réussi, en moins de 5 minutes.
+
+## 1 · Connexion
+
+Cliquez sur [Démarrer gratuitement sur le tableau de bord](https://dash.occp.ai/onboarding/start)
+et authentifiez-vous avec GitHub.
+
+> OAuth est la méthode recommandée. Pas de carte bancaire. Aucune étape de
+> vérification d'e-mail bloquante — elle se déroule en arrière-plan.
+
+## 2 · Générer une clé API
+
+Depuis l'assistant d'intégration, cliquez sur **Générer votre première clé
+API**. La clé n'est affichée qu'une seule fois et commence par
+`occp_live_sk_`.
+
+Enregistrez-la dans un fichier `.env` :
+
+```bash
+OCCP_API_KEY=occp_live_sk_xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+## 3 · Installer le SDK
+
+```bash
+# Python
+pip install occp
+
+# Node / TypeScript
+npm install @occp/sdk
+```
+
+## 4 · Exécuter une tâche vérifiée
+
+```python
+from occp import ControlPlane
+import os
+
+cp = ControlPlane(api_key=os.environ["OCCP_API_KEY"])
+
+result = cp.run(
+    agent="claude-opus-4-7",
+    task="Say hello and confirm the pipeline is working.",
+)
+
+print(result.status)          # 'pass'
+print(result.audit_chain_id)  # tamper-evident chain id
+```
+
+## 5 · Consulter la piste d'audit
+
+Rendez-vous sur la [page Audit](https://dash.occp.ai/audit) du tableau de
+bord. Votre exécution y figure, avec une preuve signée pour chaque étape.
+
+Terminé — vous venez d'exécuter une action autonome entièrement gouvernée.
+
+## À lire ensuite
+
+- [Autonomie vérifiée — concept central](/docs/concepts/verified-autonomy)
+- [Rédiger des politiques](/docs/guides/policy-writing)
+- [Déployer des agents via GitHub](/docs/guides/first-agent)

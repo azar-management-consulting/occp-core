@@ -1,18 +1,42 @@
 ---
-title: Dokumentáció
-description: Dokumentáció magyar nyelven — hamarosan.
+title: OCCP dokumentáció
+description: Az ügynökvezérlő réteg igazolt autonómia folyamattal.
 ---
 
-# Dokumentáció magyar nyelven — hamarosan
+# Induljon el 60 másodperc alatt
 
-Az OCCP teljes dokumentációjának magyar fordítása folyamatban van.
-Addig is a teljes angol nyelvű dokumentáció elérhető:
+Az OCCP nyílt forráskódú vezérlőréteg autonóm AI ügynökökhöz. Minden művelet,
+amelyet az ügynök végrehajt, **megtervezett, házirend-ellenőrzött, végrehajtott,
+validált és auditnaplózott** — még mielőtt az ügynök bármilyen visszafordíthatatlan
+változtatást véglegesítene.
 
-- [OCCP Documentation (English)](/en)
+## Telepítés
 
-## Gyorslinkek
+```bash
+pip install occp
+# or
+npm install @occp/sdk
+```
 
-- [Quickstart (EN)](/en/quickstart)
-- [API Reference (EN)](/en/api-reference)
-- [Architecture (EN)](/en/concepts/architecture)
-- [Verified Autonomy Pipeline (EN)](/en/concepts/verified-autonomy)
+## Az első igazolt futtatás
+
+```python
+from occp import ControlPlane
+
+cp = ControlPlane(policy="policies/finance.rego")
+
+result = cp.run(
+    agent="claude-opus-4-7",
+    task="Refund order #4521 if return window is open",
+)
+
+# PLAN → VERIFY → APPROVE → EXECUTE → AUDIT
+print(result.audit_chain_id)
+```
+
+## Következő lépések
+
+- [Gyorsindító — 5 perces bemutató](/docs/quickstart)
+- [Alapfogalmak](/docs/concepts)
+- [Útmutatók](/docs/guides)
+- [API referencia](/docs/api-reference)

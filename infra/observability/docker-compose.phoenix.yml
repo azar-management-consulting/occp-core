@@ -9,15 +9,21 @@
 #   # edit secrets (PHOENIX_DB_URL, PHOENIX_SECRET)
 #   docker compose -f docker-compose.phoenix.yml --env-file .env.phoenix up -d
 #
-# Target host: Hetzner CX32 (4 vCPU / 8 GB RAM, ARM or x86).
+# Target host: Hetzner AX41 brain server (195.201.238.144, 64 GB RAM).
 # ============================================================================
 
 name: occp-phoenix
 
+# occp-core_default  — external network created by `docker compose up` in /opt/occp
+#                      (project dir = occp-core → Docker names it occp-core_default)
+# phoenix-internal   — internal bridge; postgres is NOT exposed on the shared network
 networks:
-  occp-obs:
-    name: occp-obs
+  occp-core_default:
+    name: occp-core_default
     external: true
+  phoenix-internal:
+    driver: bridge
+    internal: true
 
 volumes:
   phoenix-pg-data:
@@ -36,7 +42,7 @@ services:
     volumes:
       - phoenix-pg-data:/var/lib/postgresql/data
     networks:
-      - occp-obs
+      - phoenix-internal
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${PHOENIX_PG_USER:-phoenix} -d ${PHOENIX_PG_DB:-phoenix}"]
       interval: 10s
@@ -53,7 +59,7 @@ services:
           memory: 512m
 
   phoenix:
-    image: arizephoenix/phoenix:latest
+    image: arizephoenix/phoenix:7.12.0
     container_name: phoenix
     restart: unless-stopped
     depends_on:
@@ -70,13 +76,14 @@ services:
       PHOENIX_SECRET: ${PHOENIX_SECRET:?phoenix auth secret required}
     ports:
       # UI
-      - "${PHOENIX_PORT:-6006}:6006"
+      - "127.0.0.1:${PHOENIX_PORT:-6006}:6006"
       # OTLP gRPC
-      - "${PHOENIX_GRPC_PORT:-4317}:4317"
+      - "127.0.0.1:${PHOENIX_GRPC_PORT:-4317}:4317"
       # OTLP HTTP
-      - "${PHOENIX_HTTP_PORT:-4318}:6006"
+      - "127.0.0.1:${PHOENIX_HTTP_PORT:-4318}:4318"
     networks:
-      - occp-obs
+      - occp-core_default
+      - phoenix-internal
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:6006/healthz || exit 1"]
       interval: 15s

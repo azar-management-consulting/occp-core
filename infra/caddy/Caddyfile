@@ -1,0 +1,35 @@
+{
+    admin off
+    auto_https off
+    log {
+        output stdout
+        format json
+        level INFO
+    }
+}
+
+# v2.occp.ai -> landing-next container
+:80 {
+    @landing host v2.occp.ai
+    handle @landing {
+        reverse_proxy landing:3000 {
+            header_up Host {upstream_hostport}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-Proto https
+        }
+    }
+
+    @docs host docs.occp.ai
+    handle @docs {
+        reverse_proxy docs:3000 {
+            header_up Host {upstream_hostport}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-Proto https
+        }
+    }
+
+    # Fallback
+    handle {
+        respond "OCCP host not routed" 404
+    }
+}

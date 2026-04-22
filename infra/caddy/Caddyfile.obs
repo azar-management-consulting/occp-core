@@ -1,0 +1,30 @@
+# OCCP Observability — Caddy virtual host snippets
+# ─────────────────────────────────────────────────
+# Usage:
+#   Option A (import): add `import /etc/caddy/Caddyfile.obs` to the main Caddyfile
+#   Option B (append): cat Caddyfile.obs >> Caddyfile && caddy reload
+#
+# Requires: grafana and phoenix containers on the same Docker network as Caddy
+# (occp-core_default). Both grafana:3000 and phoenix:6006 must resolve via Docker DNS.
+#
+# Cloudflare DNS prerequisite:
+#   grafana.occp.ai  CNAME  195.201.238.144  (proxy ON)
+#   traces.occp.ai   CNAME  195.201.238.144  (proxy ON)
+
+@grafana host grafana.occp.ai
+handle @grafana {
+    reverse_proxy grafana:3000 {
+        header_up Host {upstream_hostport}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-Proto https
+    }
+}
+
+@phoenix host traces.occp.ai
+handle @phoenix {
+    reverse_proxy phoenix:6006 {
+        header_up Host {upstream_hostport}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-Proto https
+    }
+}

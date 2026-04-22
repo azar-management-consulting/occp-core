@@ -14,6 +14,9 @@ rule_files:
 scrape_configs:
 
   # ── OCCP API metrics endpoint ──────────────────────────────────────────────
+  # Target is the Docker service DNS alias "api" (service name in docker-compose.yml).
+  # Container name would be occp-core-api-1 but service alias "api" resolves
+  # from any container on the same network (occp-core_default).
   - job_name: occp-api
     scrape_interval: 15s
     scrape_timeout: 10s
@@ -21,7 +24,7 @@ scrape_configs:
     scheme: http
     static_configs:
       - targets:
-          - "occp-api:8000"
+          - "api:8000"
         labels:
           service: occp-api
           env: production
@@ -69,6 +72,25 @@ scrape_configs:
         labels:
           service: alertmanager
           env: production
+
+  # ── TODO: OCCP API observability endpoint (Bearer auth) ───────────────────
+  # Uncomment and set OCCP_METRICS_TOKEN when the /api/v1/observability/metrics
+  # endpoint is implemented with Bearer token authentication.
+  #
+  # - job_name: occp-api-observability
+  #   scrape_interval: 30s
+  #   scrape_timeout: 10s
+  #   metrics_path: /api/v1/observability/metrics
+  #   scheme: http
+  #   authorization:
+  #     type: Bearer
+  #     credentials: ${OCCP_METRICS_TOKEN}
+  #   static_configs:
+  #     - targets:
+  #         - "api:8000"
+  #       labels:
+  #         service: occp-api-obs
+  #         env: production
 
 alerting:
   alertmanagers:

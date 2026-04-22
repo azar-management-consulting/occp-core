@@ -73,7 +73,7 @@
 - **0 CRITICAL / 0 HIGH open** (2 HIGH fix iter-5: SQL injection CTE-bypass guard, RBAC Managed Agents; SSRF mcp_playwright)
 - CSP + HSTS preload + X-Frame-Options DENY + Permissions-Policy mind a 3 surface-en
 - Brain box secret redaction iter-6 (`/opt/occp/OPENCLAW/DEPLOYMENT-PROMPT-FINAL.md` + `/opt/occp/.claude/settings.local.json` — chmod 600)
-- **⚠️ Rotáció vár Henry-re**: Slack bot token (`xoxb-10571177313809-...`) + Slack signing secret (`02fd20...`) + GitHub PAT (`ghp_aUUwXiCPa...`)
+- **⚠️ Rotáció vár Henry-re**: Slack bot token + Slack signing secret + GitHub PAT (a konkrét értékek csak a brain `/opt/occp-backup-*/` pre-sync snapshot-okban maradtak; rotáció után töröld a backupokat)
 
 ---
 
@@ -82,7 +82,7 @@
 | # | Lépés | Command / URL |
 |---|---|---|
 | 1 | Slack bot rotáció | https://api.slack.com/apps → OAuth → Reinstall app |
-| 2 | GitHub PAT revoke | https://github.com/settings/tokens → `ghp_aUUwXiCPa...` → Delete |
+| 2 | GitHub PAT revoke | https://github.com/settings/tokens → azonosítsd a brain-en `/opt/occp-backup-*/OPENCLAW/DEPLOYMENT-PROMPT-FINAL.md`-ben → Delete |
 | 3 | Vercel landing deploy | `cd landing-next && vercel link --project occp-landing --yes && vercel --prod` |
 | 4 | Vercel docs deploy | `cd docs-next && vercel link --project occp-docs --yes && vercel --prod` |
 | 5 | Cloudflare DNS (grey cloud) | `v2.occp.ai CNAME cname.vercel-dns.com`, ugyanez `docs.occp.ai`, `traces.occp.ai`, `grafana.occp.ai` |

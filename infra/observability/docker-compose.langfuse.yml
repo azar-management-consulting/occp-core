@@ -72,7 +72,7 @@ services:
   # ClickHouse — trace columnar store
   # -------------------------------------------------------------------------
   langfuse-clickhouse:
-    image: clickhouse/clickhouse-server:24
+    image: clickhouse/clickhouse-server:24.10-alpine
     container_name: langfuse-clickhouse
     restart: unless-stopped
     environment:
@@ -139,7 +139,7 @@ services:
   # Langfuse worker — background event ingestion, evals
   # -------------------------------------------------------------------------
   langfuse-worker:
-    image: langfuse/langfuse-worker:3
+    image: langfuse/langfuse-worker:3.54
     container_name: langfuse-worker
     restart: unless-stopped
     depends_on:
@@ -176,7 +176,7 @@ services:
   # Langfuse web — UI + ingestion API (OTLP via /api/public/otel)
   # -------------------------------------------------------------------------
   langfuse-web:
-    image: langfuse/langfuse:3
+    image: langfuse/langfuse:3.54
     container_name: langfuse-web
     restart: unless-stopped
     depends_on:
@@ -206,7 +206,7 @@ services:
       LANGFUSE_INIT_USER_EMAIL: ${LANGFUSE_INIT_USER_EMAIL:-}
       LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD:-}
     ports:
-      - "${LANGFUSE_WEB_PORT:-3100}:3000"
+      - "127.0.0.1:${LANGFUSE_WEB_PORT:-3100}:3000"
     networks:
       - occp-obs
     healthcheck:

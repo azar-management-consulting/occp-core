@@ -1,18 +1,42 @@
 ---
-title: Documentation
-description: Documentation en français — bientôt disponible.
+title: Documentation OCCP
+description: Le plan de contrôle d'agents avec pipeline d'autonomie vérifiée.
 ---
 
-# Documentation en français — bientôt disponible
+# Démarrez en 60 secondes
 
-La traduction de la documentation complète de l'OCCP en français est en cours.
-En attendant, la documentation complète en anglais est disponible :
+OCCP est le plan de contrôle open source pour les agents IA autonomes. Chaque
+action exécutée par votre agent est **planifiée, validée par une politique,
+exécutée, vérifiée et consignée dans un journal d'audit** — avant même que
+l'agent n'engage la moindre opération irréversible.
 
-- [OCCP Documentation (English)](/en)
+## Installation
 
-## Liens rapides
+```bash
+pip install occp
+# or
+npm install @occp/sdk
+```
 
-- [Quickstart (EN)](/en/quickstart)
-- [API Reference (EN)](/en/api-reference)
-- [Architecture (EN)](/en/concepts/architecture)
-- [Verified Autonomy Pipeline (EN)](/en/concepts/verified-autonomy)
+## Votre première exécution vérifiée
+
+```python
+from occp import ControlPlane
+
+cp = ControlPlane(policy="policies/finance.rego")
+
+result = cp.run(
+    agent="claude-opus-4-7",
+    task="Refund order #4521 if return window is open",
+)
+
+# PLAN → VERIFY → APPROVE → EXECUTE → AUDIT
+print(result.audit_chain_id)
+```
+
+## Pour aller plus loin
+
+- [Démarrage rapide — tutoriel de 5 minutes](/docs/quickstart)
+- [Concepts fondamentaux](/docs/concepts)
+- [Guides](/docs/guides)
+- [Référence de l'API](/docs/api-reference)

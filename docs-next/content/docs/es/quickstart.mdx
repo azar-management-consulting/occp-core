@@ -1,0 +1,68 @@
+---
+title: Guía rápida
+description: Ejecute su primera acción de agente verificada en menos de 5 minutos.
+---
+
+# Guía rápida
+
+Esta página lo lleva desde cero hasta el primer ciclo exitoso de
+**PLAN → VERIFY → APPROVE → EXECUTE → AUDIT** en menos de 5 minutos.
+
+## 1 · Inicie sesión
+
+Haga clic en [Comenzar gratis en el panel](https://dash.occp.ai/onboarding/start)
+y autentíquese con GitHub.
+
+> OAuth es la ruta recomendada. Sin tarjeta de crédito. Ningún paso de
+> verificación por correo lo bloquea — eso ocurre de forma asíncrona.
+
+## 2 · Genere una clave API
+
+Desde el asistente de inicio, haga clic en **Generar su primera clave API**.
+La clave se muestra una sola vez y comienza con `occp_live_sk_`.
+
+Guárdela en un archivo `.env`:
+
+```bash
+OCCP_API_KEY=occp_live_sk_xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+## 3 · Instale el SDK
+
+```bash
+# Python
+pip install occp
+
+# Node / TypeScript
+npm install @occp/sdk
+```
+
+## 4 · Ejecute una tarea verificada
+
+```python
+from occp import ControlPlane
+import os
+
+cp = ControlPlane(api_key=os.environ["OCCP_API_KEY"])
+
+result = cp.run(
+    agent="claude-opus-4-7",
+    task="Say hello and confirm the pipeline is working.",
+)
+
+print(result.status)          # 'pass'
+print(result.audit_chain_id)  # tamper-evident chain id
+```
+
+## 5 · Consulte el registro de auditoría
+
+Vaya a la [página de Auditoría](https://dash.occp.ai/audit) del panel. Su
+ejecución aparece allí con evidencia firmada para cada etapa.
+
+Listo — acaba de ejecutar una acción autónoma totalmente gobernada.
+
+## Qué leer a continuación
+
+- [Autonomía verificada — concepto central](/docs/concepts/verified-autonomy)
+- [Escritura de políticas](/docs/guides/policy-writing)
+- [Despliegue de agentes vía GitHub](/docs/guides/first-agent)
