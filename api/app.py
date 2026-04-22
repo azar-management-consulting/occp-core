@@ -560,6 +560,19 @@ def create_app() -> FastAPI:
     app.include_router(daily_check_route.router, prefix=prefix)
     app.include_router(managed_agents_route.router, prefix=prefix)
 
+    # Public Prometheus scrape endpoint (unauthenticated — bind container-internal only in prod).
+    # Prometheus docker scrape config (infra/grafana/prometheus.yml) targets `occp-api:8000/metrics`.
+    # The authenticated variant at `/api/v1/observability/metrics` remains for dashboard use.
+    from fastapi.responses import Response as _PromResponse
+    from observability.metrics_collector import get_collector as _get_metrics_coll
+
+    @app.get("/metrics", include_in_schema=False)
+    async def _prometheus_metrics() -> _PromResponse:
+        return _PromResponse(
+            content=_get_metrics_coll().render_prometheus(),
+            media_type="text/plain; version=0.0.4; charset=utf-8",
+        )
+
     return app
 
 
