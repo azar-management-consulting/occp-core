@@ -93,7 +93,7 @@ export default async function Page(props: {
   params: Promise<{ lang: string; slug?: string[] }>;
 }) {
   const params = await props.params;
-  const page = source.getPage(params.slug, params.lang);
+  const page = source.getPage([params.lang, ...(params.slug ?? [])]);
   if (!page) notFound();
 
   // Fumadocs 16.8: PageData only declares {icon,title,description}; the MDX
@@ -135,17 +135,22 @@ export default async function Page(props: {
 }
 
 export async function generateStaticParams() {
-  // Combine params across all languages.
-  return i18n.languages.flatMap((lang) =>
-    source.generateParams('slug', 'lang').filter((p) => p.lang === lang),
-  );
+  // Our content lives at content/docs/<lang>/<slug>.mdx — so every page's
+  // `slugs[0]` IS the locale and `slugs[1:]` is the real slug. Split here;
+  // the page lookup (`source.getPage([lang, ...slug])`) below mirrors it.
+  const params: { lang: string; slug: string[] }[] = [];
+  for (const page of source.getPages()) {
+    const [lang, ...slug] = page.slugs;
+    if (i18n.languages.includes(lang)) params.push({ lang, slug });
+  }
+  return params;
 }
 
 export async function generateMetadata(props: {
   params: Promise<{ lang: string; slug?: string[] }>;
 }): Promise<Metadata> {
   const params = await props.params;
-  const page = source.getPage(params.slug, params.lang);
+  const page = source.getPage([params.lang, ...(params.slug ?? [])]);
   if (!page) notFound();
 
   // hreflang per supported language.
