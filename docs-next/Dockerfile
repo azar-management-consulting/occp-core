@@ -1,8 +1,10 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-# See landing-next/Dockerfile for rationale on `npm install` vs `npm ci`.
-RUN npm install --no-audit --no-fund --prefer-offline
+# Skip scripts (postinstall: fumadocs-mdx) — runs against content/docs/,
+# which doesn't exist yet in this stage. Scripts run during the
+# build stage after full source is copied.
+RUN npm install --no-audit --no-fund --prefer-offline --ignore-scripts
 
 FROM node:22-alpine AS builder
 WORKDIR /app
@@ -11,7 +13,9 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_OCCP_API_URL=https://api.occp.ai
 ENV NEXT_PUBLIC_OCCP_API_URL=$NEXT_PUBLIC_OCCP_API_URL
-RUN npm run build
+# Generate .source/ collections from content/docs (normally a postinstall,
+# skipped in deps stage), then build.
+RUN npx fumadocs-mdx && npm run build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
