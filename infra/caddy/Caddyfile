@@ -21,6 +21,9 @@
 
     @docs host docs.occp.ai
     handle @docs {
+        # Root -> /en/docs (docs-next has no flat `/` page when i18n is on).
+        @root_only path /
+        redir @root_only /en/docs 302
         reverse_proxy docs:3000 {
             header_up Host {upstream_hostport}
             header_up X-Real-IP {remote_host}
