@@ -1,7 +1,7 @@
 # OCCP Final Handoff — 2026-04-22
 
 **Status:** ✅ **100% KÉSZ, SHIP-READY**
-**Commit HEAD:** `<filled at commit>` · `origin/main` szinkronban
+**Commit HEAD:** `566a6eb` · `origin/main` szinkronban
 **8 iteráció · 60+ nap · ~420 új/frissített fájl**
 
 ---
@@ -105,7 +105,7 @@
 | iter-5 | 2026-04-21 | Hardening (metrics, SSRF/SQL fix, feature flag, prod smoke) | `c836e83` |
 | iter-6 | 2026-04-21 | Product polish (a11y, SEO, WP MCP, hero anim, sparkline, secret redact) | `71992b9` |
 | iter-7 | 2026-04-21 | World-class redesign + i18n 7 locale (5 agent + deep-research) | `a52b2c8` |
-| iter-8 | 2026-04-22 | Landing i18n 100% (5 komponens × 7 locale × ~70 string = ~490 translation) + final handoff | `<this commit>` |
+| iter-8 | 2026-04-22 | Landing i18n 100% (5 komponens × 7 locale × ~70 string = ~490 translation) + final handoff | `566a6eb` |
 
 **8 iteráció · 30+ commit · 3157 regression test · 20/20 frontend · 7/7 smoke · 0 CVE · 0 open HIGH.**
 
