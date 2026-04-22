@@ -43,5 +43,168 @@
     "ariaExecute": "Végrehajtás szakasz",
     "ariaValidate": "Validáció szakasz",
     "ariaShip": "Kiszállítás szakasz"
+  },
+  "features": {
+    "eyebrow": "A platform",
+    "heading": "Minden, amit egy irányítási szintű ügynök control plane igényel",
+    "learnMore": "Tudj meg többet →",
+    "learnMoreAria": "Tudj meg többet a(z) {title} funkcióról",
+    "cards": {
+      "vap": {
+        "title": "Verified Autonomy Pipeline",
+        "description": "Öt determinisztikus kapu — Terv, Kapu, Végrehajtás, Validáció, Kiszállítás — blokkol minden policy-sértő műveletet, mielőtt az élesbe kerülne."
+      },
+      "euAiAct": {
+        "title": "EU AI Act 14. cikk beépítve",
+        "description": "Human-in-the-loop eszkaláció, átlátható döntésnaplózás és kockázati besorolás elsődleges primitívekként, nem utólag ráaggatva."
+      },
+      "mcpCatalog": {
+        "title": "MCP-natív tool katalógus",
+        "description": "A katalógus minden eszköze típusos, verziózott és a Model Context Protocol specifikáció szerint séma-ellenőrzött, mielőtt bármely ügynök meghívná."
+      },
+      "cost": {
+        "title": "Költség-megfigyelhetőség",
+        "description": "Token-szintű USD költés valós időben, OpenTelemetry span-eken keresztül. Ügynök- és policy-szintű költségkeretek és riasztások."
+      },
+      "killSwitch": {
+        "title": "Vészleállító",
+        "description": "Redis-alapú globális vészleállító 200 ms alatt állítja le az összes futó pipeline-t. Áramkörmegszakító ügynökönként, környezetenként, szervezetenként."
+      },
+      "auditChain": {
+        "title": "Audit lánc",
+        "description": "Csak-hozzáfűzhető SHA-256 hash-lánc minden műveleti eseményre. Olvasáskor manipulációérzékelés. Exportálható S3-ba vagy bármely SIEM-be."
+      }
+    }
+  },
+  "socialProof": {
+    "heading": "Működik a te stackeddel",
+    "titles": {
+      "mcp": "Model Context Protocol",
+      "openTelemetry": "OpenTelemetry megfigyelhetőség",
+      "supabase": "Supabase Postgres backend",
+      "cloudflare": "Cloudflare edge",
+      "github": "GitHub CI/CD",
+      "slack": "Slack értesítések"
+    }
+  },
+  "pricing": {
+    "eyebrow": "Árazás",
+    "heading": "Egyszerű, átlátható árazás",
+    "subtitleBefore": "A teljes árazási részletek az",
+    "subtitleLink": "árazási oldalon",
+    "subtitleAfter": ". Nincs rejtett mérés.",
+    "mostPopular": "Legnépszerűbb",
+    "tiers": {
+      "free": {
+        "name": "Ingyenes",
+        "price": "$0",
+        "period": "",
+        "description": "Saját szerveren, MIT licensz, Community Edition funkciók.",
+        "cta": "Ingyenes indítás",
+        "features": [
+          "Teljes Verified Autonomy Pipeline",
+          "Legfeljebb 3 ügynök",
+          "Közösségi MCP tool katalógus",
+          "Audit lánc (helyi tárolás)",
+          "Közösségi támogatás (GitHub)"
+        ]
+      },
+      "team": {
+        "name": "Csapat",
+        "price": "$29",
+        "period": "/hó",
+        "description": "Hosztolt, menedzselt infrastruktúra, prioritásos támogatás.",
+        "cta": "Csapat indítása",
+        "features": [
+          "Minden az Ingyenesből",
+          "Korlátlan ügynök",
+          "Hosztolt + menedzselt infrastruktúra",
+          "Költség-megfigyelési dashboard",
+          "Prioritásos e-mail támogatás"
+        ]
+      },
+      "enterprise": {
+        "name": "Vállalati",
+        "price": "Egyedi",
+        "period": "",
+        "description": "Dedikált példány, SSO, SLA, egyedi policy.",
+        "cta": "Lépj kapcsolatba",
+        "features": [
+          "Minden a Csapat csomagból",
+          "SSO (SAML / OIDC)",
+          "99,9% rendelkezésre állási SLA",
+          "Dedikált példány",
+          "Egyedi policy-mérnökség"
+        ]
+      }
+    }
+  },
+  "faq": {
+    "eyebrow": "GYIK",
+    "heading": "Gyakori kérdések",
+    "items": [
+      {
+        "q": "Nyílt forráskódú az OCCP?",
+        "a": "Igen. A Community Edition MIT licenszes, és a github.com/azar-management-consulting/occp-core címen él. Az Enterprise Edition a haladó policy funkciókkal és SLA-val kereskedelmi. Minden CE funkció ingyenes és nyílt marad örökre."
+      },
+      {
+        "q": "Működik OpenAI, Anthropic és lokális LLM-ekkel?",
+        "a": "Az OCCP LLM-független. Bármely, OpenAI-kompatibilis chat-completions végponton elérhető modell — beleértve az Ollamát, vLLM-et, Azure OpenAI-t és az Anthropic Claude API-ját — azonnal működik. A modellt ügynökönként, nem telepítésenként konfigurálod."
+      },
+      {
+        "q": "Hogyan működik a vészleállító?",
+        "a": "Egy Redis kulcs globális áramkörmegszakítóként funkcionál. Aktiváláskor (dashboardról, CLI-ről vagy API-ról) minden aktív pipeline-dolgozó minden kapunál ellenőrzi a kulcsot, és egy lekérdezési intervallumon belül — szabványos telepítésben 200 ms alatt — szabályosan leáll. A részleges eredmények az audit láncban megőrződnek."
+      },
+      {
+        "q": "Milyen adatok maradnak on-prem?",
+        "a": "Saját szerveres módban minden: a promptok, ügynök kimenetek, tool call payloadok és audit események soha nem hagyják el az infrastruktúrádat. Menedzselt módban csak telemetria metaadatok (token számok, latenciák, hibakódok) kerülnek továbbításra — a nyers payloadokat a kliens oldalon titkosítjuk a küldés előtt."
+      },
+      {
+        "q": "EU AI Act megfelelőség — pontosan miben?",
+        "a": "Az OCCP a 14. cikket (emberi felügyelet) kötelező jóváhagyási kapukkal valósítja meg a magas kockázatú műveletekhez, a 13. cikket (átláthatóság) strukturált, géppel olvasható audit naplókkal, a 9. cikket (kockázatkezelés) pedig Rego alapú policy-as-code-dal. Az OCCP nem tanúsító hatóság — a megfelelőség a telepítéstől és a használati esettől függ."
+      },
+      {
+        "q": "Futtathatom saját szerveren?",
+        "a": "Igen, és szabályozott iparágakban ez az alapértelmezett ajánlott út. Futtasd az occp up parancsot Docker Compose-zal, és a teljes pipeline öt percen belül helyben fut. Kubernetes Helm chart-ok is elérhetők éles telepítésekhez. Saját szerveres módban alapértelmezetten nem kerül semmilyen telemetria elküldésre."
+      }
+    ]
+  },
+  "footer": {
+    "trust": "EU AI Act 14. cikk kész · GDPR-megfelelő · SOC2 (folyamatban)",
+    "copyright": "© 2026 Azar Management Consulting",
+    "madeIn": "EU-ban készült",
+    "euFlagLabel": "Európai Unió zászló",
+    "githubAria": "OCCP a GitHubon",
+    "linkedinAria": "Azar Management Consulting a LinkedInen",
+    "columns": {
+      "product": {
+        "heading": "Termék",
+        "features": "Funkciók",
+        "pricing": "Árazás",
+        "changelog": "Változások",
+        "roadmap": "Roadmap"
+      },
+      "resources": {
+        "heading": "Erőforrások",
+        "docs": "Dokumentáció",
+        "api": "API referencia",
+        "templates": "Sablonok",
+        "blog": "Blog"
+      },
+      "company": {
+        "heading": "Cég",
+        "about": "Rólunk",
+        "security": "Biztonság",
+        "careers": "Karrier",
+        "contact": "Kapcsolat"
+      },
+      "legal": {
+        "heading": "Jog",
+        "terms": "ÁSZF",
+        "privacy": "Adatvédelem",
+        "sla": "SLA",
+        "aup": "Használati szabályzat"
+      }
+    }
   }
 }

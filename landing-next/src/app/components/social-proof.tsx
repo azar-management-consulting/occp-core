@@ -2,14 +2,23 @@
 
 import { motion, useInView } from "motion/react";
 import { useRef } from "react";
+import { useTranslations } from "next-intl";
 
-const INTEGRATIONS = [
-  { label: "MCP", title: "Model Context Protocol" },
-  { label: "OpenTelemetry", title: "OpenTelemetry observability" },
-  { label: "Supabase", title: "Supabase Postgres backend" },
-  { label: "Cloudflare", title: "Cloudflare edge" },
-  { label: "GitHub", title: "GitHub CI/CD" },
-  { label: "Slack", title: "Slack notifications" },
+type IntegrationKey =
+  | "mcp"
+  | "openTelemetry"
+  | "supabase"
+  | "cloudflare"
+  | "github"
+  | "slack";
+
+const INTEGRATIONS: ReadonlyArray<{ key: IntegrationKey; label: string }> = [
+  { key: "mcp", label: "MCP" },
+  { key: "openTelemetry", label: "OpenTelemetry" },
+  { key: "supabase", label: "Supabase" },
+  { key: "cloudflare", label: "Cloudflare" },
+  { key: "github", label: "GitHub" },
+  { key: "slack", label: "Slack" },
 ] as const;
 
 const containerVariants = {
@@ -31,6 +40,7 @@ const tileVariants = {
 export function SocialProof() {
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
+  const t = useTranslations("socialProof");
 
   return (
     <section
@@ -47,7 +57,7 @@ export function SocialProof() {
           transition={{ duration: 0.4 }}
           className="mb-8 text-center text-xl font-semibold tracking-tight"
         >
-          Works with your stack
+          {t("heading")}
         </motion.p>
 
         <motion.ul
@@ -59,9 +69,9 @@ export function SocialProof() {
         >
           {INTEGRATIONS.map((item) => (
             <motion.li
-              key={item.label}
+              key={item.key}
               variants={tileVariants}
-              title={item.title}
+              title={t(`titles.${item.key}`)}
               className="flex h-16 items-center justify-center rounded-lg border text-sm font-medium transition-colors duration-150 hover:bg-bg-elev"
               style={{
                 borderColor: "var(--color-border-subtle)",

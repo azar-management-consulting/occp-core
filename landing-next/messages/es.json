@@ -43,5 +43,168 @@
     "ariaExecute": "Etapa Execute",
     "ariaValidate": "Etapa Validate",
     "ariaShip": "Etapa Ship"
+  },
+  "features": {
+    "eyebrow": "La plataforma",
+    "heading": "Todo lo que necesita un control plane de agentes de nivel gobierno",
+    "learnMore": "Saber más →",
+    "learnMoreAria": "Saber más sobre {title}",
+    "cards": {
+      "vap": {
+        "title": "Verified Autonomy Pipeline",
+        "description": "Cinco puertas deterministas — Plan, Gate, Execute, Validate, Ship — bloquean cualquier acción que viole tu política antes de llegar a producción."
+      },
+      "euAiAct": {
+        "title": "Ley de IA de la UE Art. 14 integrado",
+        "description": "Escalado human-in-the-loop, registro transparente de decisiones y clasificación de riesgos como primitivas de primera clase, no añadidos a posteriori."
+      },
+      "mcpCatalog": {
+        "title": "Catálogo de herramientas MCP-nativo",
+        "description": "Cada herramienta del catálogo está tipada, versionada y validada contra la especificación del Model Context Protocol antes de que los agentes puedan invocarla."
+      },
+      "cost": {
+        "title": "Observabilidad de costes",
+        "description": "Gasto en USD por token rastreado en tiempo real mediante spans de OpenTelemetry. Límites de presupuesto y alertas configurables por agente, por política."
+      },
+      "killSwitch": {
+        "title": "Botón de parada",
+        "description": "Kill switch global basado en Redis detiene todos los pipelines en ejecución en menos de 200 ms. Disyuntor por agente, por entorno, por organización."
+      },
+      "auditChain": {
+        "title": "Cadena de auditoría",
+        "description": "Cadena de hash SHA-256 append-only en cada evento de acción. Detección de manipulación al leer. Exportable a S3 o cualquier SIEM."
+      }
+    }
+  },
+  "socialProof": {
+    "heading": "Funciona con tu stack",
+    "titles": {
+      "mcp": "Model Context Protocol",
+      "openTelemetry": "Observabilidad OpenTelemetry",
+      "supabase": "Backend Supabase Postgres",
+      "cloudflare": "Cloudflare edge",
+      "github": "GitHub CI/CD",
+      "slack": "Notificaciones de Slack"
+    }
+  },
+  "pricing": {
+    "eyebrow": "Precios",
+    "heading": "Precios simples y transparentes",
+    "subtitleBefore": "Todos los detalles de precios en la",
+    "subtitleLink": "página de precios",
+    "subtitleAfter": ". Sin medición oculta.",
+    "mostPopular": "Más popular",
+    "tiers": {
+      "free": {
+        "name": "Free",
+        "price": "$0",
+        "period": "",
+        "description": "Autohospedado, licencia MIT, funciones de Community Edition.",
+        "cta": "Empezar gratis",
+        "features": [
+          "Verified Autonomy Pipeline completo",
+          "Hasta 3 agentes",
+          "Catálogo comunitario de herramientas MCP",
+          "Cadena de auditoría (almacenamiento local)",
+          "Soporte de la comunidad (GitHub)"
+        ]
+      },
+      "team": {
+        "name": "Team",
+        "price": "$29",
+        "period": "/mes",
+        "description": "Hospedado, infraestructura gestionada, soporte prioritario.",
+        "cta": "Empezar Team",
+        "features": [
+          "Todo lo de Free",
+          "Agentes ilimitados",
+          "Infraestructura hospedada + gestionada",
+          "Panel de observabilidad de costes",
+          "Soporte prioritario por email"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "price": "Consultar",
+        "period": "",
+        "description": "Instancia dedicada, SSO, SLA, políticas personalizadas.",
+        "cta": "Contáctanos",
+        "features": [
+          "Todo lo de Team",
+          "SSO (SAML / OIDC)",
+          "SLA de disponibilidad del 99,9 %",
+          "Instancia dedicada",
+          "Ingeniería de políticas personalizadas"
+        ]
+      }
+    }
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "heading": "Preguntas frecuentes",
+    "items": [
+      {
+        "q": "¿OCCP es de código abierto?",
+        "a": "Sí. La Community Edition tiene licencia MIT y reside en github.com/azar-management-consulting/occp-core. La Enterprise Edition, con funciones avanzadas de política y SLA, es comercial. Todas las funciones de CE seguirán siendo gratuitas y abiertas para siempre."
+      },
+      {
+        "q": "¿Funciona con OpenAI, Anthropic y LLM locales?",
+        "a": "OCCP es agnóstico en cuanto a LLM. Cualquier modelo accesible mediante un endpoint de chat-completions compatible con OpenAI — incluyendo Ollama, vLLM, Azure OpenAI y la API de Claude de Anthropic — funciona sin configuración. Configuras el modelo por agente, no por instalación."
+      },
+      {
+        "q": "¿Cómo funciona el botón de parada?",
+        "a": "Una clave de Redis actúa como disyuntor global. Cuando se activa (por panel, CLI o API), todos los workers de pipeline activos comprueban la clave en cada puerta y se detienen ordenadamente dentro de un intervalo de sondeo — bajo 200 ms en implementaciones estándar. Los resultados parciales se conservan en la cadena de auditoría."
+      },
+      {
+        "q": "¿Qué datos permanecen on-premise?",
+        "a": "En modo autohospedado, todo: los prompts, las salidas de agentes, los payloads de llamadas a herramientas y los eventos de auditoría nunca salen de tu infraestructura. En modo gestionado solo se transmiten metadatos de telemetría (conteos de tokens, latencias, códigos de error) — los payloads crudos se cifran en el cliente antes de transmitirse."
+      },
+      {
+        "q": "Cumplimiento de la Ley de IA de la UE — ¿qué exactamente?",
+        "a": "OCCP implementa el artículo 14 (supervisión humana) mediante puertas de aprobación obligatorias para acciones de alto riesgo, el artículo 13 (transparencia) mediante registros de auditoría estructurados en formato legible por máquina, y el artículo 9 (gestión de riesgos) mediante política como código con Rego. OCCP no es una autoridad de certificación — el cumplimiento depende de tu despliegue y caso de uso."
+      },
+      {
+        "q": "¿Puedo autohospedarlo?",
+        "a": "Sí, y es la vía recomendada por defecto para sectores regulados. Ejecuta occp up con Docker Compose y tendrás el pipeline completo localmente en menos de cinco minutos. Hay charts de Helm para Kubernetes disponibles para despliegues de producción. En modo autohospedado no se envía telemetría por defecto."
+      }
+    ]
+  },
+  "footer": {
+    "trust": "Ley de IA de la UE Art. 14 preparado · Cumple RGPD · SOC2 (en progreso)",
+    "copyright": "© 2026 Azar Management Consulting",
+    "madeIn": "Hecho en la UE",
+    "euFlagLabel": "Bandera de la Unión Europea",
+    "githubAria": "OCCP en GitHub",
+    "linkedinAria": "Azar Management Consulting en LinkedIn",
+    "columns": {
+      "product": {
+        "heading": "Producto",
+        "features": "Funciones",
+        "pricing": "Precios",
+        "changelog": "Changelog",
+        "roadmap": "Hoja de ruta"
+      },
+      "resources": {
+        "heading": "Recursos",
+        "docs": "Documentación",
+        "api": "Referencia de API",
+        "templates": "Plantillas",
+        "blog": "Blog"
+      },
+      "company": {
+        "heading": "Empresa",
+        "about": "Sobre nosotros",
+        "security": "Seguridad",
+        "careers": "Empleo",
+        "contact": "Contacto"
+      },
+      "legal": {
+        "heading": "Legal",
+        "terms": "Términos",
+        "privacy": "Privacidad",
+        "sla": "SLA",
+        "aup": "Política de uso"
+      }
+    }
   }
 }

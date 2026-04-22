@@ -43,5 +43,168 @@
     "ariaExecute": "Execute stage",
     "ariaValidate": "Validate stage",
     "ariaShip": "Ship stage"
+  },
+  "features": {
+    "eyebrow": "The platform",
+    "heading": "Everything a governance-grade agent control plane needs",
+    "learnMore": "Learn more →",
+    "learnMoreAria": "Learn more about {title}",
+    "cards": {
+      "vap": {
+        "title": "Verified Autonomy Pipeline",
+        "description": "Five deterministic gates — Plan, Gate, Execute, Validate, Ship — block any action that violates your policy before it reaches production."
+      },
+      "euAiAct": {
+        "title": "EU AI Act Art. 14 built-in",
+        "description": "Human-in-the-loop escalation, transparent decision logging, and risk classification ship as first-class primitives, not bolt-ons."
+      },
+      "mcpCatalog": {
+        "title": "MCP-native tool catalog",
+        "description": "Every tool in the catalog is typed, versioned, and schema-validated against the Model Context Protocol spec before agents can invoke it."
+      },
+      "cost": {
+        "title": "Cost observability",
+        "description": "Per-token USD spend tracked in real time via OpenTelemetry spans. Budget limits and alerts configurable per agent, per policy."
+      },
+      "killSwitch": {
+        "title": "Kill switch",
+        "description": "Redis-backed global kill switch halts all running pipelines in under 200 ms. Circuit breaker per agent, per environment, per org."
+      },
+      "auditChain": {
+        "title": "Audit chain",
+        "description": "Append-only SHA-256 hash chain on every action event. Tamper detection on read. Exportable to S3 or any SIEM."
+      }
+    }
+  },
+  "socialProof": {
+    "heading": "Works with your stack",
+    "titles": {
+      "mcp": "Model Context Protocol",
+      "openTelemetry": "OpenTelemetry observability",
+      "supabase": "Supabase Postgres backend",
+      "cloudflare": "Cloudflare edge",
+      "github": "GitHub CI/CD",
+      "slack": "Slack notifications"
+    }
+  },
+  "pricing": {
+    "eyebrow": "Pricing",
+    "heading": "Simple, transparent pricing",
+    "subtitleBefore": "Full pricing details on the",
+    "subtitleLink": "pricing page",
+    "subtitleAfter": ". No hidden metering.",
+    "mostPopular": "Most popular",
+    "tiers": {
+      "free": {
+        "name": "Free",
+        "price": "$0",
+        "period": "",
+        "description": "Self-host, MIT license, Community Edition features.",
+        "cta": "Start free",
+        "features": [
+          "Full Verified Autonomy Pipeline",
+          "Up to 3 agents",
+          "Community MCP tool catalog",
+          "Audit chain (local storage)",
+          "Community support (GitHub)"
+        ]
+      },
+      "team": {
+        "name": "Team",
+        "price": "$29",
+        "period": "/mo",
+        "description": "Hosted, managed infra, priority support.",
+        "cta": "Start team",
+        "features": [
+          "Everything in Free",
+          "Unlimited agents",
+          "Hosted + managed infra",
+          "Cost observability dashboard",
+          "Priority email support"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "price": "Contact",
+        "period": "",
+        "description": "Dedicated instance, SSO, SLA, custom policy.",
+        "cta": "Contact us",
+        "features": [
+          "Everything in Team",
+          "SSO (SAML / OIDC)",
+          "99.9% uptime SLA",
+          "Dedicated instance",
+          "Custom policy engineering"
+        ]
+      }
+    }
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "heading": "Common questions",
+    "items": [
+      {
+        "q": "Is OCCP open source?",
+        "a": "Yes. The Community Edition is MIT-licensed and lives at github.com/azar-management-consulting/occp-core. The Enterprise Edition with advanced policy features and SLA is commercial. All CE features remain free and open forever."
+      },
+      {
+        "q": "Does it work with OpenAI, Anthropic, and local LLMs?",
+        "a": "OCCP is LLM-agnostic. Any model reachable via an OpenAI-compatible chat-completions endpoint — including Ollama, vLLM, Azure OpenAI, and Anthropic's Claude API — works out of the box. You configure the model per agent, not per installation."
+      },
+      {
+        "q": "How does the kill switch work?",
+        "a": "A Redis key acts as a global circuit breaker. When triggered (via dashboard, CLI, or API), all active pipeline workers check the key on each gate and halt gracefully within one polling interval — under 200 ms in standard deployments. Partial results are preserved in the audit chain."
+      },
+      {
+        "q": "What data stays on-prem?",
+        "a": "In self-hosted mode, everything: prompts, agent outputs, tool call payloads, and audit events never leave your infrastructure. In managed mode, only telemetry metadata (token counts, latencies, error codes) is transmitted — raw payloads are encrypted client-side before transmission."
+      },
+      {
+        "q": "EU AI Act compliance — what exactly?",
+        "a": "OCCP implements Article 14 (human oversight) via mandatory approval gates for high-risk actions, Article 13 (transparency) via structured audit logs in machine-readable format, and Article 9 (risk management) via policy-as-code with Rego. OCCP is not a certification authority — compliance depends on your deployment and use case."
+      },
+      {
+        "q": "Can I self-host?",
+        "a": "Yes, and it is the default recommended path for regulated industries. Run occp up with Docker Compose and you have the full pipeline locally in under five minutes. Kubernetes Helm charts are available for production deployments. No telemetry is sent in self-hosted mode by default."
+      }
+    ]
+  },
+  "footer": {
+    "trust": "EU AI Act Art. 14 ready · GDPR compliant · SOC2 (in progress)",
+    "copyright": "© 2026 Azar Management Consulting",
+    "madeIn": "Made in EU",
+    "euFlagLabel": "European Union flag",
+    "githubAria": "OCCP on GitHub",
+    "linkedinAria": "Azar Management Consulting on LinkedIn",
+    "columns": {
+      "product": {
+        "heading": "Product",
+        "features": "Features",
+        "pricing": "Pricing",
+        "changelog": "Changelog",
+        "roadmap": "Roadmap"
+      },
+      "resources": {
+        "heading": "Resources",
+        "docs": "Docs",
+        "api": "API Reference",
+        "templates": "Templates",
+        "blog": "Blog"
+      },
+      "company": {
+        "heading": "Company",
+        "about": "About",
+        "security": "Security",
+        "careers": "Careers",
+        "contact": "Contact"
+      },
+      "legal": {
+        "heading": "Legal",
+        "terms": "Terms",
+        "privacy": "Privacy",
+        "sla": "SLA",
+        "aup": "AUP"
+      }
+    }
   }
 }
