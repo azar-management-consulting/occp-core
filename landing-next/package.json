@@ -36,6 +36,6 @@
     "@vitejs/plugin-react": "^4.3.4",
     "@testing-library/react": "^16.1.0",
     "@testing-library/jest-dom": "^6.6.3",
-    "happy-dom": "^15.11.7"
+    "happy-dom": "^20.9.0"
   }
 }
