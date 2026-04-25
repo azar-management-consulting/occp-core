@@ -14,12 +14,12 @@
 
 name: occp-phoenix
 
-# occp-core_default  — external network created by `docker compose up` in /opt/occp
-#                      (project dir = occp-core → Docker names it occp-core_default)
+# occp_default  — external network created by `docker compose up` in /opt/occp
+#                      (project dir = occp-core → Docker names it occp_default)
 # phoenix-internal   — internal bridge; postgres is NOT exposed on the shared network
 networks:
-  occp-core_default:
-    name: occp-core_default
+  occp_default:
+    name: occp_default
     external: true
   phoenix-internal:
     driver: bridge
@@ -82,7 +82,7 @@ services:
       # OTLP HTTP
       - "127.0.0.1:${PHOENIX_HTTP_PORT:-4318}:4318"
     networks:
-      - occp-core_default
+      - occp_default
       - phoenix-internal
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:6006/healthz || exit 1"]

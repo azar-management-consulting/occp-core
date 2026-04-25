@@ -1,7 +1,7 @@
 # OCCP Grafana observability stack — Grafana 11 + Prometheus + Alertmanager
 # Usage: docker compose -f infra/grafana/docker-compose.grafana.yml up -d
 # Requires: .env.grafana (copy from .env.grafana.example)
-# Network: occp-core_default (external — OCCP main network; enables Prometheus→api scrape)
+# Network: occp_default (external — OCCP main network; enables Prometheus→api scrape)
 
 version: "3.8"
 
@@ -29,7 +29,7 @@ services:
       - ./dashboards:/etc/grafana/provisioning/dashboards
       - grafana-data:/var/lib/grafana
     networks:
-      - occp-core_default
+      - occp_default
     depends_on:
       prometheus:
         condition: service_healthy
@@ -61,7 +61,7 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     networks:
-      - occp-core_default
+      - occp_default
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/-/healthy || exit 1"]
       interval: 15s
@@ -86,7 +86,7 @@ services:
       - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       - alertmanager-data:/alertmanager
     networks:
-      - occp-core_default
+      - occp_default
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:9093/-/healthy || exit 1"]
       interval: 15s
@@ -106,6 +106,6 @@ volumes:
     driver: local
 
 networks:
-  occp-core_default:
-    name: occp-core_default
+  occp_default:
+    name: occp_default
     external: true
