@@ -59,7 +59,7 @@ services:
           memory: 512m
 
   phoenix:
-    image: arizephoenix/phoenix:7.12.0
+    image: arizephoenix/phoenix:14.14.0
     container_name: phoenix
     restart: unless-stopped
     depends_on:
