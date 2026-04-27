@@ -12,7 +12,8 @@ services:
     container_name: occp-grafana
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3000:3000"
+      # 3001 host, not 3000 — port 3000 is taken by occp-dash-1 on the brain.
+      - "127.0.0.1:${GRAFANA_PORT:-3001}:3000"
     env_file:
       - .env.grafana
     environment:
