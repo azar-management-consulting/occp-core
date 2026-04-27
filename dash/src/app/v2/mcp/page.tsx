@@ -8,6 +8,12 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Plug, Plus } from "lucide-react";
 import { TaskCreateDialog } from "@/components/task-create-dialog";
+import { StatusPill } from "@/components/status-pill";
+
+const MCP_STATUS_VARIANT: Record<"connected" | "disconnected", "passed" | "pending"> = {
+  connected: "passed",
+  disconnected: "pending",
+};
 
 import {
   Card,
@@ -96,7 +102,7 @@ export default function MCPV2Page() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm font-mono" aria-label="MCP server connections">
-                <thead className="text-xs uppercase tracking-wider text-[var(--fg-muted,#a1a1aa)]">
+                <thead className="sticky top-0 z-10 bg-[var(--bg-elev,#18181b)]/80 backdrop-blur-sm text-xs uppercase tracking-wider text-[var(--fg-muted,#a1a1aa)]">
                   <tr className="border-b border-[var(--border-subtle,#52525b)]">
                     <th scope="col" className="py-2 pr-4 text-left font-medium">Name</th>
                     <th scope="col" className="py-2 pr-4 text-left font-medium">Status</th>
@@ -109,15 +115,11 @@ export default function MCPV2Page() {
                   {SERVERS.map((s) => (
                     <tr
                       key={s.name}
-                      className="border-b border-[var(--border-subtle,#52525b)] last:border-0 hover:bg-white/[0.02] transition-colors duration-150"
+                      className="border-b border-[var(--border-subtle,#52525b)] last:border-0 hover:bg-white/[0.03] transition-colors duration-150 cursor-pointer"
                     >
                       <td className="py-3 pr-4 font-bold">{s.name}</td>
                       <td className="py-3 pr-4">
-                        <span
-                          className={`inline-block rounded border px-2 py-0.5 text-xs uppercase tracking-wider ${STATUS_STYLES[s.status]}`}
-                        >
-                          {s.status}
-                        </span>
+                        <StatusPill variant={MCP_STATUS_VARIANT[s.status]} label={s.status} />
                       </td>
                       <td className="py-3 pr-4 text-right">{s.toolsCount}</td>
                       <td className="py-3 pr-4 text-[var(--fg-muted,#a1a1aa)]">

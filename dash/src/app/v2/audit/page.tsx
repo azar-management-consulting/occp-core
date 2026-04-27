@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { LiveBadge } from "@/components/live-badge";
 import { EmptyState } from "@/components/empty-state";
+import { StatusPill, type StatusPillVariant } from "@/components/status-pill";
 import { HelpBubble } from "@/components/onboarding/help-bubble";
 
 type Decision = "allow" | "deny" | "approve" | "n/a";
@@ -118,7 +119,7 @@ export default function AuditV2Page() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm font-mono" aria-label="Audit log entries">
-                <thead className="text-xs uppercase tracking-wider text-[var(--fg-muted,#a1a1aa)]">
+                <thead className="sticky top-0 z-10 bg-[var(--bg-elev,#18181b)]/80 backdrop-blur-sm text-xs uppercase tracking-wider text-[var(--fg-muted,#a1a1aa)]">
                   <tr className="border-b border-[var(--border-subtle,#52525b)]">
                     <th scope="col" className="py-2 pr-4 text-left font-medium">Timestamp</th>
                     <th scope="col" className="py-2 pr-4 text-left font-medium">Task</th>
@@ -132,7 +133,7 @@ export default function AuditV2Page() {
                     <tr
                       key={`${e.ts}-${e.taskId}-${e.action}`}
                       data-tour={idx === 0 ? "first-audit-row" : undefined}
-                      className="border-b border-[var(--border-subtle,#52525b)] last:border-0 hover:bg-white/[0.02] transition-colors duration-150"
+                      className="border-b border-[var(--border-subtle,#52525b)] last:border-0 hover:bg-white/[0.03] transition-colors duration-150 cursor-pointer"
                     >
                       <td className="py-3 pr-4 text-[var(--fg-muted,#a1a1aa)]">
                         {e.ts}
@@ -148,11 +149,7 @@ export default function AuditV2Page() {
                       <td className="py-3 pr-4">{e.actor}</td>
                       <td className="py-3 pr-4">{e.action}</td>
                       <td className="py-3">
-                        <span
-                          className={`inline-block rounded border px-2 py-0.5 text-xs uppercase tracking-wider ${DECISION_STYLES[e.decision]}`}
-                        >
-                          {e.decision}
-                        </span>
+                        <StatusPill variant={e.decision as StatusPillVariant} compact />
                       </td>
                     </tr>
                   ))}
