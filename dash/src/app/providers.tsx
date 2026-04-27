@@ -8,6 +8,8 @@ import { AuthGuard } from "@/components/auth-guard";
 import { Nav } from "@/components/nav";
 import { CommandPalette } from "@/components/command-palette";
 import { BrianDrawer } from "@/components/brian-drawer";
+import { OnboardingProvider } from "@/components/onboarding/onboarding-provider";
+import { TourEngine } from "@/components/onboarding/tour-engine";
 
 const STANDALONE_ROUTES = ["/docs"];
 
@@ -23,12 +25,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
             {isStandalone ? (
               <>{children}</>
             ) : (
-              <>
+              <OnboardingProvider>
                 <Nav />
                 <main className="max-w-7xl mx-auto px-6 py-10">{children}</main>
                 <CommandPalette />
                 <BrianDrawer />
-              </>
+                <TourEngine />
+              </OnboardingProvider>
             )}
           </AuthGuard>
         </AuthProvider>
