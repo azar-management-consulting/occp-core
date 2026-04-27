@@ -1,0 +1,32 @@
+# Alertmanager v0.28 minimal config — OCCP observability stack
+# Routes all alerts to a single null receiver until a real notification
+# channel (PagerDuty / Slack webhook) is wired. Update receivers[] below
+# with real targets, then `docker compose -f docker-compose.grafana.yml restart alertmanager`.
+
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: 'null-default'
+  group_by: ['alertname', 'cluster']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers:
+        - severity = "page"
+      receiver: 'null-default'
+      continue: true
+    - matchers:
+        - severity = "ticket"
+      receiver: 'null-default'
+
+receivers:
+  - name: 'null-default'
+
+inhibit_rules:
+  - source_matchers:
+      - severity = "page"
+    target_matchers:
+      - severity = "ticket"
+    equal: ['alertname', 'cluster']
