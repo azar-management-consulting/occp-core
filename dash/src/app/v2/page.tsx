@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SpendSparkline } from "@/components/spend-sparkline";
+import { HelpBubble } from "@/components/onboarding/help-bubble";
 import { PageHeader } from "@/components/page-header";
 import { LiveBadge } from "@/components/live-badge";
 
@@ -102,7 +103,10 @@ export default function DashboardV2Home() {
         {KPIs.map((k) => {
           const Icon = k.icon;
           return (
-            <Card key={k.label}>
+            <Card
+              key={k.label}
+              data-tour={k.label === "Token Spend" ? "token-spend-card" : undefined}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{k.label}</CardTitle>
                 <Icon className="text-[var(--fg-muted,#a1a1aa)]" aria-hidden="true" />
@@ -179,6 +183,16 @@ export default function DashboardV2Home() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Hint 8: Token Spend KPI — first-render bubble */}
+      <HelpBubble
+        hintKey="costspend"
+        anchor='[data-tour="token-spend-card"]'
+        variant="info"
+        placement="bottom"
+        title="Live token spend"
+        body="Refreshes every 30 seconds via SSE. Click this card to drill into per-agent cost breakdowns."
+      />
     </div>
   );
 }

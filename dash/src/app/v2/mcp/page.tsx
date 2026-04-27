@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
+import { HelpBubble } from "@/components/onboarding/help-bubble";
 
 type MCPStatus = "connected" | "disconnected";
 
@@ -53,7 +54,7 @@ export default function MCPV2Page() {
         title="MCP servers"
         description={`${connected} of ${SERVERS.length} servers online.`}
         actions={
-          <Button asChild>
+          <Button asChild data-tour="mcp-connect-button">
             <Link href="/mcp?new=1">
               <Plus aria-hidden="true" /> Connect server
             </Link>
@@ -125,6 +126,16 @@ export default function MCPV2Page() {
           )}
         </CardContent>
       </Card>
+
+      {/* Hint 6: Connect server */}
+      <HelpBubble
+        hintKey="mcpconnect"
+        anchor='[data-tour="mcp-connect-button"]'
+        variant="pro-tip"
+        placement="bottom"
+        title="Expand your agent's toolbelt"
+        body="Connect Slack, GitHub, or Supabase as MCP servers. Agents call these tools under full policy control."
+      />
     </div>
   );
 }

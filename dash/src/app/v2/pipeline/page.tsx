@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { LiveBadge } from "@/components/live-badge";
 import { EmptyState } from "@/components/empty-state";
+import { HelpBubble } from "@/components/onboarding/help-bubble";
 
 type RunStatus = "running" | "passed" | "failed" | "halted";
 
@@ -66,7 +67,7 @@ export default function PipelineV2Page() {
         description="Verified Autonomy runs."
         badge={<LiveBadge variant="live" />}
         actions={
-          <Button asChild>
+          <Button asChild data-tour="new-task-button">
             <Link href="/v2/pipeline?new=1">
               <Plus aria-hidden="true" /> New task
             </Link>
@@ -173,6 +174,16 @@ export default function PipelineV2Page() {
           )}
         </CardContent>
       </Card>
+
+      {/* Hint 4: New task button */}
+      <HelpBubble
+        hintKey="newtask"
+        anchor='[data-tour="new-task-button"]'
+        variant="pro-tip"
+        placement="bottom"
+        title="Start a governance-checked run"
+        body="Every task passes through the Policy Gate before execution. Rejections are logged to the audit trail."
+      />
     </div>
   );
 }

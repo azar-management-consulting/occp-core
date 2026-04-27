@@ -10,13 +10,44 @@
  * This lets individual pages suppress or override it (e.g. Mission Control
  * home shows "Home" only). The layout only provides the <main> shell.
  */
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { HelpBubble } from "@/components/onboarding/help-bubble";
+import {
+  tOnboarding,
+  type OnboardingLocale,
+} from "@/lib/onboarding-i18n";
+
+function readDashLocale(): OnboardingLocale {
+  if (typeof window === "undefined") return "en";
+  try {
+    const v = window.localStorage.getItem("occp_lang");
+    if (
+      v === "hu" ||
+      v === "de" ||
+      v === "fr" ||
+      v === "es" ||
+      v === "it" ||
+      v === "pt" ||
+      v === "en"
+    ) {
+      return v;
+    }
+  } catch {
+    // ignore
+  }
+  return "en";
+}
 
 export default function DashV2Layout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [locale, setLocale] = useState<OnboardingLocale>("en");
+  useEffect(() => {
+    setLocale(readDashLocale());
+  }, []);
+
   return (
     <div className="dash-v2">
       {/* Skip-link target: id="main-content" satisfies WCAG 2.4.1 Bypass Blocks */}
@@ -31,6 +62,7 @@ export default function DashV2Layout({
       <div className="fixed bottom-4 right-4 z-40">
         <button
           type="button"
+          data-tour="cmdk-trigger"
           onClick={() =>
             window.dispatchEvent(
               new KeyboardEvent("keydown", {
@@ -49,6 +81,16 @@ export default function DashV2Layout({
           <span>Shortcuts</span>
         </button>
       </div>
+
+      {/* Hint 1: ⌘K command palette — first-render bubble */}
+      <HelpBubble
+        hintKey="cmdk"
+        anchor='[data-tour="cmdk-trigger"]'
+        variant="info"
+        placement="top"
+        title={tOnboarding(locale, "hint.cmdk.title")}
+        body={tOnboarding(locale, "hint.cmdk.body")}
+      />
     </div>
   );
 }

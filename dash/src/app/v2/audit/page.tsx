@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { LiveBadge } from "@/components/live-badge";
 import { EmptyState } from "@/components/empty-state";
+import { HelpBubble } from "@/components/onboarding/help-bubble";
 
 type Decision = "allow" | "deny" | "approve" | "n/a";
 
@@ -116,9 +117,10 @@ export default function AuditV2Page() {
                   </tr>
                 </thead>
                 <tbody>
-                  {ENTRIES.map((e) => (
+                  {ENTRIES.map((e, idx) => (
                     <tr
                       key={`${e.ts}-${e.taskId}-${e.action}`}
+                      data-tour={idx === 0 ? "first-audit-row" : undefined}
                       className="border-b border-[var(--border-subtle,#52525b)] last:border-0 hover:bg-white/[0.02] transition-colors duration-150"
                     >
                       <td className="py-3 pr-4 text-[var(--fg-muted,#a1a1aa)]">
@@ -149,6 +151,16 @@ export default function AuditV2Page() {
           )}
         </CardContent>
       </Card>
+
+      {/* Hint 5: First audit row */}
+      <HelpBubble
+        hintKey="auditrow"
+        anchor='[data-tour="first-audit-row"]'
+        variant="info"
+        placement="top"
+        title="Tamper-proof record"
+        body="Every row is SHA-256 hash-chained to the previous entry. Click a row to inspect the chain proof."
+      />
     </div>
   );
 }
