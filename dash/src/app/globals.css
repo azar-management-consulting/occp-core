@@ -51,6 +51,17 @@
   100% { box-shadow: 0 0 20px rgba(120, 120, 255, 0.6); }
 }
 
+/* StatusPill `running` variant — soft pulse on the pill background.
+   The icon itself uses Tailwind's `animate-spin` (Loader2). */
+@keyframes pulse-status {
+  50% { opacity: .6; }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes pulse-status {
+    50% { opacity: 1; }
+  }
+}
+
 /* Onboarding hint bubble entry animation. Respects prefers-reduced-motion. */
 @keyframes occp-bubble-in {
   from { opacity: 0; transform: translateY(4px); }

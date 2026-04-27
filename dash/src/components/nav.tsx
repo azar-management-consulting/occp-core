@@ -1,18 +1,50 @@
 "use client";
 
+/**
+ * Top navigation — Linear/Vercel-grade modernization.
+ *
+ * Layout: sticky 56px bar with logo + wordmark left, link row centre,
+ *         language selector + user menu right.
+ *
+ * Active link: pathname === href OR pathname.startsWith(href + "/").
+ *              Highlighted with brand-green underline (oklch(0.72 0.18 145)).
+ *
+ * Mobile: link row gets overflow-x-auto, no horizontal page scroll.
+ *
+ * a11y: <nav aria-label="Primary">; active link has aria-current="page".
+ *
+ * Hidden on /login and /register (returns null).
+ */
+
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { LanguageSelector } from "@/components/language-selector";
+import { UserMenu } from "@/components/user-menu";
+import { cn } from "@/lib/utils";
+
+interface NavLink {
+  href: string;
+  label: string;
+  desc: string;
+}
+
+function isActive(pathname: string, href: string): boolean {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(href + "/");
+}
 
 export function Nav() {
   const pathname = usePathname();
-  const { isAuthenticated, isAdmin, user, logout } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
   const t = useT();
 
-  const links = [
+  if (pathname === "/login" || pathname === "/register") return null;
+
+  const links: NavLink[] = [
     { href: "/", label: t.nav.control, desc: t.nav.controlDesc },
     { href: "/pipeline", label: t.nav.pipeline, desc: t.nav.pipelineDesc },
     { href: "/agents", label: t.nav.agents, desc: t.nav.agentsDesc },
@@ -26,61 +58,80 @@ export function Nav() {
       : []),
   ];
 
-  if (pathname === "/login" || pathname === "/register") return null;
-
   return (
-    <nav className="border-b border-occp-muted/40 bg-occp-surface/80 backdrop-blur-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 flex items-center h-16 gap-6">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <Image src="/logo.png" alt="OCCP" width={28} height={28} className="rounded" />
-          <span className="font-pixel text-[13px] text-occp-primary text-glow tracking-wider">
+    <header
+      className={cn(
+        "sticky top-0 z-30 w-full",
+        "bg-[var(--bg)]/85 backdrop-blur-md",
+        "border-b border-[var(--border-subtle,#52525b)]/40",
+      )}
+    >
+      <div className="max-w-7xl mx-auto h-14 px-6 flex items-center gap-6">
+        {/* Logo + wordmark */}
+        <Link
+          href="/"
+          className="flex items-center gap-2 shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent,#6366f1)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] rounded-md"
+        >
+          <Image
+            src="/logo.png"
+            alt="OCCP"
+            width={28}
+            height={28}
+            className="rounded"
+            priority
+          />
+          <span className="text-base font-semibold tracking-tight text-[var(--fg,#fafafa)]">
             OCCP
           </span>
         </Link>
 
+        {/* Primary nav links */}
         {isAuthenticated && (
-          <div className="flex gap-1">
-            {links.map(({ href, label, desc }) => (
-              <Link
-                key={href}
-                href={href}
-                title={desc}
-                className={`group relative px-3.5 py-2 rounded text-sm font-mono tracking-wide transition-all duration-200 ${
-                  pathname === href
-                    ? "bg-occp-primary/15 text-occp-primary text-glow border border-occp-primary/30"
-                    : "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/5"
-                }`}
-              >
-                {pathname === href && (
-                  <span className="text-occp-accent mr-1">&gt;</span>
-                )}
-                {label}
-                <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-2.5 py-1.5 rounded bg-occp-dark border border-[var(--muted)] text-[11px] text-[var(--text-muted)] font-mono whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
-                  {desc}
-                </span>
-              </Link>
-            ))}
-          </div>
+          <nav
+            aria-label="Primary"
+            className={cn(
+              "flex items-center gap-5 min-w-0 flex-1",
+              // mobile: allow horizontal scroll without bleeding into page
+              "overflow-x-auto md:overflow-visible",
+              "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+            )}
+          >
+            {links.map(({ href, label, desc }) => {
+              const active = isActive(pathname, href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  title={desc}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "relative shrink-0 py-4 text-sm font-medium tracking-tight transition-colors outline-none",
+                    "focus-visible:text-[var(--fg,#fafafa)]",
+                    active
+                      ? "text-[var(--fg,#fafafa)]"
+                      : "text-[var(--fg-muted,#a1a1aa)] hover:text-[var(--fg,#fafafa)]",
+                  )}
+                >
+                  {label}
+                  {active && (
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-0 right-0 -bottom-px h-px"
+                      style={{ background: "oklch(0.72 0.18 145)" }}
+                    />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
         )}
 
-        <div className="ml-auto flex items-center gap-4 text-sm font-mono">
+        {/* Right slot */}
+        <div className="ml-auto flex items-center gap-2 shrink-0">
           <LanguageSelector />
-          <span className="text-occp-accent/60">[v0.8.2]</span>
-          {isAuthenticated && (
-            <div className="flex items-center gap-3">
-              <span className="text-[var(--text-muted)]">
-                <span className="text-occp-success">&#9679;</span> {user}
-              </span>
-              <button
-                onClick={logout}
-                className="text-[var(--text-muted)] hover:text-occp-danger transition-colors"
-              >
-                {t.nav.logout}
-              </button>
-            </div>
-          )}
+          {isAuthenticated && <UserMenu />}
         </div>
       </div>
-    </nav>
+    </header>
   );
 }
