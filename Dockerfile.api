@@ -11,6 +11,8 @@ RUN apt-get update && \
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 COPY pyproject.toml .
+COPY alembic.ini .
+COPY migrations/ migrations/
 COPY orchestrator/ orchestrator/
 COPY policy_engine/ policy_engine/
 COPY adapters/ adapters/
