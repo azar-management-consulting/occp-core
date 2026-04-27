@@ -12,6 +12,7 @@ import {
   KeyRound,
   Wrench,
   UserRound,
+  HelpCircle,
 } from "lucide-react";
 
 import {
@@ -54,6 +55,12 @@ const TILES: Tile[] = [
     title: "Profile",
     description: "Display name, email, preferred language.",
     icon: UserRound,
+  },
+  {
+    href: "/settings/help",
+    title: "Help & onboarding",
+    description: "Restart the guided tour, reset hint bubbles.",
+    icon: HelpCircle,
   },
 ];
 
