@@ -76,14 +76,20 @@ export default function MCPV2Page() {
             <EmptyState
               icon={Plug}
               title="No MCP servers connected"
-              description="Connect your first MCP server to start routing tool calls."
+              description="Connect an MCP server to give your agents verified tool access to Slack, GitHub, and more."
               action={
                 <Button asChild>
                   <Link href="/mcp?new=1">
-                    <Plus aria-hidden="true" /> Connect server
+                    <Plus aria-hidden="true" /> Connect a server
                   </Link>
                 </Button>
               }
+              helpBubble={{
+                hintKey: "empty_mcp",
+                variant: "pro-tip",
+                title: "Tools your agents can call",
+                body: "MCP servers are the tools your agents call. All tool calls are logged to the audit trail.",
+              }}
             />
           ) : (
             <div className="overflow-x-auto">

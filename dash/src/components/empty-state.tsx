@@ -1,5 +1,20 @@
+"use client";
+
 import type { LucideIcon } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+import {
+  HelpBubble,
+  type HintVariant,
+} from "@/components/onboarding/help-bubble";
+
+export interface EmptyStateHelpBubble {
+  hintKey: string;
+  variant?: HintVariant;
+  title?: string;
+  body: string;
+  placement?: "top" | "bottom" | "left" | "right";
+}
 
 interface EmptyStateProps {
   icon: LucideIcon;
@@ -7,6 +22,8 @@ interface EmptyStateProps {
   description: string;
   action?: React.ReactNode;
   className?: string;
+  /** First-render hint pointing at the action CTA. */
+  helpBubble?: EmptyStateHelpBubble;
 }
 
 /**
@@ -15,6 +32,8 @@ interface EmptyStateProps {
  * Layout: centered flex column, max-w-sm, py-16.
  * Icon: 48×48 rounded muted tile.
  * a11y: role="status" so screen readers announce the empty state.
+ *
+ * Optional helpBubble: anchored to the action CTA via internal ref.
  */
 export function EmptyState({
   icon: Icon,
@@ -22,13 +41,21 @@ export function EmptyState({
   description,
   action,
   className,
+  helpBubble,
 }: EmptyStateProps) {
+  const actionRef = useRef<HTMLDivElement>(null);
+
+  // Forward focus management is up to the consumer's CTA.
+  useEffect(() => {
+    // No-op — placeholder for future autofocus heuristic.
+  }, []);
+
   return (
     <div
       role="status"
       className={cn(
         "mx-auto flex max-w-sm flex-col items-center gap-4 py-16 text-center",
-        className
+        className,
       )}
     >
       {/* Icon tile */}
@@ -54,7 +81,23 @@ export function EmptyState({
       </div>
 
       {/* Optional CTA */}
-      {action && <div className="mt-2">{action}</div>}
+      {action && (
+        <div ref={actionRef} className="mt-2">
+          {action}
+        </div>
+      )}
+
+      {/* Optional help bubble pointing at the CTA */}
+      {helpBubble && action ? (
+        <HelpBubble
+          hintKey={helpBubble.hintKey}
+          anchor={actionRef as React.RefObject<Element | null>}
+          variant={helpBubble.variant ?? "info"}
+          placement={helpBubble.placement ?? "bottom"}
+          title={helpBubble.title}
+          body={helpBubble.body}
+        />
+      ) : null}
     </div>
   );
 }

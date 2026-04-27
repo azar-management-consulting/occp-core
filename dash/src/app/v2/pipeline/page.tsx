@@ -111,14 +111,20 @@ export default function PipelineV2Page() {
             <EmptyState
               icon={GitBranch}
               title="No pipeline runs yet"
-              description="Kick off your first Verified Autonomy task to see it here."
+              description="Kick off your first Verified Autonomy task. Every run is policy-gated and audit-logged."
               action={
                 <Button asChild>
                   <Link href="/v2/pipeline?new=1">
-                    <Plus aria-hidden="true" /> New task
+                    <Plus aria-hidden="true" /> Run your first task
                   </Link>
                 </Button>
               }
+              helpBubble={{
+                hintKey: "empty_pipeline",
+                variant: "pro-tip",
+                title: "Start a verified-autonomy run",
+                body: "Your first task runs through the Policy Gate. The result appears here and in the audit log.",
+              }}
             />
           ) : (
             <div className="overflow-x-auto">

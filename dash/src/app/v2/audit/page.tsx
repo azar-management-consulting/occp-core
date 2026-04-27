@@ -102,7 +102,18 @@ export default function AuditV2Page() {
             <EmptyState
               icon={ScrollText}
               title="No audit entries yet"
-              description="Policy decisions and pipeline events will appear here once activity starts."
+              description="Audit rows appear as soon as your first pipeline task runs. They are immutable and hash-chained."
+              action={
+                <Button asChild>
+                  <Link href="/v2/pipeline">Go to Pipeline</Link>
+                </Button>
+              }
+              helpBubble={{
+                hintKey: "empty_audit",
+                variant: "info",
+                title: "Hash-chained audit log",
+                body: "Run a task first — its audit row will appear here within seconds.",
+              }}
             />
           ) : (
             <div className="overflow-x-auto">

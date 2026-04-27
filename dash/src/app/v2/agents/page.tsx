@@ -64,14 +64,20 @@ export default function AgentsV2Page() {
         <EmptyState
           icon={Cpu}
           title="No agents registered"
-          description="Register your first agent to start running autonomous tasks."
+          description="Register an agent to start dispatching governed tasks. Each agent has its own tool policy."
           action={
             <Button asChild>
               <Link href="/agents?new=1">
-                <Plus aria-hidden="true" /> Register agent
+                <Plus aria-hidden="true" /> Register an agent
               </Link>
             </Button>
           }
+          helpBubble={{
+            hintKey: "empty_agents",
+            variant: "info",
+            title: "Agents are reusable",
+            body: "Agents are registered once and reused across tasks. Each gets its own tool allowlist.",
+          }}
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
