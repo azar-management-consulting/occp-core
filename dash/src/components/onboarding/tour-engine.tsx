@@ -89,6 +89,10 @@ export function TourEngine() {
         content={inlineContent}
         primaryCta={t(step.i18n.primary)}
         onPrimary={() => {
+          // Step 4: primary CTA opens the Brian drawer in addition to advancing.
+          if (step.id === "step-4" && typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("brian:open"));
+          }
           if (isStepFive) tour.completeTour();
           else tour.nextStep();
         }}

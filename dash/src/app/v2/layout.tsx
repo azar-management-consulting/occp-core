@@ -63,15 +63,19 @@ export default function DashV2Layout({
         <button
           type="button"
           data-tour="cmdk-trigger"
-          onClick={() =>
-            window.dispatchEvent(
-              new KeyboardEvent("keydown", {
-                key: "k",
-                metaKey: true,
-                bubbles: true,
-              })
-            )
-          }
+          onClick={() => {
+            // react-hotkeys-hook listens on document by default — dispatching
+            // on window does NOT bubble down. Use document.body for reliable
+            // delivery to the bound mod+k handler.
+            const evt = new KeyboardEvent("keydown", {
+              key: "k",
+              metaKey: true,
+              ctrlKey: !navigator.platform.includes("Mac"),
+              bubbles: true,
+              cancelable: true,
+            });
+            document.dispatchEvent(evt);
+          }}
           className="flex items-center gap-1.5 rounded-md border border-[var(--border-subtle,#52525b)] bg-[var(--bg-elev,#18181b)] px-3 py-1.5 text-xs text-[var(--fg-muted,#a1a1aa)] transition-colors duration-150 ease-out hover:text-[var(--fg,#fafafa)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent,#6366f1)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-elev,#18181b)]"
           aria-label="Open keyboard shortcuts (Command K)"
         >

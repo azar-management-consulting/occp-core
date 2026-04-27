@@ -6,7 +6,9 @@
  * wire to search params + SSE in follow-up.
  */
 import Link from "next/link";
+import { Suspense } from "react";
 import { GitBranch, Plus } from "lucide-react";
+import { TaskCreateDialog } from "@/components/task-create-dialog";
 
 import {
   Card,
@@ -190,6 +192,11 @@ export default function PipelineV2Page() {
         title="Start a governance-checked run"
         body="Every task passes through the Policy Gate before execution. Rejections are logged to the audit trail."
       />
+
+      {/* ?new=1 — placeholder dialog until iter-12 wires the real form */}
+      <Suspense fallback={null}>
+        <TaskCreateDialog variant="pipeline" />
+      </Suspense>
     </div>
   );
 }

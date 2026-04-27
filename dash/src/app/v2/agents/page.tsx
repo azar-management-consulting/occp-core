@@ -5,7 +5,9 @@
  * registry + last-run metrics wire in follow-up.
  */
 import Link from "next/link";
+import { Suspense } from "react";
 import { Cpu, Plus } from "lucide-react";
+import { TaskCreateDialog } from "@/components/task-create-dialog";
 
 import {
   Card,
@@ -121,6 +123,11 @@ export default function AgentsV2Page() {
           ))}
         </div>
       )}
+
+      {/* ?new=1 — placeholder dialog until iter-12 wires the real form */}
+      <Suspense fallback={null}>
+        <TaskCreateDialog variant="agents" />
+      </Suspense>
     </div>
   );
 }

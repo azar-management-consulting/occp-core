@@ -5,7 +5,9 @@
  * legacy catalog until a v2 install flow lands.
  */
 import Link from "next/link";
+import { Suspense } from "react";
 import { Plug, Plus } from "lucide-react";
+import { TaskCreateDialog } from "@/components/task-create-dialog";
 
 import {
   Card,
@@ -142,6 +144,11 @@ export default function MCPV2Page() {
         title="Expand your agent's toolbelt"
         body="Connect Slack, GitHub, or Supabase as MCP servers. Agents call these tools under full policy control."
       />
+
+      {/* ?new=1 — placeholder dialog until iter-12 wires the real form */}
+      <Suspense fallback={null}>
+        <TaskCreateDialog variant="mcp" />
+      </Suspense>
     </div>
   );
 }

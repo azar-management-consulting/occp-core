@@ -36,7 +36,7 @@ export const TOUR_STEPS: TourStepDef[] = [
       primary: "tour.apikey.cta_primary",
       secondary: "tour.apikey.cta_back",
     },
-    anchorSelector: '[data-tour="api-key-tile"]',
+    anchorSelector: null, // centered modal — API key surfacing wires in iter-12
     variant: "pro-tip",
   },
   {
@@ -62,7 +62,7 @@ export const TOUR_STEPS: TourStepDef[] = [
       primary: "tour.brian.cta_primary",
       secondary: "tour.apikey.cta_back",
     },
-    anchorSelector: '[data-brian-trigger]',
+    anchorSelector: null, // centered modal — Brian drawer is opened via primaryCta dispatching brian:open
     variant: "pro-tip",
   },
   {
